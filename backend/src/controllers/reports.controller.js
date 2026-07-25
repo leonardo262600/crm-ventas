@@ -19,6 +19,16 @@ const dashboard = async (req, res) => {
       `SELECT COALESCE(SUM(amount),0) as revenue_won FROM opportunities WHERE tenant_id=? AND status='won'${dateFilter}`, [tid]);
     const [[{ pipeline_value }]] = await db.query(
       `SELECT COALESCE(SUM(amount),0) as pipeline_value FROM opportunities WHERE tenant_id=? AND status='open'${dateFilter}`, [tid]);
+    const [[monthlyRevenue]] = await db.query(
+      `SELECT
+         COALESCE(SUM(cash_collected),0) AS cash_collected_month,
+         COALESCE(SUM(commission_amount),0) AS commission_month
+       FROM opportunities
+       WHERE tenant_id=? AND status='won'
+         AND close_date >= DATE_FORMAT(CURDATE(),'%Y-%m-01')
+         AND close_date < DATE_ADD(DATE_FORMAT(CURDATE(),'%Y-%m-01'), INTERVAL 1 MONTH)`,
+      [tid]
+    );
     const [[followupStats]] = await db.query(
       `SELECT
         SUM(next_action_at < NOW()) AS overdue_followups,
@@ -97,7 +107,7 @@ const dashboard = async (req, res) => {
     );
 
     res.json({
-      stats: { total_contacts, total_opportunities, total_activities, total_users, revenue_won, pipeline_value, ...followupStats },
+      stats: { total_contacts, total_opportunities, total_activities, total_users, revenue_won, pipeline_value, ...followupStats, ...monthlyRevenue },
       monthly, pipeline, top_sellers, upcoming, today_tasks, priorities,
       filters: { from: from || null, to: to || null },
     });

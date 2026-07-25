@@ -114,13 +114,15 @@ const moveStage = async (req, res) => {
 };
 
 const updateStatus = async (req, res) => {
-  const { status, amount, close_date, lost_reason, lost_detail, competitor_chosen, activation_date, resume_date } = req.body;
+  const { status, amount, close_date, cash_collected, commission_amount, lost_reason, lost_detail, competitor_chosen, activation_date, resume_date } = req.body;
   try {
     let sql = 'UPDATE opportunities SET status=?';
     const params = [status];
     
     if (amount !== undefined) { sql += ', amount=?'; params.push(amount); }
     if (close_date !== undefined) { sql += ', close_date=?'; params.push(close_date); }
+    if (cash_collected !== undefined) { sql += ', cash_collected=?'; params.push(cash_collected || 0); }
+    if (commission_amount !== undefined) { sql += ', commission_amount=?'; params.push(commission_amount || 0); }
     
     if (lost_reason !== undefined) { sql += ', lost_reason=?'; params.push(lost_reason || null); }
     if (lost_detail !== undefined) { sql += ', lost_detail=?'; params.push(lost_detail || null); }

@@ -66,8 +66,8 @@ export default function Dashboard() {
           { label: 'Seguimientos para hoy', value: stats.today_followups || 0, icon: CalendarCheck, bg: 'linear-gradient(135deg, #F59E0B, #B45309)' },
           { label: 'Sin próxima acción', value: stats.without_next_action || 0, icon: CalendarDays, bg: 'linear-gradient(135deg, #64748B, #334155)' },
           { label: 'Demos últimos 7 días', value: stats.demos_week || 0, icon: Target, bg: 'linear-gradient(135deg, #3B82F6, #1D4ED8)' },
-          { label: 'Pipeline activo', value: fmt(stats.pipeline_value || 0), icon: DollarSign, currency: true, bg: 'linear-gradient(135deg, #8B5CF6, #6D28D9)' },
-          { label: 'Pipeline ponderado', value: fmt(stats.weighted_pipeline || 0), icon: TrendingUp, currency: true, bg: 'linear-gradient(135deg, #14B8A6, #0F766E)' },
+          { label: 'Cash collected del mes', value: fmt(stats.cash_collected_month || 0), icon: DollarSign, currency: true, bg: 'linear-gradient(135deg, #8B5CF6, #6D28D9)' },
+          { label: 'Mi comisión del mes', value: fmt(stats.commission_month || 0), icon: TrendingUp, currency: true, bg: 'linear-gradient(135deg, #14B8A6, #0F766E)' },
         ].map(({ label, value, icon: Icon, bg, currency }) => (
           <div className="stat-card stat-card-colored" key={label} style={{ background: bg }}>
             {!currency && <div className="stat-icon">

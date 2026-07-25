@@ -176,7 +176,7 @@ export default function Opportunities() {
                   
                   {/* Acciones Rápidas */}
                   <div style={{ display:'flex', gap:6, marginTop:12, paddingTop:12, borderTop:'1px dashed #e2e8f0' }} onClick={e => e.stopPropagation()}>
-                    <button className="btn btn-sm" style={{ flex:1, background:'#ecfdf5', color:'#059669', border:'1px solid #a7f3d0' }} onClick={() => setWonModal({ ...opp, final_amount: opp.amount, close_date: new Date().toISOString().split('T')[0] })}>
+                    <button className="btn btn-sm" style={{ flex:1, background:'#ecfdf5', color:'#059669', border:'1px solid #a7f3d0' }} onClick={() => setWonModal({ ...opp, final_amount: opp.amount, cash_collected: opp.amount, commission_amount: '', close_date: new Date().toISOString().split('T')[0] })}>
                       <CheckCircle2 size={14}/> Ganada
                     </button>
                     <button className="btn btn-sm" style={{ flex:1, background:'#fef2f2', color:'#dc2626', border:'1px solid #fecaca' }} onClick={() => setLostModal({ ...opp, lost_reason: '' })}>
@@ -316,12 +316,20 @@ export default function Opportunities() {
               <h3><CheckCircle2 size={18} color="#059669" style={{ display:'inline', verticalAlign:'middle', marginRight:6 }}/> Marcar como Ganada</h3>
               <button className="btn-icon" onClick={() => setWonModal(null)}><X size={18}/></button>
             </div>
-            <form onSubmit={e => { e.preventDefault(); changeStatus(wonModal.id, 'won', { amount: wonModal.final_amount, close_date: wonModal.close_date }); }}>
+            <form onSubmit={e => { e.preventDefault(); changeStatus(wonModal.id, 'won', { amount: wonModal.final_amount, cash_collected: wonModal.cash_collected, commission_amount: wonModal.commission_amount, close_date: wonModal.close_date }); }}>
               <div className="modal-body">
                 <p style={{ fontSize:13, color:'#64748b', marginBottom:16 }}>Confirma el monto final y la fecha de cierre de la venta.</p>
                 <div className="input-group">
                   <label>Monto de Venta Real</label>
                   <input className="input" type="number" step="0.01" value={wonModal.final_amount} onChange={e => setWonModal(w => ({...w, final_amount: e.target.value}))} required />
+                </div>
+                <div className="input-group">
+                  <label>Cash collected / facturado (€)</label>
+                  <input className="input" type="number" min="0" step="0.01" value={wonModal.cash_collected} onChange={e => setWonModal(w => ({...w, cash_collected: e.target.value}))} required />
+                </div>
+                <div className="input-group">
+                  <label>Mi comisión (€)</label>
+                  <input className="input" type="number" min="0" step="0.01" value={wonModal.commission_amount} onChange={e => setWonModal(w => ({...w, commission_amount: e.target.value}))} required />
                 </div>
                 <div className="input-group">
                   <label>Fecha de Cierre</label>
