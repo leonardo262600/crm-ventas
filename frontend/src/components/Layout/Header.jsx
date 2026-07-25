@@ -152,7 +152,7 @@ export default function Header() {
           </div>
           <div>
             <p style={{ fontWeight:600, fontSize:13, lineHeight:1.2 }}>{user?.name}</p>
-            <p style={{ fontSize:10, color:'#64748b', textTransform:'capitalize' }}>{user?.role}</p>
+            <p style={{ fontSize:10, color:'#64748b' }}>{user?.role === 'admin' ? 'Asesor' : user?.role}</p>
           </div>
         </div>
       </div>

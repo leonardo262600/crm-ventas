@@ -10,8 +10,8 @@ import {
 const navStyle = isActive => ({
   display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px',
   borderRadius: 10, marginBottom: 2, textDecoration: 'none',
-  color: isActive ? '#fff' : 'rgba(255,255,255,.65)',
-  background: isActive ? 'rgba(255,255,255,.18)' : 'transparent',
+  color: isActive ? '#173b60' : '#345879',
+  background: isActive ? '#fff' : 'transparent',
   fontWeight: isActive ? 600 : 400, fontSize: 14,
   transition: 'all .15s',
 });
@@ -43,30 +43,30 @@ export default function Sidebar() {
       zIndex: 100,
     }}>
       {/* Logo */}
-      <div style={{ padding: '22px 18px 18px', borderBottom: '1px solid rgba(255,255,255,.1)' }}>
+      <div style={{ padding: '22px 18px 18px', borderBottom: '1px solid #bfdcff' }}>
         <img src="/brand/realadvisor-wordmark.png" alt="RealAdvisor" style={{ display:'block', width:'100%', maxWidth:190, height:32, objectFit:'contain', objectPosition:'left center' }}/>
-        <p style={{ color: 'rgba(255,255,255,.65)', fontSize: 11, marginTop:8 }}>Seguimiento comercial</p>
+        <p style={{ color: '#52708d', fontSize: 11, marginTop:8 }}>Seguimiento comercial</p>
       </div>
 
       {/* User card — click to go to profile */}
       <NavLink to="/profile" style={{ textDecoration:'none' }}>
-        <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,.1)', cursor:'pointer' }}
-          onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,.07)'}
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid #bfdcff', cursor:'pointer' }}
+          onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,.55)'}
           onMouseLeave={e => e.currentTarget.style.background='transparent'}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
               width: 36, height: 36, borderRadius: '50%',
               background: 'rgba(255,255,255,.2)', overflow:'hidden',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', fontWeight: 700, fontSize: 14, flexShrink: 0,
+              color: '#173b60', fontWeight: 700, fontSize: 14, flexShrink: 0,
             }}>
               <img src={user?.avatar || '/brand/leonardo-profile.jpg'} alt={user?.name || 'Leonardo'} style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'50% 22%'}}/>
             </div>
             <div style={{ overflow: 'hidden', flex:1 }}>
-              <p style={{ color: '#fff', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name}</p>
-              <p style={{ color: 'rgba(255,255,255,.6)', fontSize: 11, textTransform: 'capitalize' }}>{user?.role}</p>
+              <p style={{ color: '#173b60', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name}</p>
+              <p style={{ color: '#52708d', fontSize: 11 }}>{user?.role === 'admin' ? 'Asesor' : user?.role}</p>
             </div>
-            <UserCircle size={14} color="rgba(255,255,255,.4)"/>
+            <UserCircle size={14} color="#6d89a3"/>
           </div>
         </div>
       </NavLink>
@@ -84,7 +84,7 @@ export default function Sidebar() {
         {/* Admin-only links */}
         {(user?.role === 'admin' || user?.role === 'gerente') && (
           <>
-            <div style={{ height:1, background:'rgba(255,255,255,.08)', margin:'8px 4px' }}/>
+            <div style={{ height:1, background:'#bfdcff', margin:'8px 4px' }}/>
             <NavLink to="/settings"
               style={({ isActive }) => navStyle(isActive)}>
               <SlidersHorizontal size={17}/>
@@ -110,11 +110,11 @@ export default function Sidebar() {
       </nav>
 
       {/* Logout */}
-      <div style={{ padding: '12px 10px', borderTop: '1px solid rgba(255,255,255,.1)' }}>
+      <div style={{ padding: '12px 10px', borderTop: '1px solid #bfdcff' }}>
         <button onClick={handleLogout} style={{
           display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-          padding: '10px 12px', background: 'rgba(239,68,68,.15)', border: 'none',
-          borderRadius: 10, cursor: 'pointer', color: '#fca5a5', fontSize: 14, fontWeight: 500,
+          padding: '10px 12px', background: 'rgba(239,68,68,.09)', border: 'none',
+          borderRadius: 10, cursor: 'pointer', color: '#b42318', fontSize: 14, fontWeight: 500,
         }}>
           <LogOut size={17}/>
           Cerrar sesión
