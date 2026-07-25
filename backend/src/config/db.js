@@ -3,10 +3,12 @@ require('dotenv').config();
 
 const useSsl = String(process.env.DB_SSL || 'false').toLowerCase() === 'true';
 const configuredPort = Number(process.env.DB_PORT || 3306);
-const hostFallback = configuredPort === 4000
-  ? 'gateway01.eu-central-1.prod.aws.tidbcloud.com'
-  : 'localhost';
-const dbHost = process.env.DB_HOST || hostFallback;
+const tidbHost = 'gateway01.eu-central-1.prod.aws.tidbcloud.com';
+const rawHost = String(process.env.DB_HOST || '').trim();
+const localhostSet = ['', 'localhost', '127.0.0.1', '::1'].includes(rawHost);
+const dbHost = configuredPort === 4000 && localhostSet
+  ? tidbHost
+  : (rawHost || 'localhost');
 
 const pool = mysql.createPool({
   host: dbHost,
