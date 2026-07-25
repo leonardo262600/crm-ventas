@@ -33,7 +33,7 @@ export default function Login() {
     <div style={{ minHeight: '100vh', display: 'flex', background: 'linear-gradient(135deg, #3454d1 0%, #172c91 100%)' }}>
       {/* Left panel */}
       <div style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', padding: '40px', display: 'none' }} className="login-left">
-        <img src="/brand/realadvisor-logo.jpg" alt="RealAdvisor" style={{ width:88, height:88, borderRadius:24, marginBottom:24 }}/>
+        <img src="/brand/realadvisor-logo-new.png" alt="RealAdvisor" style={{ width:88, height:88, borderRadius:24, marginBottom:24, objectFit:'cover' }}/>
         <h1 style={{ fontSize: 36, fontWeight: 700, marginBottom: 12 }}>RealAdvisor</h1>
         <p style={{ opacity: .8, textAlign: 'center', maxWidth: 360, lineHeight: 1.6 }}>
           Organiza tus demos, seguimientos y oportunidades desde un solo lugar.
@@ -44,7 +44,7 @@ export default function Login() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', padding: '20px' }}>
         <div style={{ background: '#fff', borderRadius: 20, padding: '48px 40px', width: '100%', maxWidth: 420, boxShadow: '0 24px 80px rgba(0,0,0,.25)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
-            <img src="/brand/realadvisor-logo.jpg" alt="RealAdvisor" style={{ width:46, height:46, borderRadius:12 }}/>
+            <img src="/brand/realadvisor-logo-new.png" alt="RealAdvisor" style={{ width:46, height:46, borderRadius:12, objectFit:'cover' }}/>
             <div>
               <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1e293b' }}>Closer RealAdvisor</h2>
               <p style={{ fontSize: 12, color: '#64748b' }}>Inicia sesión en tu cuenta</p>

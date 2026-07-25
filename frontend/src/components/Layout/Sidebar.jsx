@@ -45,7 +45,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div style={{ padding: '24px 20px 20px', borderBottom: '1px solid rgba(255,255,255,.1)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <img src="/brand/realadvisor-logo.jpg" alt="RealAdvisor" style={{ width:38, height:38, borderRadius:10 }}/>
+          <img src="/brand/realadvisor-logo-new.png" alt="RealAdvisor" style={{ width:38, height:38, borderRadius:10, objectFit:'cover' }}/>
           <div>
             <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>Closer RealAdvisor</span>
             <p style={{ color: 'rgba(255,255,255,.6)', fontSize: 11 }}>Seguimiento comercial</p>
