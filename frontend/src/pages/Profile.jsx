@@ -219,17 +219,17 @@ export default function Profile() {
           {[
             { icon: Target,      label:'Opor. abiertas',  value: stats.open_opps,    color:'#3B82F6' },
             { icon: CheckCircle, label:'Opor. ganadas',   value: stats.won_opps,     color:'#10b981' },
-            { icon: DollarSign,  label:'Ingresos',        value: fmt(stats.revenue), color:'#0f766e' },
+            { icon: DollarSign,  label:'Ingresos',        value: fmt(stats.revenue), color:'#0f766e', hideIcon:true },
             { icon: Users2,      label:'Contactos',       value: stats.contacts,     color:'#8B5CF6' },
             { icon: Target,      label:'Act. pendientes', value: stats.pending_acts, color:'#F59E0B' },
-          ].map(({ icon: Icon, label, value, color }) => (
-            <div key={label} className="card" style={{ padding:'16px 18px', display:'flex', gap:12, alignItems:'center' }}>
-              <div style={{ background:`${color}15`, borderRadius:10, padding:10, flexShrink:0 }}>
+          ].map(({ icon: Icon, label, value, color, hideIcon }) => (
+            <div key={label} className="card" style={{ padding:'16px 18px', display:'flex', gap:12, alignItems:'center', minWidth:0, overflow:'hidden' }}>
+              {!hideIcon && <div style={{ background:`${color}15`, borderRadius:10, padding:10, flexShrink:0 }}>
                 <Icon size={18} color={color}/>
-              </div>
-              <div>
+              </div>}
+              <div style={{ minWidth:0, flex:1 }}>
                 <p style={{ fontSize:11, color:'#64748b' }}>{label}</p>
-                <p style={{ fontSize:20, fontWeight:700, color:'#1e293b' }}>{value}</p>
+                <p style={{ fontSize:'clamp(15px,1.55vw,20px)', lineHeight:1.2, fontWeight:700, color:'#1e293b', whiteSpace:'nowrap', maxWidth:'100%' }}>{value}</p>
               </div>
             </div>
           ))}
