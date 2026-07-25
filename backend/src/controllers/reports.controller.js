@@ -19,6 +19,18 @@ const dashboard = async (req, res) => {
       `SELECT COALESCE(SUM(amount),0) as revenue_won FROM opportunities WHERE tenant_id=? AND status='won'${dateFilter}`, [tid]);
     const [[{ pipeline_value }]] = await db.query(
       `SELECT COALESCE(SUM(amount),0) as pipeline_value FROM opportunities WHERE tenant_id=? AND status='open'${dateFilter}`, [tid]);
+    const [[followupStats]] = await db.query(
+      `SELECT
+        SUM(next_action_at < NOW()) AS overdue_followups,
+        SUM(DATE(next_action_at) = CURDATE()) AS today_followups,
+        SUM(next_action_at IS NULL) AS without_next_action,
+        SUM(demo_date >= DATE_SUB(NOW(), INTERVAL 7 DAY)) AS demos_week,
+        SUM(stage_id IN (SELECT id FROM pipeline_stages WHERE tenant_id=? AND name='Propuesta enviada')) AS proposals_pending,
+        SUM(stage_id IN (SELECT id FROM pipeline_stages WHERE tenant_id=? AND name='Decisión pendiente')) AS decisions_pending,
+        COALESCE(SUM(amount * probability / 100),0) AS weighted_pipeline
+       FROM opportunities WHERE tenant_id=? AND status='open'`,
+      [tid, tid, tid]
+    );
 
     // Oportunidades por mes (últimos 12 meses o dentro del rango)
     const monthlyWhere = from && to
@@ -56,9 +68,26 @@ const dashboard = async (req, res) => {
       [tid]
     );
 
+    const [priorities] = await db.query(
+      `SELECT o.id, o.title, o.temperature, o.next_action, o.next_action_type, o.next_action_at,
+              c.name AS contact_name, c.company, ps.name AS stage_name,
+              TIMESTAMPDIFF(DAY, COALESCE(o.last_interaction_at,o.created_at), NOW()) AS days_without_contact
+       FROM opportunities o
+       LEFT JOIN contacts c ON o.contact_id=c.id
+       LEFT JOIN pipeline_stages ps ON o.stage_id=ps.id
+       WHERE o.tenant_id=? AND o.status='open'
+         AND (o.next_action_at <= DATE_ADD(NOW(),INTERVAL 7 DAY) OR o.next_action_at IS NULL)
+       ORDER BY
+         CASE WHEN o.next_action_at < NOW() THEN 0 WHEN DATE(o.next_action_at)=CURDATE() THEN 1
+              WHEN o.next_action_at IS NULL THEN 3 ELSE 2 END,
+         CASE o.temperature WHEN 'caliente' THEN 0 WHEN 'templada' THEN 1 ELSE 2 END,
+         o.next_action_at ASC LIMIT 10`,
+      [tid]
+    );
+
     res.json({
-      stats: { total_contacts, total_opportunities, total_activities, total_users, revenue_won, pipeline_value },
-      monthly, pipeline, top_sellers, upcoming,
+      stats: { total_contacts, total_opportunities, total_activities, total_users, revenue_won, pipeline_value, ...followupStats },
+      monthly, pipeline, top_sellers, upcoming, priorities,
       filters: { from: from || null, to: to || null },
     });
   } catch (err) { res.status(500).json({ message: err.message }); }

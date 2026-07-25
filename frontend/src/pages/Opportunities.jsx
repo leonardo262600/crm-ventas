@@ -1,9 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, X, DollarSign, Calendar, User, CheckCircle2, XCircle } from 'lucide-react';
+import { Plus, X, Calendar, User, CheckCircle2, XCircle, Clock3, TriangleAlert } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 
-const empty = { title:'', contact_id:'', stage_id:'', amount:'', probability:50, close_date:'', assigned_to:'', description:'', status:'open' };
+const empty = {
+  title:'', contact_id:'', stage_id:'', amount:'', monthly_amount:'', probability:50,
+  close_date:'', assigned_to:'', description:'', status:'open', client_type:'agencia',
+  zone:'', city:'', province:'', offices_count:'', agents_count:'', lead_source:'',
+  demo_date:'', temperature:'templada', proposal_period:'', current_solution:'',
+  decision_maker:'', stakeholders:'', main_goal:'', current_problem:'', problem_impact:'',
+  current_acquisition:'', current_captures:'', target_captures:'', urgency:'',
+  urgency_reason:'', decision_criteria:'', client_quote:'', objection_type:'',
+  objection_detail:'', objection_response:'', objection_status:'pendiente',
+  next_action:'', next_action_type:'', next_action_at:'', latest_response:'',
+  decision_date:'', resume_date:''
+};
 
 import { fmtCurrency as fmt } from '../utils/format';
 import ExportButtons from '../components/ExportButtons';
@@ -19,6 +31,7 @@ export default function Opportunities() {
   const [dragging, setDragging] = useState(null);
   const [wonModal, setWonModal] = useState(null);
   const [lostModal, setLostModal] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const load = () => Promise.all([
     api.get('/opportunities'),
@@ -31,8 +44,25 @@ export default function Opportunities() {
     api.get('/users').then(r => setUsers(r.data)).catch(()=>{});
   }, []);
 
+  useEffect(() => {
+    const edit = Number(searchParams.get('edit'));
+    if (edit && opps.length) {
+      const opportunity = opps.find(item => item.id === edit);
+      if (opportunity) {
+        openEdit(opportunity);
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [opps, searchParams, setSearchParams]);
+
   const openNew = (stage_id='') => { setForm({...empty, stage_id}); setEditId(null); setModal(true); };
-  const openEdit = (o) => { setForm({...o, contact_id:o.contact_id||'', stage_id:o.stage_id||'', assigned_to:o.assigned_to||'', close_date:o.close_date?.slice(0,10)||''}); setEditId(o.id); setModal(true); };
+  const openEdit = (o) => { setForm({
+    ...empty, ...o,
+    contact_id:o.contact_id||'', stage_id:o.stage_id||'', assigned_to:o.assigned_to||'',
+    close_date:o.close_date?.slice(0,10)||'', decision_date:o.decision_date?.slice(0,10)||'',
+    resume_date:o.resume_date?.slice(0,10)||'', demo_date:o.demo_date?.slice(0,16)||'',
+    next_action_at:o.next_action_at?.slice(0,16)||''
+  }); setEditId(o.id); setModal(true); };
 
   const save = async (e) => {
     e.preventDefault();
@@ -133,6 +163,16 @@ export default function Opportunities() {
                       <User size={11} />{opp.assigned_name}
                     </p>
                   )}
+                  <div style={{ marginTop:8 }}>
+                    <span className={`badge ${opp.temperature==='caliente'?'badge-red':opp.temperature==='fria'?'badge-blue':'badge-yellow'}`}>
+                      {opp.temperature || 'sin clasificar'}
+                    </span>
+                  </div>
+                  <p style={{ fontSize:11, color:!opp.next_action_at?'#dc2626':new Date(opp.next_action_at)<new Date()?'#dc2626':'#64748b', marginTop:7, display:'flex', alignItems:'center', gap:4 }}>
+                    {!opp.next_action_at ? <TriangleAlert size={12}/> : <Clock3 size={12}/>}
+                    {opp.next_action || 'Sin próxima acción'}
+                    {opp.next_action_at ? ` · ${new Date(opp.next_action_at).toLocaleString('es-ES',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}` : ''}
+                  </p>
                   
                   {/* Acciones Rápidas */}
                   <div style={{ display:'flex', gap:6, marginTop:12, paddingTop:12, borderTop:'1px dashed #e2e8f0' }} onClick={e => e.stopPropagation()}>
@@ -177,7 +217,7 @@ export default function Opportunities() {
 
       {modal && (
         <div className="modal-overlay" onClick={e => e.target===e.currentTarget && setModal(false)}>
-          <div className="modal">
+          <div className="modal" style={{ maxWidth: 820 }}>
             <div className="modal-header">
               <h3>{editId?'Editar oportunidad':'Nueva oportunidad'}</h3>
               <button className="btn-icon" onClick={() => setModal(false)}><X size={18} /></button>
@@ -207,6 +247,55 @@ export default function Opportunities() {
                       {users.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}
                     </select>
                   </div>
+                  <div className="input-group"><label>Tipo de cliente</label>
+                    <select className="input" value={form.client_type} onChange={e=>setForm(f=>({...f,client_type:e.target.value}))}>
+                      <option value="agente">Agente independiente</option>
+                      <option value="agencia">Agencia inmobiliaria</option>
+                      <option value="red">Red o grupo</option>
+                    </select>
+                  </div>
+                  <div className="input-group"><label>Temperatura</label>
+                    <select className="input" value={form.temperature} onChange={e=>setForm(f=>({...f,temperature:e.target.value}))}>
+                      <option value="caliente">Caliente</option>
+                      <option value="templada">Templada</option>
+                      <option value="fria">Fría</option>
+                    </select>
+                  </div>
+                  <div className="input-group"><label>Zona prioritaria</label><input className="input" value={form.zone} onChange={e=>setForm(f=>({...f,zone:e.target.value}))} placeholder="Ej. Chamberí, Madrid"/></div>
+                  <div className="input-group"><label>Provincia</label><input className="input" value={form.province} onChange={e=>setForm(f=>({...f,province:e.target.value}))}/></div>
+                  <div className="input-group"><label>Fecha de la demo</label><input className="input" type="datetime-local" value={form.demo_date} onChange={e=>setForm(f=>({...f,demo_date:e.target.value}))}/></div>
+                  <div className="input-group"><label>Decisor principal</label><input className="input" value={form.decision_maker} onChange={e=>setForm(f=>({...f,decision_maker:e.target.value}))}/></div>
+                </div>
+                <h4 style={{ marginTop:6 }}>Descubrimiento de la demo</h4>
+                <div className="form-grid">
+                  <div className="input-group"><label>Objetivo principal</label><textarea className="input" rows={2} value={form.main_goal} onChange={e=>setForm(f=>({...f,main_goal:e.target.value}))}/></div>
+                  <div className="input-group"><label>Problema actual</label><textarea className="input" rows={2} value={form.current_problem} onChange={e=>setForm(f=>({...f,current_problem:e.target.value}))}/></div>
+                  <div className="input-group"><label>Consecuencia del problema</label><textarea className="input" rows={2} value={form.problem_impact} onChange={e=>setForm(f=>({...f,problem_impact:e.target.value}))}/></div>
+                  <div className="input-group"><label>Qué necesita validar para decidir</label><textarea className="input" rows={2} value={form.decision_criteria} onChange={e=>setForm(f=>({...f,decision_criteria:e.target.value}))}/></div>
+                  <div className="input-group" style={{gridColumn:'1/-1'}}><label>Frase literal importante del cliente</label><input className="input" value={form.client_quote} onChange={e=>setForm(f=>({...f,client_quote:e.target.value}))} placeholder="Ej. Necesitamos captar más exclusivas en esta zona"/></div>
+                </div>
+                <h4>Objeción y seguimiento</h4>
+                <div className="form-grid">
+                  <div className="input-group"><label>Objeción principal</label>
+                    <select className="input" value={form.objection_type} onChange={e=>setForm(f=>({...f,objection_type:e.target.value}))}>
+                      <option value="">Sin objeción</option>
+                      {['Precio o presupuesto','Retorno de la inversión','No es el momento','Consultar con socio o director','Dudas sobre resultados','Otra solución','Falta de confianza','Condiciones contractuales','No responde','Otra'].map(v=><option key={v}>{v}</option>)}
+                    </select>
+                  </div>
+                  <div className="input-group"><label>Estado de la objeción</label>
+                    <select className="input" value={form.objection_status} onChange={e=>setForm(f=>({...f,objection_status:e.target.value}))}>
+                      <option value="pendiente">Pendiente</option><option value="respondida">Respondida</option><option value="resuelta">Resuelta</option><option value="no_resuelta">No resuelta</option>
+                    </select>
+                  </div>
+                  <div className="input-group" style={{gridColumn:'1/-1'}}><label>Detalle de la objeción</label><textarea className="input" rows={2} value={form.objection_detail} onChange={e=>setForm(f=>({...f,objection_detail:e.target.value}))}/></div>
+                  <div className="input-group"><label>Próxima acción</label><input className="input" value={form.next_action} onChange={e=>setForm(f=>({...f,next_action:e.target.value}))} placeholder="Ej. Llamar después de su reunión"/></div>
+                  <div className="input-group"><label>Tipo de acción</label>
+                    <select className="input" value={form.next_action_type} onChange={e=>setForm(f=>({...f,next_action_type:e.target.value}))}>
+                      <option value="">Seleccionar</option><option value="llamada">Llamada</option><option value="whatsapp">WhatsApp</option><option value="email">Correo</option><option value="reunion">Reunión</option>
+                    </select>
+                  </div>
+                  <div className="input-group"><label>Fecha de próxima acción</label><input className="input" type="datetime-local" value={form.next_action_at} onChange={e=>setForm(f=>({...f,next_action_at:e.target.value}))}/></div>
+                  <div className="input-group"><label>Fecha comprometida de decisión</label><input className="input" type="date" value={form.decision_date} onChange={e=>setForm(f=>({...f,decision_date:e.target.value}))}/></div>
                 </div>
                 <div className="input-group"><label>Descripción</label><textarea className="input" rows={3} value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} style={{resize:'vertical'}} /></div>
               </div>

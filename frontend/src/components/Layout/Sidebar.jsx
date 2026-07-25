@@ -2,9 +2,9 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
-  LayoutDashboard, Users2, Target, CalendarCheck, FileText, FileCheck,
-  Package, BarChart2, Users, TrendingUp, LogOut,
-  MessageSquare, Zap, Settings, TrendingDown, UserCircle, Network, SlidersHorizontal, DatabaseBackup
+  LayoutDashboard, Users2, Target, CalendarCheck,
+  BarChart2, Users, TrendingUp, LogOut,
+  MessageSquare, Settings, UserCircle, SlidersHorizontal, DatabaseBackup
 } from 'lucide-react';
 
 const navStyle = isActive => ({
@@ -17,18 +17,13 @@ const navStyle = isActive => ({
 });
 
 const nav = [
-  { to: '/',               icon: LayoutDashboard, label: 'Dashboard',        exact: true },
+  { to: '/',               icon: LayoutDashboard, label: 'Inicio',           exact: true },
   { to: '/contacts',       icon: Users2,          label: 'Contactos' },
   { to: '/opportunities',  icon: Target,          label: 'Oportunidades' },
-  { to: '/forecast',       icon: TrendingUp,      label: 'Pronóstico' },
-  { to: '/activities',     icon: CalendarCheck,   label: 'Actividades' },
-  { to: '/communications', icon: MessageSquare,   label: 'Comunicaciones' },
-  { to: '/quotes',         icon: FileText,        label: 'Cotizaciones' },
-  { to: '/invoices',       icon: FileCheck,       label: 'Facturación' },
-  { to: '/products',       icon: Package,         label: 'Productos' },
-  { to: '/reports',        icon: BarChart2,       label: 'Reportes' },
-  { to: '/automations',    icon: Zap,             label: 'Automatizaciones' },
-  { to: '/workflows',      icon: Network,         label: 'Workflows' },
+  { to: '/followups',      icon: CalendarCheck,   label: 'Seguimientos' },
+  { to: '/activities',     icon: CalendarCheck,   label: 'Calendario' },
+  { to: '/communications', icon: MessageSquare,   label: 'Plantillas' },
+  { to: '/reports',        icon: BarChart2,       label: 'Informes' },
 ];
 
 export default function Sidebar() {
@@ -54,8 +49,8 @@ export default function Sidebar() {
             <TrendingUp size={20} color="#fff"/>
           </div>
           <div>
-            <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>CRM Ventas</span>
-            <p style={{ color: 'rgba(255,255,255,.6)', fontSize: 11 }}>Panel de control</p>
+            <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>Closer RealAdvisor</span>
+            <p style={{ color: 'rgba(255,255,255,.6)', fontSize: 11 }}>Seguimiento comercial</p>
           </div>
         </div>
       </div>

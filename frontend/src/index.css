@@ -149,6 +149,31 @@ tr:hover td { background: #f8fafc; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
 
+/* Seguimientos */
+.followup-summary { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+.followup-filter { background:#fff; border:1px solid var(--border); border-radius:12px; padding:16px; text-align:left; cursor:pointer; color:var(--text-muted); }
+.followup-filter strong { display:block; margin-top:6px; font-size:26px; color:var(--text); }
+.followup-filter.active { border-color:var(--primary); box-shadow:0 0 0 2px rgba(15,118,110,.1); }
+.followup-list { display:flex; flex-direction:column; }
+.followup-row { display:flex; gap:14px; align-items:center; padding:17px 20px; border-bottom:1px solid var(--border); border-left:4px solid transparent; }
+.followup-row:last-child { border-bottom:0; }
+.followup-row.vencido { border-left-color:var(--danger); background:#fffafa; }
+.followup-row.hoy { border-left-color:var(--accent); }
+.followup-row.sin_fecha { border-left-color:#94a3b8; }
+.followup-icon { width:38px; height:38px; display:flex; align-items:center; justify-content:center; flex-shrink:0; border-radius:10px; background:#f1f5f9; color:var(--primary); }
+.followup-main { flex:1; min-width:0; }
+.followup-title { display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
+.followup-main > p { color:var(--text-muted); font-size:12px; margin-top:3px; }
+.followup-main .followup-action { color:var(--text); font-size:13px; font-weight:500; }
+.followup-meta { display:flex; gap:14px; flex-wrap:wrap; margin-top:7px; color:var(--text-muted); font-size:11px; }
+.followup-meta span { display:flex; align-items:center; gap:4px; }
+.followup-actions { display:flex; gap:7px; flex-wrap:wrap; justify-content:flex-end; }
+@media (max-width: 900px) {
+  .followup-summary { grid-template-columns:1fr 1fr; }
+  .followup-row { align-items:flex-start; flex-wrap:wrap; }
+  .followup-actions { width:100%; justify-content:flex-start; margin-left:52px; }
+}
+
 /* Empty state */
 .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
 .empty-state svg { margin: 0 auto 16px; opacity: .4; }
