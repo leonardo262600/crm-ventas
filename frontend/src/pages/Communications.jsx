@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Plus, X, Mail, Phone, MessageSquare, FileText, Send, Hash, Circle } from 'lucide-react';
+import { Plus, X, Mail, Phone, MessageSquare, FileText, Send, Hash, Circle, Copy } from 'lucide-react';
 import { io } from 'socket.io-client';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useSearchParams } from 'react-router-dom';
+import { FOLLOWUP_PHASES } from '../utils/followupPhases';
 
 const TABS = ['emails','llamadas','plantillas','chat'];
 const TAB_LABELS = { emails:'Emails', llamadas:'Llamadas', plantillas:'Plantillas', chat:'Chat' };
@@ -240,7 +242,9 @@ function ChatPanel() {
 
 /* ─── Main Communications page ───────────────────────────── */
 export default function Communications() {
-  const [tab, setTab]           = useState('emails');
+  const [searchParams] = useSearchParams();
+  const [tab, setTab]           = useState(searchParams.get('tab') || 'emails');
+  const [selectedPhase, setSelectedPhase] = useState(Number(searchParams.get('phase') || 0));
   const [emails, setEmails]     = useState([]);
   const [calls, setCalls]       = useState([]);
   const [templates, setTemplates] = useState([]);
@@ -265,7 +269,7 @@ export default function Communications() {
 
   const openEmail    = () => { setForm({ contact_id:'', subject:'', body:'', template_id:'' }); setModal('email'); };
   const openCall     = () => { setForm({ contact_id:'', direction:'outbound', duration:'', notes:'', called_at:'' }); setModal('call'); };
-  const openTemplate = (t = null) => { setForm(t || { name:'', subject:'', body:'' }); setEditId(t?.id||null); setModal('template'); };
+  const openTemplate = (t = null) => { setForm(t || { name:'', subject:'', body:'', channel:'email', phase:selectedPhase, summary:'' }); setEditId(t?.id||null); setModal('template'); };
 
   const saveEmail = async e => {
     e.preventDefault();
@@ -378,6 +382,14 @@ export default function Communications() {
       {/* ── Plantillas ── */}
       {tab === 'plantillas' && (
         <div>
+          <div className="card" style={{ marginBottom:16, background:'linear-gradient(135deg,#eff6ff,#f8fafc)' }}>
+            <h3 style={{marginBottom:6}}>Cadencia de seguimiento después de la demo</h3>
+            <p style={{fontSize:13,color:'#475569'}}>Elige la fase, adapta las variables entre llaves y copia el mensaje. El CRM no envía nada automáticamente.</p>
+            <div className="tabs" style={{marginTop:14,marginBottom:0,overflowX:'auto'}}>
+              {FOLLOWUP_PHASES.map(phase => <button key={phase.value} className={`tab ${selectedPhase===phase.value?'active':''}`} onClick={()=>setSelectedPhase(phase.value)}>{phase.timing} · Fase {phase.value}</button>)}
+            </div>
+            <p style={{fontSize:13,marginTop:12}}><strong>{FOLLOWUP_PHASES[selectedPhase].label}:</strong> {FOLLOWUP_PHASES[selectedPhase].summary}</p>
+          </div>
           <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:12 }}>
             <button className="btn btn-primary" onClick={() => openTemplate()}><Plus size={16}/>Nueva plantilla</button>
           </div>
@@ -385,17 +397,19 @@ export default function Communications() {
             <div className="card"><div className="empty-state"><FileText size={48}/><h3>Sin plantillas</h3></div></div>
           ) : (
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))', gap:16 }}>
-              {templates.map(t => (
+              {templates.filter(t => Number(t.phase || 0) === selectedPhase).map(t => (
                 <div key={t.id} className="card">
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
-                    <h4 style={{ fontWeight:600 }}>{t.name}</h4>
+                    <div><span className={`badge ${t.channel==='whatsapp'?'badge-green':'badge-blue'}`}>{t.channel==='whatsapp'?'WhatsApp':'Correo'}</span><h4 style={{ fontWeight:600, marginTop:7 }}>{t.name}</h4></div>
                     <div style={{ display:'flex', gap:6 }}>
                       <button className="btn-icon" onClick={() => openTemplate(t)}>✏</button>
                       <button className="btn-icon" style={{ color:'#ef4444' }} onClick={() => delTemplate(t.id)}><X size={14}/></button>
                     </div>
                   </div>
                   <p style={{ fontSize:12, color:'#64748b', fontWeight:500 }}>{t.subject}</p>
-                  <p style={{ fontSize:12, color:'#94a3b8', marginTop:6, lineHeight:1.5 }}>{t.body?.slice(0,100)}...</p>
+                  {t.summary && <p style={{fontSize:12,color:'#475569',marginTop:7}}><strong>Cómo usarla:</strong> {t.summary}</p>}
+                  <p style={{ fontSize:12, color:'#94a3b8', marginTop:8, lineHeight:1.5, whiteSpace:'pre-line' }}>{t.body?.slice(0,180)}...</p>
+                  <button className="btn btn-secondary btn-sm" style={{marginTop:12}} onClick={()=>{navigator.clipboard.writeText([t.subject,t.body].filter(Boolean).join('\n\n'));toast.success('Plantilla copiada');}}><Copy size={14}/>Copiar</button>
                 </div>
               ))}
             </div>
@@ -480,7 +494,12 @@ export default function Communications() {
             <div className="modal-header"><h3>{editId?'Editar plantilla':'Nueva plantilla'}</h3><button className="btn-icon" onClick={() => setModal(null)}><X size={18}/></button></div>
             <form onSubmit={saveTemplate}>
               <div className="modal-body">
+                <div className="form-grid">
+                  <div className="input-group"><label>Fase</label><select className="input" value={form.phase ?? 0} onChange={e=>setForm(f=>({...f,phase:Number(e.target.value)}))}>{FOLLOWUP_PHASES.map(p=><option key={p.value} value={p.value}>{p.label}</option>)}</select></div>
+                  <div className="input-group"><label>Canal</label><select className="input" value={form.channel || 'email'} onChange={e=>setForm(f=>({...f,channel:e.target.value}))}><option value="email">Correo</option><option value="whatsapp">WhatsApp</option></select></div>
+                </div>
                 <div className="input-group"><label>Nombre *</label><input className="input" value={form.name} onChange={e => setForm(f => ({ ...f, name:e.target.value }))} required/></div>
+                <div className="input-group"><label>Resumen de uso</label><input className="input" value={form.summary || ''} onChange={e => setForm(f => ({ ...f, summary:e.target.value }))}/></div>
                 <div className="input-group"><label>Asunto</label><input className="input" value={form.subject} onChange={e => setForm(f => ({ ...f, subject:e.target.value }))}/></div>
                 <div className="input-group"><label>Cuerpo</label><textarea className="input" rows={8} value={form.body} onChange={e => setForm(f => ({ ...f, body:e.target.value }))} style={{ resize:'vertical', fontFamily:'monospace', fontSize:13 }} placeholder="Usa {{nombre}}, {{empresa}} como variables"/></div>
               </div>

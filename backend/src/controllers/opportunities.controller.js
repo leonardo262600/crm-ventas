@@ -55,7 +55,7 @@ const create = async (req, res) => {
     'main_goal','current_problem','problem_impact','current_acquisition','current_captures','target_captures',
     'urgency','urgency_reason','decision_criteria','client_quote','objection_type','objection_detail',
     'objection_response','objection_status','next_action','next_action_type','next_action_at',
-    'latest_response','decision_date','resume_date'
+    'latest_response','decision_date','resume_date','followup_phase'
   ];
   const values = fields.map(field => req.body[field] === '' || req.body[field] === undefined ? null : req.body[field]);
   try {
@@ -80,7 +80,7 @@ const update = async (req, res) => {
     'main_goal','current_problem','problem_impact','current_acquisition','current_captures','target_captures',
     'urgency','urgency_reason','decision_criteria','client_quote','objection_type','objection_detail',
     'objection_response','objection_status','next_action','next_action_type','next_action_at',
-    'latest_response','decision_date','resume_date'
+    'latest_response','decision_date','resume_date','followup_phase'
   ];
   const values = fields.map(field => {
     if (field === 'status') return req.body[field] || 'open';
@@ -110,6 +110,20 @@ const moveStage = async (req, res) => {
       });
     }
     res.json({ message: 'Etapa actualizada' });
+  } catch (err) { res.status(500).json({ message: err.message }); }
+};
+
+const updateFollowupPhase = async (req, res) => {
+  const phase = Number(req.body.followup_phase);
+  if (!Number.isInteger(phase) || phase < 0 || phase > 5) {
+    return res.status(400).json({ message: 'La fase debe estar entre 0 y 5' });
+  }
+  try {
+    await db.query(
+      'UPDATE opportunities SET followup_phase=? WHERE id=? AND tenant_id=?',
+      [phase, req.params.id, req.user.tenant_id]
+    );
+    res.json({ message: 'Fase de seguimiento actualizada', followup_phase: phase });
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
 
@@ -199,4 +213,4 @@ const remove = async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
 
-module.exports = { list, stages, getOne, create, update, moveStage, updateStatus, forecast, remove };
+module.exports = { list, stages, getOne, create, update, moveStage, updateFollowupPhase, updateStatus, forecast, remove };

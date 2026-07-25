@@ -81,6 +81,7 @@ router.get('/opportunities/:id',            auth, oppsCtrl.getOne);
 router.post('/opportunities',               auth, oppsCtrl.create);
 router.put('/opportunities/:id',            auth, oppsCtrl.update);
 router.patch('/opportunities/:id/stage',    auth, oppsCtrl.moveStage);
+router.patch('/opportunities/:id/followup-phase', auth, oppsCtrl.updateFollowupPhase);
 router.patch('/opportunities/:id/status',   auth, oppsCtrl.updateStatus);
 router.delete('/opportunities/:id',         auth, requireRole('admin','gerente'), oppsCtrl.remove);
 
@@ -224,4 +225,3 @@ router.post('/backup/restore/upload',       auth, requireRole('admin'), sqlUploa
 router.post('/backup/reset',               auth, requireRole('admin'),           backupCtrl.resetSystem);
 
 module.exports = router;
-

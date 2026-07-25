@@ -90,7 +90,7 @@ const complete = async (req, res) => {
 const followups = async (req, res) => {
   try {
     const [rows] = await db.query(
-      `SELECT o.id, o.title, o.contact_id, o.zone, o.temperature, o.next_action, o.next_action_type,
+      `SELECT o.id, o.title, o.contact_id, o.zone, o.temperature, o.followup_phase, o.next_action, o.next_action_type,
               o.next_action_at, o.last_interaction_at, o.followup_attempts, o.objection_type,
               ps.name AS stage_name, ps.color AS stage_color,
               c.name AS contact_name, c.company, c.phone, c.email,

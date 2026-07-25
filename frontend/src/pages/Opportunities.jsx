@@ -14,11 +14,12 @@ const empty = {
   urgency_reason:'', decision_criteria:'', client_quote:'', objection_type:'',
   objection_detail:'', objection_response:'', objection_status:'pendiente',
   next_action:'', next_action_type:'', next_action_at:'', latest_response:'',
-  decision_date:'', resume_date:''
+  decision_date:'', resume_date:'', followup_phase:0
 };
 
 import { fmtCurrency as fmt } from '../utils/format';
 import ExportButtons from '../components/ExportButtons';
+import { FOLLOWUP_PHASES, phaseByValue } from '../utils/followupPhases';
 
 export default function Opportunities() {
   const [opps, setOpps] = useState([]);
@@ -167,6 +168,7 @@ export default function Opportunities() {
                     <span className={`badge ${opp.temperature==='caliente'?'badge-red':opp.temperature==='fria'?'badge-blue':'badge-yellow'}`}>
                       {opp.temperature || 'sin clasificar'}
                     </span>
+                    <span className="badge badge-blue" style={{ marginLeft:6 }}>{phaseByValue(opp.followup_phase).label}</span>
                   </div>
                   <p style={{ fontSize:11, color:!opp.next_action_at?'#dc2626':new Date(opp.next_action_at)<new Date()?'#dc2626':'#64748b', marginTop:7, display:'flex', alignItems:'center', gap:4 }}>
                     {!opp.next_action_at ? <TriangleAlert size={12}/> : <Clock3 size={12}/>}
@@ -276,6 +278,12 @@ export default function Opportunities() {
                 </div>
                 <h4>Objeción y seguimiento</h4>
                 <div className="form-grid">
+                  <div className="input-group" style={{gridColumn:'1/-1'}}><label>Fase de seguimiento</label>
+                    <select className="input" value={form.followup_phase ?? 0} onChange={e=>setForm(f=>({...f,followup_phase:Number(e.target.value)}))}>
+                      {FOLLOWUP_PHASES.map(phase=><option key={phase.value} value={phase.value}>{phase.label} — {phase.timing}</option>)}
+                    </select>
+                    <small style={{color:'#64748b'}}>{phaseByValue(form.followup_phase).summary}</small>
+                  </div>
                   <div className="input-group"><label>Objeción principal</label>
                     <select className="input" value={form.objection_type} onChange={e=>setForm(f=>({...f,objection_type:e.target.value}))}>
                       <option value="">Sin objeción</option>

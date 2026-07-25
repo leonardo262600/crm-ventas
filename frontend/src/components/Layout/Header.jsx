@@ -11,12 +11,13 @@ export default function Header() {
   const [results, setResults] = useState(null);
   const [open, setOpen] = useState(false);
   const [upcoming, setUpcoming] = useState([]);
+  const [overdue, setOverdue] = useState([]);
   const [showNotif, setShowNotif] = useState(false);
   const ref = useRef();
 
   useEffect(() => {
-    api.get('/activities', { params: { status: 'pendiente' } })
-      .then(r => setUpcoming(r.data.slice(0, 5)))
+    Promise.all([api.get('/activities', { params: { status: 'pendiente' } }), api.get('/activities/followups')])
+      .then(([a, f]) => { setUpcoming(a.data.slice(0, 5)); setOverdue(f.data.filter(item => item.followup_status === 'vencido')); })
       .catch(() => {});
   }, []);
 
@@ -115,18 +116,21 @@ export default function Header() {
         <div style={{ position:'relative' }} ref={null}>
           <button className="btn-icon" onClick={() => { setShowNotif(v => !v); setOpen(false); }} style={{ position:'relative' }}>
             <Bell size={18}/>
-            {upcoming.length > 0 && (
+            {(upcoming.length + overdue.length) > 0 && (
               <span style={{ position:'absolute', top:-4, right:-4, background:'#ef4444', color:'#fff', borderRadius:'50%', width:16, height:16, fontSize:10, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700 }}>
-                {upcoming.length}
+                {Math.min(upcoming.length + overdue.length, 99)}
               </span>
             )}
           </button>
           {showNotif && (
             <div style={{ position:'absolute', right:0, top:'calc(100% + 8px)', width:300, background:'#fff', border:'1px solid #e2e8f0', borderRadius:12, boxShadow:'0 8px 30px rgba(0,0,0,.12)', zIndex:200, overflow:'hidden' }}>
               <div style={{ padding:'12px 16px', borderBottom:'1px solid #f1f5f9', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                <p style={{ fontWeight:600, fontSize:14 }}>Actividades pendientes</p>
-                <span className="badge badge-red">{upcoming.length}</span>
+                <p style={{ fontWeight:600, fontSize:14 }}>Avisos del CRM</p>
+                <span className="badge badge-red">{upcoming.length + overdue.length}</span>
               </div>
+              {overdue.length > 0 && <p style={{padding:'8px 16px',fontSize:11,fontWeight:700,color:'#dc2626',background:'#fef2f2'}}>SEGUIMIENTOS ATRASADOS ({overdue.length})</p>}
+              {overdue.slice(0,5).map(item => <div key={`fu-${item.id}`} style={{padding:'10px 16px',borderBottom:'1px solid #fee2e2',cursor:'pointer'}} onClick={()=>{go('/followups');setShowNotif(false);}}><p style={{fontWeight:600,fontSize:13,color:'#b91c1c'}}>{item.company || item.title}</p><p style={{fontSize:11,color:'#64748b',marginTop:2}}>Fase {item.followup_phase ?? 0} · {item.next_action || 'Seguimiento pendiente'}</p></div>)}
+              {upcoming.length > 0 && <p style={{padding:'8px 16px',fontSize:11,fontWeight:700,color:'#64748b',background:'#f8fafc'}}>TAREAS PENDIENTES</p>}
               {upcoming.map(a => (
                 <div key={a.id} style={{ padding:'10px 16px', borderBottom:'1px solid #f8fafc', cursor:'pointer' }}
                   onClick={() => { go('/activities'); setShowNotif(false); }}
@@ -136,7 +140,7 @@ export default function Header() {
                   <p style={{ fontSize:11, color:'#94a3b8', marginTop:2 }}>{a.type} · {a.contact_name || 'Sin contacto'}</p>
                 </div>
               ))}
-              {!upcoming.length && <p style={{ padding:16, fontSize:13, color:'#94a3b8', textAlign:'center' }}>Sin actividades pendientes</p>}
+              {!upcoming.length && !overdue.length && <p style={{ padding:16, fontSize:13, color:'#94a3b8', textAlign:'center' }}>Todo al día</p>}
             </div>
           )}
         </div>

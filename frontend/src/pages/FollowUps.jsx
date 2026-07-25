@@ -5,6 +5,7 @@ import { es } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { FOLLOWUP_PHASES, phaseByValue } from '../utils/followupPhases';
 
 const FILTERS = [
   ['vencido', 'Vencidos'],
@@ -83,6 +84,14 @@ export default function FollowUps() {
     });
   };
 
+  const changePhase = async (item, value) => {
+    try {
+      await api.patch(`/opportunities/${item.id}/followup-phase`, { followup_phase: Number(value) });
+      setItems(current => current.map(row => row.id === item.id ? { ...row, followup_phase: Number(value) } : row));
+      toast.success(`Actualizado a ${phaseByValue(value).label}`);
+    } catch (error) { toast.error(error.response?.data?.message || 'No se pudo cambiar la fase'); }
+  };
+
   if (loading) return <div className="spinner" />;
 
   return (
@@ -131,6 +140,7 @@ export default function FollowUps() {
                       <strong>{item.company || item.title}</strong>
                       <span className={`badge ${temperatureClass[item.temperature] || 'badge-gray'}`}>{item.temperature || 'sin clasificar'}</span>
                       <span className="badge badge-gray">{item.stage_name || 'Sin etapa'}</span>
+                      <span className="badge badge-blue">{phaseByValue(item.followup_phase).label}</span>
                     </div>
                     <p>{item.contact_name || 'Sin contacto'}{item.zone ? ` · ${item.zone}` : ''}</p>
                     <p className="followup-action">{item.next_action || 'Falta definir la próxima acción'}</p>
@@ -143,6 +153,10 @@ export default function FollowUps() {
                     </div>
                   </div>
                   <div className="followup-actions">
+                    <select className="input" value={item.followup_phase ?? 0} onChange={e => changePhase(item, e.target.value)} style={{ minWidth:190, padding:'7px 9px', fontSize:12 }}>
+                      {FOLLOWUP_PHASES.map(phase => <option key={phase.value} value={phase.value}>{phase.label}</option>)}
+                    </select>
+                    <Link className="btn btn-secondary btn-sm" to={`/communications?tab=plantillas&phase=${item.followup_phase ?? 0}`}>Ver plantilla</Link>
                     <button className="btn btn-primary btn-sm" onClick={() => openActivity(item)}>
                       Registrar contacto
                     </button>
