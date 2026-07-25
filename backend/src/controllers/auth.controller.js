@@ -48,7 +48,8 @@ const login = async (req, res) => {
       user: { id: user.id, name: user.name, email: user.email, role: user.role, tenant_id: user.tenant_id }
     });
   } catch (err) {
-    res.status(500).json({ message: 'Error del servidor', error: err.message });
+    console.error('[Auth.login] Error:', err);
+    res.status(500).json({ message: 'Error del servidor', error: err?.message || String(err) });
   }
 };
 
