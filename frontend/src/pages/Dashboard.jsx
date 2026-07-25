@@ -66,15 +66,15 @@ export default function Dashboard() {
           { label: 'Seguimientos para hoy', value: stats.today_followups || 0, icon: CalendarCheck, bg: 'linear-gradient(135deg, #F59E0B, #B45309)' },
           { label: 'Sin próxima acción', value: stats.without_next_action || 0, icon: CalendarDays, bg: 'linear-gradient(135deg, #64748B, #334155)' },
           { label: 'Demos últimos 7 días', value: stats.demos_week || 0, icon: Target, bg: 'linear-gradient(135deg, #3B82F6, #1D4ED8)' },
-          { label: 'Pipeline activo', value: fmt(stats.pipeline_value || 0), icon: DollarSign, bg: 'linear-gradient(135deg, #8B5CF6, #6D28D9)' },
-          { label: 'Pipeline ponderado', value: fmt(stats.weighted_pipeline || 0), icon: TrendingUp, bg: 'linear-gradient(135deg, #14B8A6, #0F766E)' },
-        ].map(({ label, value, icon: Icon, bg }) => (
+          { label: 'Pipeline activo', value: fmt(stats.pipeline_value || 0), icon: DollarSign, currency: true, bg: 'linear-gradient(135deg, #8B5CF6, #6D28D9)' },
+          { label: 'Pipeline ponderado', value: fmt(stats.weighted_pipeline || 0), icon: TrendingUp, currency: true, bg: 'linear-gradient(135deg, #14B8A6, #0F766E)' },
+        ].map(({ label, value, icon: Icon, bg, currency }) => (
           <div className="stat-card stat-card-colored" key={label} style={{ background: bg }}>
-            <div className="stat-icon">
+            {!currency && <div className="stat-icon">
               <Icon size={24} color="#ffffff" />
-            </div>
-            <div style={{ flex: 1, zIndex: 1 }}>
-              <div className="stat-value">{value}</div>
+            </div>}
+            <div className={currency ? 'stat-content stat-content-currency' : 'stat-content'}>
+              <div className={`stat-value ${currency ? 'stat-value-currency' : ''}`}>{value}</div>
               <div className="stat-label">{label}</div>
             </div>
             {/* Decal de fondo para que el diseño se vea más premium */}

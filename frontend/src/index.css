@@ -119,6 +119,10 @@ tr:hover td { background: #f8fafc; }
 .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; position: relative; z-index: 1; }
 .stat-value { font-size: 28px; font-weight: 700; line-height: 1; }
 .stat-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.stat-content { flex:1; min-width:0; position:relative; z-index:1; }
+.stat-content-currency { text-align:center; width:100%; padding:0 4px; }
+.stat-value-currency { font-size:clamp(19px, 1.9vw, 26px); white-space:nowrap; letter-spacing:-.35px; }
+.stat-content-currency .stat-label { font-size:12px; }
 
 /* Search bar */
 .search-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }

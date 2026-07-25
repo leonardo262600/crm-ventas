@@ -4,25 +4,52 @@ import api from '../services/api';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const cachedUser = (() => {
+    try { return JSON.parse(localStorage.getItem('crm_user')); } catch { return null; }
+  })();
+  const [user, setUser] = useState(cachedUser);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem('crm_token');
     if (token) {
-      api.get('/auth/me')
-        .then(r => {
+      const validateSession = async () => {
+        try {
+          const r = await api.get('/auth/me');
           setUser(r.data);
+          localStorage.setItem('crm_user', JSON.stringify(r.data));
           // Cargar configuración de la empresa para formateo global
           api.get('/settings').then(sr => {
             localStorage.setItem('crm_settings', JSON.stringify(sr.data));
             // Disparar evento para que los componentes se enteren
             window.dispatchEvent(new Event('crm_settings_updated'));
           }).catch(()=>{});
-        })
-        .catch(() => localStorage.removeItem('crm_token'))
-        .finally(() => setLoading(false));
+        } catch (err) {
+          if (err.response?.status === 401) {
+            localStorage.removeItem('crm_token');
+            localStorage.removeItem('crm_user');
+            setUser(null);
+          } else if (!cachedUser) {
+            // Render puede tardar en despertar. Un fallo temporal no invalida el token.
+            await new Promise(resolve => setTimeout(resolve, 1200));
+            try {
+              const retry = await api.get('/auth/me');
+              setUser(retry.data);
+              localStorage.setItem('crm_user', JSON.stringify(retry.data));
+            } catch (retryErr) {
+              if (retryErr.response?.status === 401) {
+                localStorage.removeItem('crm_token');
+                localStorage.removeItem('crm_user');
+              }
+            }
+          }
+        } finally {
+          setLoading(false);
+        }
+      };
+      validateSession();
     } else {
+      localStorage.removeItem('crm_user');
       setLoading(false);
     }
   }, []);
@@ -33,12 +60,14 @@ export const AuthProvider = ({ children }) => {
       return { require_2fa: true };
     }
     localStorage.setItem('crm_token', data.token);
+    localStorage.setItem('crm_user', JSON.stringify(data.user));
     setUser(data.user);
     return data;
   };
 
   const logout = () => {
     localStorage.removeItem('crm_token');
+    localStorage.removeItem('crm_user');
     setUser(null);
   };
 
