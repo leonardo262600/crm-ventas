@@ -45,7 +45,7 @@ const login = async (req, res) => {
 
     res.json({
       token,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role, tenant_id: user.tenant_id }
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, tenant_id: user.tenant_id, avatar: user.avatar }
     });
   } catch (err) {
     console.error('[Auth.login] Error:', err);
@@ -123,4 +123,3 @@ const disable2FA = async (req, res) => {
 };
 
 module.exports = { login, me, changePassword, setup2FA, enable2FA, disable2FA };
-

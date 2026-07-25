@@ -68,6 +68,17 @@ const dashboard = async (req, res) => {
       [tid]
     );
 
+    const [today_tasks] = await db.query(
+      `SELECT a.*, c.name AS contact_name, o.title AS opp_title
+       FROM activities a
+       LEFT JOIN contacts c ON a.contact_id=c.id
+       LEFT JOIN opportunities o ON a.opportunity_id=o.id
+       WHERE a.tenant_id=? AND a.status='pendiente'
+         AND (DATE(a.scheduled_at)=CURDATE() OR a.scheduled_at<NOW())
+       ORDER BY a.scheduled_at ASC LIMIT 12`,
+      [tid]
+    );
+
     const [priorities] = await db.query(
       `SELECT o.id, o.title, o.temperature, o.next_action, o.next_action_type, o.next_action_at,
               c.name AS contact_name, c.company, ps.name AS stage_name,
@@ -87,7 +98,7 @@ const dashboard = async (req, res) => {
 
     res.json({
       stats: { total_contacts, total_opportunities, total_activities, total_users, revenue_won, pipeline_value, ...followupStats },
-      monthly, pipeline, top_sellers, upcoming, priorities,
+      monthly, pipeline, top_sellers, upcoming, today_tasks, priorities,
       filters: { from: from || null, to: to || null },
     });
   } catch (err) { res.status(500).json({ message: err.message }); }

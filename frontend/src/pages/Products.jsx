@@ -4,7 +4,7 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 
 const empty    = { sku:'', name:'', description:'', category:'', price:'', cost:'', stock:'', unit:'unidad' };
-const emptyPL  = { name:'', description:'', currency:'MXN' };
+const emptyPL  = { name:'', description:'', currency:'EUR' };
 import { fmtCurrency as fmt } from '../utils/format';
 import ExportButtons from '../components/ExportButtons';
 
@@ -61,7 +61,7 @@ export default function Products() {
 
   /* ── Price List CRUD ── */
   const openNewPL  = ()  => { setPlForm(emptyPL); setPlEditId(null); setPlModal(true); };
-  const openEditPL = pl  => { setPlForm({ name:pl.name, description:pl.description||'', currency:pl.currency||'MXN' }); setPlEditId(pl.id); setPlModal(true); };
+  const openEditPL = pl  => { setPlForm({ name:pl.name, description:pl.description||'', currency:pl.currency||'EUR' }); setPlEditId(pl.id); setPlModal(true); };
 
   const savePL = async e => {
     e.preventDefault();

@@ -3,7 +3,7 @@
  */
 
 /** Currency formatter — reads tenant config from localStorage if set */
-export const fmtCurrency = (n, fallbackCurrency = 'PEN') => {
+export const fmtCurrency = (n, fallbackCurrency = 'EUR') => {
   let cfg = null;
   try {
     cfg = JSON.parse(localStorage.getItem('crm_settings'));
@@ -19,10 +19,10 @@ export const fmtCurrency = (n, fallbackCurrency = 'PEN') => {
   }
 
   // Use custom settings
-  const symbol = cfg.currency_symbol || 'S/';
-  const dec = cfg.decimal_separator || '.';
-  const thou = cfg.thousands_separator || ',';
-  const pos = cfg.currency_position || 'before';
+  const symbol = cfg.currency_symbol || '€';
+  const dec = cfg.decimal_separator || ',';
+  const thou = cfg.thousands_separator || '.';
+  const pos = cfg.currency_position || 'after';
 
   // Format number
   let parts = val.toFixed(2).split('.');
@@ -44,8 +44,8 @@ export const fmtShortCurrency = (n) => {
   
   const val = Number(n) || 0;
   const shortVal = val >= 1000 ? (val/1000).toFixed(0) + 'k' : val;
-  const symbol = cfg?.currency_symbol || 'S/';
-  const pos = cfg?.currency_position || 'before';
+  const symbol = cfg?.currency_symbol || '€';
+  const pos = cfg?.currency_position || 'after';
   
   if (pos === 'after') return `${shortVal} ${symbol}`;
   return `${symbol} ${shortVal}`;
@@ -56,7 +56,7 @@ export const fmtDate = (d, fmt = 'dd/MM/yyyy') => {
   if (!d) return '—';
   try {
     const date = new Date(d);
-    return date.toLocaleDateString('es-MX');
+    return date.toLocaleDateString('es-ES');
   } catch { return '—'; }
 };
 

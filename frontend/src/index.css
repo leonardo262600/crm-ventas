@@ -1,11 +1,11 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --sidebar-bg: linear-gradient(180deg, #0f766e 0%, #134e4a 100%);
+  --sidebar-bg: linear-gradient(180deg, #3454d1 0%, #172c91 100%);
   --sidebar-width: 220px;
-  --primary: #0f766e;
-  --primary-dark: #134e4a;
-  --primary-light: #99f6e4;
+  --primary: #3454d1;
+  --primary-dark: #223aa3;
+  --primary-light: #e3e9f7;
   --accent: #f59e0b;
   --danger: #ef4444;
   --success: #10b981;

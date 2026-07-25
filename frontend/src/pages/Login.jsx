@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { TrendingUp, Lock, Mail, ShieldCheck } from 'lucide-react';
+import { Lock, Mail, ShieldCheck } from 'lucide-react';
 
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: 'admin@crm.com', password: 'admin123', tfa_token: '' });
+  const [form, setForm] = useState({ email: '', password: '', tfa_token: '' });
   const [loading, setLoading] = useState(false);
   const [requires2FA, setRequires2FA] = useState(false);
 
@@ -30,13 +30,13 @@ export default function Login() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', background: 'linear-gradient(135deg, #0f766e 0%, #134e4a 100%)' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', background: 'linear-gradient(135deg, #3454d1 0%, #172c91 100%)' }}>
       {/* Left panel */}
       <div style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', padding: '40px', display: 'none' }} className="login-left">
-        <TrendingUp size={64} style={{ marginBottom: 24, opacity: .9 }} />
-        <h1 style={{ fontSize: 36, fontWeight: 700, marginBottom: 12 }}>CRM Ventas</h1>
+        <img src="/brand/realadvisor-logo.jpg" alt="RealAdvisor" style={{ width:88, height:88, borderRadius:24, marginBottom:24 }}/>
+        <h1 style={{ fontSize: 36, fontWeight: 700, marginBottom: 12 }}>RealAdvisor</h1>
         <p style={{ opacity: .8, textAlign: 'center', maxWidth: 360, lineHeight: 1.6 }}>
-          Gestiona tus contactos, oportunidades y equipo de ventas desde un solo lugar.
+          Organiza tus demos, seguimientos y oportunidades desde un solo lugar.
         </p>
       </div>
 
@@ -44,11 +44,9 @@ export default function Login() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', padding: '20px' }}>
         <div style={{ background: '#fff', borderRadius: 20, padding: '48px 40px', width: '100%', maxWidth: 420, boxShadow: '0 24px 80px rgba(0,0,0,.25)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
-            <div style={{ background: 'linear-gradient(135deg,#0f766e,#134e4a)', borderRadius: 12, padding: 10, display: 'flex' }}>
-              <TrendingUp size={24} color="#fff" />
-            </div>
+            <img src="/brand/realadvisor-logo.jpg" alt="RealAdvisor" style={{ width:46, height:46, borderRadius:12 }}/>
             <div>
-              <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1e293b' }}>CRM Ventas</h2>
+              <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1e293b' }}>Closer RealAdvisor</h2>
               <p style={{ fontSize: 12, color: '#64748b' }}>Inicia sesión en tu cuenta</p>
             </div>
           </div>
@@ -99,11 +97,6 @@ export default function Login() {
             )}
           </form>
 
-          {!requires2FA && (
-            <p style={{ marginTop: 24, fontSize: 12, color: '#94a3b8', textAlign: 'center' }}>
-              Demo: admin@crm.com / admin123
-            </p>
-          )}
         </div>
       </div>
     </div>

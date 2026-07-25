@@ -261,7 +261,7 @@ export default function Settings() {
             <Section title="Moneda" icon={DollarSign}>
               <div className="form-grid">
                 <Field label="Moneda principal">
-                  <select className="input" value={cfg.currency||'PEN'} onChange={e => {
+                  <select className="input" value={cfg.currency||'EUR'} onChange={e => {
                     const c = CURRENCIES.find(x => x.code === e.target.value);
                     set('currency', e.target.value);
                     if (c) set('currency_symbol', c.symbol);
@@ -272,10 +272,10 @@ export default function Settings() {
                   </select>
                 </Field>
                 <Field label="Símbolo de moneda">
-                  <input className="input" value={cfg.currency_symbol||'S/'} onChange={e=>set('currency_symbol',e.target.value)} placeholder="S/" />
+                  <input className="input" value={cfg.currency_symbol||'€'} onChange={e=>set('currency_symbol',e.target.value)} placeholder="€" />
                 </Field>
                 <Field label="Posición del símbolo">
-                  <select className="input" value={cfg.currency_position||'before'} onChange={e=>set('currency_position',e.target.value)}>
+                  <select className="input" value={cfg.currency_position||'after'} onChange={e=>set('currency_position',e.target.value)}>
                     <option value="before">Antes del monto (S/ 100)</option>
                     <option value="after">Después del monto (100 S/)</option>
                   </select>
@@ -293,8 +293,8 @@ export default function Settings() {
                 <p style={{ fontSize:12, color:'#166534', fontWeight:600, marginBottom:6 }}>Vista previa de formato:</p>
                 <p style={{ fontSize:22, fontWeight:700, color:'#0f766e' }}>
                   {cfg.currency_position === 'after'
-                    ? `1${cfg.decimal_separator==='.'?',':'.'}234${cfg.decimal_separator||'.'}50 ${cfg.currency_symbol||'S/'}`
-                    : `${cfg.currency_symbol||'S/'} 1${cfg.decimal_separator==='.'?',':'.'}234${cfg.decimal_separator||'.'}50`
+                    ? `1${cfg.decimal_separator==='.'?',':'.'}234${cfg.decimal_separator||','}50 ${cfg.currency_symbol||'€'}`
+                    : `${cfg.currency_symbol||'€'} 1${cfg.decimal_separator==='.'?',':'.'}234${cfg.decimal_separator||','}50`
                   }
                 </p>
               </div>

@@ -39,7 +39,7 @@ const create = async (req, res) => {
     const [r] = await db.query(
       `INSERT INTO price_lists (tenant_id, name, description, currency, discount_pct)
        VALUES (?,?,?,?,?)`,
-      [req.user.tenant_id, name, description || null, currency || 'MXN', discount_pct || 0]
+      [req.user.tenant_id, name, description || null, currency || 'EUR', discount_pct || 0]
     );
     res.status(201).json({ id: r.insertId, name });
   } catch (err) { res.status(500).json({ message: err.message }); }
@@ -52,7 +52,7 @@ const update = async (req, res) => {
       `UPDATE price_lists
        SET name=?, description=?, currency=?, discount_pct=?, active=?
        WHERE id=? AND tenant_id=?`,
-      [name, description || null, currency || 'MXN', discount_pct ?? 0, active ?? 1,
+      [name, description || null, currency || 'EUR', discount_pct ?? 0, active ?? 1,
        req.params.id, req.user.tenant_id]
     );
     res.json({ message: 'Actualizado' });

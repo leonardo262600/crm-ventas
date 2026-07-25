@@ -45,6 +45,7 @@ export default function Dashboard() {
   const pipeline = data?.pipeline || [];
   const topSellers = data?.top_sellers || [];
   const upcoming = data?.upcoming || [];
+  const todayTasks = data?.today_tasks || [];
   const priorities = data?.priorities || [];
 
   const COLORS = ['#6B7280','#3B82F6','#F59E0B','#8B5CF6','#10B981','#EF4444'];
@@ -98,6 +99,24 @@ export default function Dashboard() {
             <span className="text-muted text-sm">{item.days_without_contact} días sin contacto</span>
           </div>
         )) : <div className="empty-state" style={{padding:30}}><p>No hay prioridades pendientes</p></div>}
+      </div>
+
+      <div className="card" style={{ marginBottom:20 }}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+          <div><h3 style={{fontWeight:600}}>Tareas de hoy</h3><p className="text-muted text-sm">Incluye las tareas vencidas que todavía no has completado</p></div>
+          <a className="btn btn-primary btn-sm" href="/activities">Añadir tarea</a>
+        </div>
+        {todayTasks.length ? todayTasks.map(task => (
+          <div key={task.id} style={{display:'flex',gap:12,alignItems:'center',padding:'11px 0',borderBottom:'1px solid #f1f5f9'}}>
+            <Clock size={17} color={task.scheduled_at && new Date(task.scheduled_at)<new Date()?'#ef4444':'#3454d1'}/>
+            <div style={{flex:1}}>
+              <p style={{fontWeight:600,fontSize:13}}>{task.title}</p>
+              <p className="text-muted text-sm">{task.contact_name || task.opp_title || 'Tarea personal'}</p>
+            </div>
+            <span className="badge badge-blue">{task.type}</span>
+            <span className="text-muted text-sm">{task.scheduled_at ? format(new Date(task.scheduled_at),'HH:mm') : 'Sin hora'}</span>
+          </div>
+        )) : <div className="empty-state" style={{padding:30}}><p>No tienes tareas pendientes para hoy</p></div>}
       </div>
 
       {/* Charts row */}

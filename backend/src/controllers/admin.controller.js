@@ -47,7 +47,7 @@ const getSettings = async (req, res) => {
         company_address: '', company_website: '', company_ruc: '',
         smtp_host: '', smtp_port: '587', smtp_secure: false,
         smtp_user: '', smtp_from: '',
-        currency: 'PEN', currency_symbol: 'S/',
+        currency: 'EUR', currency_symbol: '€',
         quote_footer: '', logo_url: '',
       });
     }
@@ -61,7 +61,7 @@ const getSettings = async (req, res) => {
       return res.json({
         company_name: '', company_email: '', smtp_host: '', smtp_port: '587',
         smtp_secure: false, smtp_user: '', smtp_from: '',
-        currency: 'PEN', currency_symbol: 'S/', quote_footer: '',
+        currency: 'EUR', currency_symbol: '€', quote_footer: '',
       });
     }
     res.status(500).json({ message: err.message });
@@ -93,8 +93,8 @@ const saveSettings = async (req, res) => {
         smtp_user VARCHAR(200),
         smtp_pass VARCHAR(200),
         smtp_from VARCHAR(200),
-        currency VARCHAR(10) DEFAULT 'PEN',
-        currency_symbol VARCHAR(5) DEFAULT 'S/',
+        currency VARCHAR(10) DEFAULT 'EUR',
+        currency_symbol VARCHAR(5) DEFAULT '€',
         quote_footer TEXT,
         logo_url TEXT,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP

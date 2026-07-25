@@ -143,8 +143,8 @@ export default function Header() {
 
         {/* User avatar */}
         <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 10px', borderRadius:10, background:'#f8fafc' }}>
-          <div style={{ width:30, height:30, borderRadius:'50%', background:'linear-gradient(135deg,#0f766e,#134e4a)', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:13 }}>
-            {user?.name?.charAt(0).toUpperCase()}
+          <div style={{ width:30, height:30, borderRadius:'50%', overflow:'hidden', background:'#e3e9f7' }}>
+            <img src={user?.avatar || '/brand/leonardo-profile.jpg'} alt={user?.name || 'Leonardo'} style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'50% 22%'}}/>
           </div>
           <div>
             <p style={{ fontWeight:600, fontSize:13, lineHeight:1.2 }}>{user?.name}</p>
