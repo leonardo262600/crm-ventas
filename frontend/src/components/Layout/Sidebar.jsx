@@ -21,7 +21,7 @@ const nav = [
   { to: '/contacts',       icon: Users2,          label: 'Contactos' },
   { to: '/opportunities',  icon: Target,          label: 'Oportunidades' },
   { to: '/followups',      icon: CalendarCheck,   label: 'Seguimientos' },
-  { to: '/activities',     icon: CalendarCheck,   label: 'Calendario' },
+  { to: '/activities',     icon: CalendarCheck,   label: 'Tareas diarias' },
   { to: '/communications', icon: MessageSquare,   label: 'Plantillas' },
   { to: '/reports',        icon: BarChart2,       label: 'Informes' },
 ];

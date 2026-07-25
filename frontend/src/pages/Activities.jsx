@@ -93,8 +93,8 @@ export default function Activities() {
       {/* Header */}
       <div className="page-header">
         <div>
-          <h1>Actividades</h1>
-          <p>Tareas, reuniones y seguimiento</p>
+          <h1>Tareas diarias</h1>
+          <p>Organiza llamadas, reuniones, recordatorios y seguimientos del día</p>
         </div>
         <div style={{ display:'flex', gap:8, alignItems:'center' }}>
           {/* View toggle */}
