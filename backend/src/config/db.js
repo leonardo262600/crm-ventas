@@ -11,7 +11,8 @@ const dbHost = configuredPort === 4000 && localhostSet
   ? tidbHost
   : (rawHost || 'localhost');
 const rawUser = String(process.env.DB_USER || '').trim();
-const dbUser = configuredPort === 4000 && ['', 'root'].includes(rawUser)
+const invalidTidbUser = !rawUser || rawUser === 'root' || !rawUser.includes('.');
+const dbUser = configuredPort === 4000 && invalidTidbUser
   ? tidbUser
   : (rawUser || 'root');
 
