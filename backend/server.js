@@ -24,6 +24,8 @@ const corsOptions = {
   origin(origin, callback) {
     // Permitir requests sin Origin (health checks, curl, etc.)
     if (!origin) return callback(null, true);
+    // Permitir despliegues frontend en Vercel para evitar bloqueos CORS en producción.
+    if (origin.endsWith('.vercel.app')) return callback(null, true);
     if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
     return callback(new Error(`Origen no permitido por CORS: ${origin}`));
   },
