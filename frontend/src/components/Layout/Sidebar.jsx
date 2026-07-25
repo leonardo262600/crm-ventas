@@ -43,14 +43,9 @@ export default function Sidebar() {
       zIndex: 100,
     }}>
       {/* Logo */}
-      <div style={{ padding: '24px 20px 20px', borderBottom: '1px solid rgba(255,255,255,.1)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <img src="/brand/realadvisor-logo-new.png" alt="RealAdvisor" style={{ width:38, height:38, borderRadius:10, objectFit:'cover' }}/>
-          <div>
-            <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>Closer RealAdvisor</span>
-            <p style={{ color: 'rgba(255,255,255,.6)', fontSize: 11 }}>Seguimiento comercial</p>
-          </div>
-        </div>
+      <div style={{ padding: '22px 18px 18px', borderBottom: '1px solid rgba(255,255,255,.1)' }}>
+        <img src="/brand/realadvisor-wordmark.png" alt="RealAdvisor" style={{ display:'block', width:'100%', maxWidth:190, height:32, objectFit:'contain', objectPosition:'left center' }}/>
+        <p style={{ color: 'rgba(255,255,255,.65)', fontSize: 11, marginTop:8 }}>Seguimiento comercial</p>
       </div>
 
       {/* User card — click to go to profile */}
