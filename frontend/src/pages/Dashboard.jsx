@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Users2, Target, CalendarCheck, DollarSign, TrendingUp, Clock } from 'lucide-react';
+import { Target, CalendarCheck, DollarSign, TrendingUp, Clock, TriangleAlert, CalendarDays } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, BarChart, Bar, CartesianGrid } from 'recharts';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -45,6 +45,7 @@ export default function Dashboard() {
   const pipeline = data?.pipeline || [];
   const topSellers = data?.top_sellers || [];
   const upcoming = data?.upcoming || [];
+  const priorities = data?.priorities || [];
 
   const COLORS = ['#6B7280','#3B82F6','#F59E0B','#8B5CF6','#10B981','#EF4444'];
 
@@ -52,7 +53,7 @@ export default function Dashboard() {
     <div>
       <div className="page-header">
         <div>
-          <h1>Dashboard</h1>
+          <h1>Prioridades comerciales</h1>
           <p>Bienvenido de vuelta, {user?.name} · {format(new Date(), "EEEE d 'de' MMMM yyyy", { locale: es })}</p>
         </div>
       </div>
@@ -60,12 +61,12 @@ export default function Dashboard() {
       {/* Stats */}
       <div className="stats-grid">
         {[
-          { label: 'Contactos', value: stats.total_contacts || 0, icon: Users2, bg: 'linear-gradient(135deg, #3B82F6, #1D4ED8)' },
-          { label: 'Oportunidades abiertas', value: stats.total_opportunities || 0, icon: Target, bg: 'linear-gradient(135deg, #10B981, #047857)' },
-          { label: 'Actividades pendientes', value: stats.total_activities || 0, icon: CalendarCheck, bg: 'linear-gradient(135deg, #F59E0B, #B45309)' },
+          { label: 'Seguimientos vencidos', value: stats.overdue_followups || 0, icon: TriangleAlert, bg: 'linear-gradient(135deg, #EF4444, #B91C1C)' },
+          { label: 'Seguimientos para hoy', value: stats.today_followups || 0, icon: CalendarCheck, bg: 'linear-gradient(135deg, #F59E0B, #B45309)' },
+          { label: 'Sin próxima acción', value: stats.without_next_action || 0, icon: CalendarDays, bg: 'linear-gradient(135deg, #64748B, #334155)' },
+          { label: 'Demos últimos 7 días', value: stats.demos_week || 0, icon: Target, bg: 'linear-gradient(135deg, #3B82F6, #1D4ED8)' },
           { label: 'Pipeline activo', value: fmt(stats.pipeline_value || 0), icon: DollarSign, bg: 'linear-gradient(135deg, #8B5CF6, #6D28D9)' },
-          { label: 'Ingresos ganados', value: fmt(stats.revenue_won || 0), icon: TrendingUp, bg: 'linear-gradient(135deg, #14B8A6, #0F766E)' },
-          { label: 'Usuarios activos', value: stats.total_users || 0, icon: Users2, bg: 'linear-gradient(135deg, #EC4899, #BE185D)' },
+          { label: 'Pipeline ponderado', value: fmt(stats.weighted_pipeline || 0), icon: TrendingUp, bg: 'linear-gradient(135deg, #14B8A6, #0F766E)' },
         ].map(({ label, value, icon: Icon, bg }) => (
           <div className="stat-card stat-card-colored" key={label} style={{ background: bg }}>
             <div className="stat-icon">
@@ -79,6 +80,24 @@ export default function Dashboard() {
             <Icon size={100} style={{ position: 'absolute', right: -20, bottom: -20, opacity: 0.15, transform: 'rotate(-15deg)', pointerEvents: 'none' }} color="#ffffff" />
           </div>
         ))}
+      </div>
+
+      <div className="card" style={{ marginBottom:20 }}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+          <div><h3 style={{fontWeight:600}}>Qué requiere tu atención</h3><p className="text-muted text-sm">Ordenado por vencimiento y temperatura</p></div>
+          <a className="btn btn-secondary btn-sm" href="/followups">Ver todos</a>
+        </div>
+        {priorities.length ? priorities.map(item => (
+          <div key={item.id} style={{display:'flex',gap:12,alignItems:'center',padding:'11px 0',borderBottom:'1px solid #f1f5f9'}}>
+            <div style={{width:10,height:10,borderRadius:'50%',background:item.next_action_at && new Date(item.next_action_at)<new Date()?'#ef4444':'#f59e0b'}}/>
+            <div style={{flex:1}}>
+              <p style={{fontWeight:600,fontSize:13}}>{item.company || item.title}</p>
+              <p className="text-muted text-sm">{item.next_action || 'Definir próxima acción'} · {item.stage_name || 'Sin etapa'}</p>
+            </div>
+            <span className={`badge ${item.temperature==='caliente'?'badge-red':item.temperature==='fria'?'badge-blue':'badge-yellow'}`}>{item.temperature || 'sin clasificar'}</span>
+            <span className="text-muted text-sm">{item.days_without_contact} días sin contacto</span>
+          </div>
+        )) : <div className="empty-state" style={{padding:30}}><p>No hay prioridades pendientes</p></div>}
       </div>
 
       {/* Charts row */}
@@ -108,7 +127,7 @@ export default function Dashboard() {
                   cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '3 3' }}
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }}
                 />
-                <Area type="monotone" dataKey="oportunidades" stroke="#0f766e" fill="url(#grad)" strokeWidth={3} activeDot={{ r: 6, strokeWidth: 0, fill: '#0f766e', stroke: '#ccfbf1', strokeWidth: 4 }} />
+                <Area type="monotone" dataKey="oportunidades" stroke="#0f766e" fill="url(#grad)" strokeWidth={3} activeDot={{ r: 6, fill: '#0f766e', stroke: '#ccfbf1', strokeWidth: 4 }} />
               </AreaChart>
             </ResponsiveContainer>
           ) : <div className="empty-state"><p>Sin datos aún</p></div>}

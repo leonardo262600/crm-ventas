@@ -48,30 +48,49 @@ const getOne = async (req, res) => {
 };
 
 const create = async (req, res) => {
-  const { title, contact_id, stage_id, amount, probability, close_date, assigned_to, description } = req.body;
+  const fields = [
+    'title','contact_id','stage_id','amount','probability','close_date','assigned_to','description',
+    'client_type','zone','city','province','offices_count','agents_count','lead_source','demo_date',
+    'temperature','monthly_amount','proposal_period','current_solution','decision_maker','stakeholders',
+    'main_goal','current_problem','problem_impact','current_acquisition','current_captures','target_captures',
+    'urgency','urgency_reason','decision_criteria','client_quote','objection_type','objection_detail',
+    'objection_response','objection_status','next_action','next_action_type','next_action_at',
+    'latest_response','decision_date','resume_date'
+  ];
+  const values = fields.map(field => req.body[field] === '' || req.body[field] === undefined ? null : req.body[field]);
   try {
     const [result] = await db.query(
-      `INSERT INTO opportunities (tenant_id, title, contact_id, stage_id, amount, probability, close_date, assigned_to, description, created_by)
-       VALUES (?,?,?,?,?,?,?,?,?,?)`,
-      [req.user.tenant_id, title, contact_id || null, stage_id || null, amount || 0,
-       probability || 0, close_date || null, assigned_to || null, description, req.user.id]
+      `INSERT INTO opportunities (tenant_id, ${fields.join(',')}, created_by)
+       VALUES (?,${fields.map(() => '?').join(',')},?)`,
+      [req.user.tenant_id, ...values, req.user.id]
     );
     runAutomations('opportunity_created', {
       tenant_id: req.user.tenant_id, user_id: req.user.id,
-      record: { id: result.insertId, title, contact_id, stage_id, amount, assigned_to }
+      record: { id: result.insertId, title: req.body.title, contact_id: req.body.contact_id, stage_id: req.body.stage_id, amount: req.body.amount, assigned_to: req.body.assigned_to }
     });
-    res.status(201).json({ id: result.insertId, title });
+    res.status(201).json({ id: result.insertId, title: req.body.title });
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
 
 const update = async (req, res) => {
-  const { title, contact_id, stage_id, amount, probability, close_date, assigned_to, description, status } = req.body;
+  const fields = [
+    'title','contact_id','stage_id','amount','probability','close_date','assigned_to','description','status',
+    'client_type','zone','city','province','offices_count','agents_count','lead_source','demo_date',
+    'temperature','monthly_amount','proposal_period','current_solution','decision_maker','stakeholders',
+    'main_goal','current_problem','problem_impact','current_acquisition','current_captures','target_captures',
+    'urgency','urgency_reason','decision_criteria','client_quote','objection_type','objection_detail',
+    'objection_response','objection_status','next_action','next_action_type','next_action_at',
+    'latest_response','decision_date','resume_date'
+  ];
+  const values = fields.map(field => {
+    if (field === 'status') return req.body[field] || 'open';
+    return req.body[field] === '' || req.body[field] === undefined ? null : req.body[field];
+  });
   try {
     await db.query(
-      `UPDATE opportunities SET title=?,contact_id=?,stage_id=?,amount=?,probability=?,
-       close_date=?,assigned_to=?,description=?,status=? WHERE id=? AND tenant_id=?`,
-      [title, contact_id || null, stage_id || null, amount || 0, probability || 0,
-       close_date || null, assigned_to || null, description, status || 'open', req.params.id, req.user.tenant_id]
+      `UPDATE opportunities SET ${fields.map(field => `${field}=?`).join(',')}
+       WHERE id=? AND tenant_id=?`,
+      [...values, req.params.id, req.user.tenant_id]
     );
     res.json({ message: 'Oportunidad actualizada' });
   } catch (err) { res.status(500).json({ message: err.message }); }
@@ -80,7 +99,7 @@ const update = async (req, res) => {
 const moveStage = async (req, res) => {
   const { stage_id } = req.body;
   try {
-    await db.query('UPDATE opportunities SET stage_id=? WHERE id=? AND tenant_id=?',
+    await db.query('UPDATE opportunities SET stage_id=?, stage_entered_at=NOW() WHERE id=? AND tenant_id=?',
       [stage_id, req.params.id, req.user.tenant_id]);
     // Trigger automatizaciones de cambio de etapa
     const [rows] = await db.query('SELECT * FROM opportunities WHERE id=?', [req.params.id]);
@@ -95,7 +114,7 @@ const moveStage = async (req, res) => {
 };
 
 const updateStatus = async (req, res) => {
-  const { status, amount, close_date, lost_reason } = req.body;
+  const { status, amount, close_date, lost_reason, lost_detail, competitor_chosen, activation_date, resume_date } = req.body;
   try {
     let sql = 'UPDATE opportunities SET status=?';
     const params = [status];
@@ -103,12 +122,11 @@ const updateStatus = async (req, res) => {
     if (amount !== undefined) { sql += ', amount=?'; params.push(amount); }
     if (close_date !== undefined) { sql += ', close_date=?'; params.push(close_date); }
     
-    // Si la db no tiene lost_reason, podríamos agregarlo a la descripción, pero por simplicidad solo lo ignoraremos si no existe la columna, 
-    // o para estar seguros, lo anexamos a la description.
-    if (lost_reason) {
-      sql += ', description=CONCAT(COALESCE(description,""), ?)';
-      params.push(`\n\n[Motivo de pérdida]: ${lost_reason}`);
-    }
+    if (lost_reason !== undefined) { sql += ', lost_reason=?'; params.push(lost_reason || null); }
+    if (lost_detail !== undefined) { sql += ', lost_detail=?'; params.push(lost_detail || null); }
+    if (competitor_chosen !== undefined) { sql += ', competitor_chosen=?'; params.push(competitor_chosen || null); }
+    if (activation_date !== undefined) { sql += ', activation_date=?'; params.push(activation_date || null); }
+    if (resume_date !== undefined) { sql += ', resume_date=?'; params.push(resume_date || null); }
     
     sql += ' WHERE id=? AND tenant_id=?';
     params.push(req.params.id, req.user.tenant_id);

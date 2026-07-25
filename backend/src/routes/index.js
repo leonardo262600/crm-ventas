@@ -86,6 +86,7 @@ router.delete('/opportunities/:id',         auth, requireRole('admin','gerente')
 
 // ── Activities ────────────────────────────────────────────
 router.get('/activities',              auth, activitiesCtrl.list);
+router.get('/activities/followups',    auth, activitiesCtrl.followups);
 router.post('/activities',             auth, activitiesCtrl.create);
 router.put('/activities/:id',          auth, activitiesCtrl.update);
 router.patch('/activities/:id/complete', auth, activitiesCtrl.complete);
@@ -223,5 +224,4 @@ router.post('/backup/restore/upload',       auth, requireRole('admin'), sqlUploa
 router.post('/backup/reset',               auth, requireRole('admin'),           backupCtrl.resetSystem);
 
 module.exports = router;
-
 

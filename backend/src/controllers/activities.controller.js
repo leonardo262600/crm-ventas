@@ -24,14 +24,26 @@ const list = async (req, res) => {
 };
 
 const create = async (req, res) => {
-  const { title, type, description, scheduled_at, due_at, contact_id, opportunity_id, assigned_to } = req.body;
+  const { title, type, description, outcome, contacted, scheduled_at, due_at, contact_id, opportunity_id, assigned_to, next_action, next_action_type, next_action_at } = req.body;
   try {
     const [result] = await db.query(
-      `INSERT INTO activities (tenant_id, title, type, description, scheduled_at, due_at, contact_id, opportunity_id, assigned_to, created_by)
-       VALUES (?,?,?,?,?,?,?,?,?,?)`,
-      [req.user.tenant_id, title, type || 'tarea', description, scheduled_at || null,
+      `INSERT INTO activities (tenant_id, title, type, description, outcome, contacted, scheduled_at, due_at, contact_id, opportunity_id, assigned_to, created_by)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [req.user.tenant_id, title, type || 'tarea', description, outcome || null,
+       contacted === '' || contacted === undefined ? null : Boolean(contacted), scheduled_at || null,
        due_at || null, contact_id || null, opportunity_id || null, assigned_to || req.user.id, req.user.id]
     );
+    if (opportunity_id) {
+      await db.query(
+        `UPDATE opportunities SET last_interaction_at=COALESCE(?,NOW()), last_interaction_channel=?,
+         followup_attempts=followup_attempts+1,
+         next_action=COALESCE(?,next_action), next_action_type=COALESCE(?,next_action_type),
+         next_action_at=COALESCE(?,next_action_at)
+         WHERE id=? AND tenant_id=?`,
+        [scheduled_at || null, type || 'tarea', next_action || null, next_action_type || null,
+         next_action_at || null, opportunity_id, req.user.tenant_id]
+      );
+    }
     res.status(201).json({ id: result.insertId, title });
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
@@ -75,6 +87,37 @@ const complete = async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
 
+const followups = async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT o.id, o.title, o.contact_id, o.zone, o.temperature, o.next_action, o.next_action_type,
+              o.next_action_at, o.last_interaction_at, o.followup_attempts, o.objection_type,
+              ps.name AS stage_name, ps.color AS stage_color,
+              c.name AS contact_name, c.company, c.phone, c.email,
+              TIMESTAMPDIFF(DAY, COALESCE(o.last_interaction_at,o.created_at), NOW()) AS days_without_contact,
+              CASE
+                WHEN o.next_action_at IS NULL THEN 'sin_fecha'
+                WHEN o.next_action_at < NOW() THEN 'vencido'
+                WHEN DATE(o.next_action_at) = CURDATE() THEN 'hoy'
+                WHEN o.next_action_at <= DATE_ADD(NOW(), INTERVAL 7 DAY) THEN 'proximo'
+                ELSE 'futuro'
+              END AS followup_status
+       FROM opportunities o
+       LEFT JOIN contacts c ON o.contact_id=c.id
+       LEFT JOIN pipeline_stages ps ON o.stage_id=ps.id
+       WHERE o.tenant_id=? AND o.status='open'
+       ORDER BY
+         CASE WHEN o.next_action_at < NOW() THEN 0
+              WHEN DATE(o.next_action_at)=CURDATE() THEN 1
+              WHEN o.next_action_at IS NULL THEN 3 ELSE 2 END,
+         CASE o.temperature WHEN 'caliente' THEN 0 WHEN 'templada' THEN 1 ELSE 2 END,
+         o.next_action_at ASC`,
+      [req.user.tenant_id]
+    );
+    res.json(rows);
+  } catch (err) { res.status(500).json({ message: err.message }); }
+};
+
 const remove = async (req, res) => {
   try {
     await db.query('DELETE FROM activities WHERE id=? AND tenant_id=?',
@@ -83,4 +126,4 @@ const remove = async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
 
-module.exports = { list, create, update, complete, remove };
+module.exports = { list, create, update, complete, followups, remove };
