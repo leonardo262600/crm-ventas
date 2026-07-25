@@ -9,7 +9,7 @@ const pool = mysql.createPool({
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'ventas_crm',
-  ssl: useSsl ? { rejectUnauthorized: true } : undefined,
+  ssl: useSsl ? { minVersion: 'TLSv1.2' } : undefined,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
