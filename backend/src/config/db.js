@@ -21,6 +21,15 @@ const dbPassword = configuredPort === 4000 && !rawPassword
   ? tidbPassword
   : rawPassword;
 
+console.log('[DB Config]', {
+  host: dbHost,
+  port: configuredPort,
+  user: dbUser,
+  passwordPresent: Boolean(dbPassword),
+  passwordLength: dbPassword ? dbPassword.length : 0,
+  ssl: useSsl,
+});
+
 const pool = mysql.createPool({
   host: dbHost,
   port: configuredPort,
