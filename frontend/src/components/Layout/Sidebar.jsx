@@ -33,7 +33,7 @@ export default function Sidebar() {
   const handleLogout = () => { logout(); navigate('/login'); };
 
   return (
-    <aside style={{
+    <aside className="app-sidebar" style={{
       width: 'var(--sidebar-width)',
       background: 'var(--sidebar-bg)',
       display: 'flex',
@@ -44,13 +44,13 @@ export default function Sidebar() {
       zIndex: 100,
     }}>
       {/* Logo */}
-      <div style={{ padding: '22px 18px 18px', borderBottom: '1px solid #bfdcff' }}>
+      <div className="sidebar-brand" style={{ padding: '22px 18px 18px', borderBottom: '1px solid #bfdcff' }}>
         <img src="/brand/realadvisor-wordmark.png" alt="RealAdvisor" style={{ display:'block', width:'100%', maxWidth:190, height:32, objectFit:'contain', objectPosition:'left center' }}/>
         <p style={{ color: '#52708d', fontSize: 11, marginTop:8 }}>Seguimiento comercial</p>
       </div>
 
       {/* User card — click to go to profile */}
-      <NavLink to="/profile" style={{ textDecoration:'none' }}>
+      <NavLink className="sidebar-profile" to="/profile" style={{ textDecoration:'none' }}>
         <div style={{ padding: '14px 20px', borderBottom: '1px solid #bfdcff', cursor:'pointer' }}
           onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,.55)'}
           onMouseLeave={e => e.currentTarget.style.background='transparent'}>
@@ -73,7 +73,7 @@ export default function Sidebar() {
       </NavLink>
 
       {/* Navigation */}
-      <nav style={{ flex: 1, padding: '10px 10px', overflowY: 'auto' }}>
+      <nav className="sidebar-nav" style={{ flex: 1, padding: '10px 10px', overflowY: 'auto' }}>
         {nav.map(({ to, icon: Icon, label, exact }) => (
           <NavLink key={to} to={to} end={exact}
             style={({ isActive }) => navStyle(isActive)}>
@@ -84,7 +84,7 @@ export default function Sidebar() {
 
         {/* Admin-only links */}
         {(user?.role === 'admin' || user?.role === 'gerente') && (
-          <>
+          <div className="sidebar-admin-links">
             <div style={{ height:1, background:'#bfdcff', margin:'8px 4px' }}/>
             <NavLink to="/settings"
               style={({ isActive }) => navStyle(isActive)}>
@@ -106,12 +106,12 @@ export default function Sidebar() {
               <Users size={17}/>
               Usuarios
             </NavLink>
-          </>
+          </div>
         )}
       </nav>
 
       {/* Logout */}
-      <div style={{ padding: '12px 10px', borderTop: '1px solid #bfdcff' }}>
+      <div className="sidebar-logout" style={{ padding: '12px 10px', borderTop: '1px solid #bfdcff' }}>
         <button onClick={handleLogout} style={{
           display: 'flex', alignItems: 'center', gap: 10, width: '100%',
           padding: '10px 12px', background: 'rgba(239,68,68,.09)', border: 'none',

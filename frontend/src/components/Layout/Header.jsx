@@ -46,13 +46,13 @@ export default function Header() {
   const go = (path) => { navigate(path); setQuery(''); setOpen(false); };
 
   return (
-    <header style={{
+    <header className="app-header" style={{
       position: 'sticky', top: 0, zIndex: 50,
       background: '#fff', borderBottom: '1px solid #e2e8f0',
       padding: '0 28px', height: 60, display: 'flex', alignItems: 'center', gap: 16,
     }}>
       {/* Search */}
-      <div ref={ref} style={{ flex: 1, maxWidth: 440, position: 'relative' }}>
+      <div className="header-search" ref={ref} style={{ flex: 1, maxWidth: 440, position: 'relative' }}>
         <div style={{ position: 'relative' }}>
           <Search size={16} style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#94a3b8' }} />
           <input
@@ -146,7 +146,7 @@ export default function Header() {
         </div>
 
         {/* User avatar */}
-        <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 10px', borderRadius:10, background:'#f8fafc' }}>
+        <div className="header-user" style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 10px', borderRadius:10, background:'#f8fafc' }}>
           <div style={{ width:30, height:30, borderRadius:'50%', overflow:'hidden', background:'#e3e9f7' }}>
             <img src={user?.avatar || '/brand/leonardo-profile.jpg'} alt={user?.name || 'Leonardo'} style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'50% 22%'}}/>
           </div>

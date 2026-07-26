@@ -1,3 +1,58 @@
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open('crm-leonardo-shell-v1').then(cache => cache.addAll([
+      '/',
+      '/manifest.webmanifest',
+      '/icons/icon-192.png',
+      '/icons/icon-512.png',
+      '/icons/apple-touch-icon.png'
+    ]))
+  );
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(keys => Promise.all(
+      keys.filter(key => key.startsWith('crm-leonardo-shell-') && key !== 'crm-leonardo-shell-v1')
+        .map(key => caches.delete(key))
+    ))
+  );
+  self.clients.claim();
+});
+
+self.addEventListener('fetch', event => {
+  const requestUrl = new URL(event.request.url);
+  if (event.request.method !== 'GET' || requestUrl.pathname.startsWith('/api/')) return;
+
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          const copy = response.clone();
+          caches.open('crm-leonardo-shell-v1').then(cache => cache.put('/', copy));
+          return response;
+        })
+        .catch(() => caches.match('/'))
+    );
+    return;
+  }
+
+  if (requestUrl.origin === self.location.origin && (
+    requestUrl.pathname.startsWith('/assets/') ||
+    requestUrl.pathname.startsWith('/icons/') ||
+    requestUrl.pathname.startsWith('/brand/')
+  )) {
+    event.respondWith(
+      caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
+        const copy = response.clone();
+        caches.open('crm-leonardo-shell-v1').then(cache => cache.put(event.request, copy));
+        return response;
+      }))
+    );
+  }
+});
+
 self.addEventListener('push', function(event) {
   let payload = {};
   if (event.data) {
@@ -11,8 +66,8 @@ self.addEventListener('push', function(event) {
   const title = payload.title || 'CRM Ventas';
   const options = {
     body: payload.body || 'Tienes una nueva actualización en el sistema.',
-    icon: payload.icon || '/vite.svg',
-    badge: '/vite.svg',
+    icon: payload.icon || '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
     vibrate: [100, 50, 100],
     data: {
       dateOfArrival: Date.now(),
