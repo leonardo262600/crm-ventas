@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useSearchParams } from 'react-router-dom';
-import { FOLLOWUP_PHASES } from '../utils/followupPhases';
+import { FOLLOWUP_PHASES, NO_SHOW_PHASES } from '../utils/followupPhases';
 
 const TABS = ['emails','llamadas','plantillas','chat'];
 const TAB_LABELS = { emails:'Emails', llamadas:'Llamadas', plantillas:'Plantillas', chat:'Chat' };
@@ -244,6 +244,7 @@ function ChatPanel() {
 export default function Communications() {
   const [searchParams] = useSearchParams();
   const [tab, setTab]           = useState(searchParams.get('tab') || 'emails');
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'post_demo');
   const [selectedPhase, setSelectedPhase] = useState(Number(searchParams.get('phase') || 0));
   const [emails, setEmails]     = useState([]);
   const [calls, setCalls]       = useState([]);
@@ -269,7 +270,7 @@ export default function Communications() {
 
   const openEmail    = () => { setForm({ contact_id:'', subject:'', body:'', template_id:'' }); setModal('email'); };
   const openCall     = () => { setForm({ contact_id:'', direction:'outbound', duration:'', notes:'', called_at:'' }); setModal('call'); };
-  const openTemplate = (t = null) => { setForm(t || { name:'', subject:'', body:'', channel:'email', phase:selectedPhase, summary:'' }); setEditId(t?.id||null); setModal('template'); };
+  const openTemplate = (t = null) => { setForm(t || { name:'', subject:'', body:'', channel:'email', phase:selectedPhase, summary:'', category:selectedCategory }); setEditId(t?.id||null); setModal('template'); };
 
   const saveEmail = async e => {
     e.preventDefault();
@@ -383,12 +384,19 @@ export default function Communications() {
       {tab === 'plantillas' && (
         <div>
           <div className="card" style={{ marginBottom:16, background:'linear-gradient(135deg,#eff6ff,#f8fafc)' }}>
-            <h3 style={{marginBottom:6}}>Cadencia de seguimiento después de la demo</h3>
+            <div style={{display:'flex',gap:8,marginBottom:14}}>
+              <button className={`btn btn-sm ${selectedCategory==='post_demo'?'btn-primary':'btn-secondary'}`} onClick={()=>{setSelectedCategory('post_demo');setSelectedPhase(0);}}>Después de la demo</button>
+              <button className={`btn btn-sm ${selectedCategory==='no_show'?'btn-primary':'btn-secondary'}`} onClick={()=>{setSelectedCategory('no_show');setSelectedPhase(0);}}>No Show</button>
+            </div>
+            <h3 style={{marginBottom:6}}>{selectedCategory === 'no_show' ? 'Cadencia para reagendar un No Show' : 'Cadencia de seguimiento después de la demo'}</h3>
             <p style={{fontSize:13,color:'#475569'}}>Elige la fase, adapta las variables entre llaves y copia el mensaje. El CRM no envía nada automáticamente.</p>
             <div className="tabs" style={{marginTop:14,marginBottom:0,overflowX:'auto'}}>
-              {FOLLOWUP_PHASES.map(phase => <button key={phase.value} className={`tab ${selectedPhase===phase.value?'active':''}`} onClick={()=>setSelectedPhase(phase.value)}>{phase.timing} · Fase {phase.value}</button>)}
+              {(selectedCategory === 'no_show' ? NO_SHOW_PHASES : FOLLOWUP_PHASES).map(phase => <button key={phase.value} className={`tab ${selectedPhase===phase.value?'active':''}`} onClick={()=>setSelectedPhase(phase.value)}>{phase.timing} · {selectedCategory === 'no_show' ? 'Intento' : 'Fase'} {phase.value}</button>)}
             </div>
-            <p style={{fontSize:13,marginTop:12}}><strong>{FOLLOWUP_PHASES[selectedPhase].label}:</strong> {FOLLOWUP_PHASES[selectedPhase].summary}</p>
+            {(() => {
+              const phase = (selectedCategory === 'no_show' ? NO_SHOW_PHASES : FOLLOWUP_PHASES).find(p => p.value === selectedPhase);
+              return phase && <p style={{fontSize:13,marginTop:12}}><strong>{phase.label}:</strong> {phase.summary}</p>;
+            })()}
           </div>
           <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:12 }}>
             <button className="btn btn-primary" onClick={() => openTemplate()}><Plus size={16}/>Nueva plantilla</button>
@@ -397,7 +405,7 @@ export default function Communications() {
             <div className="card"><div className="empty-state"><FileText size={48}/><h3>Sin plantillas</h3></div></div>
           ) : (
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))', gap:16 }}>
-              {templates.filter(t => Number(t.phase || 0) === selectedPhase).map(t => (
+              {templates.filter(t => (t.category || 'post_demo') === selectedCategory && Number(t.phase || 0) === selectedPhase).map(t => (
                 <div key={t.id} className="card">
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
                     <div><span className={`badge ${t.channel==='whatsapp'?'badge-green':'badge-blue'}`}>{t.channel==='whatsapp'?'WhatsApp':'Correo'}</span><h4 style={{ fontWeight:600, marginTop:7 }}>{t.name}</h4></div>
@@ -495,7 +503,8 @@ export default function Communications() {
             <form onSubmit={saveTemplate}>
               <div className="modal-body">
                 <div className="form-grid">
-                  <div className="input-group"><label>Fase</label><select className="input" value={form.phase ?? 0} onChange={e=>setForm(f=>({...f,phase:Number(e.target.value)}))}>{FOLLOWUP_PHASES.map(p=><option key={p.value} value={p.value}>{p.label}</option>)}</select></div>
+                  <div className="input-group"><label>Tipo de seguimiento</label><select className="input" value={form.category || 'post_demo'} onChange={e=>setForm(f=>({...f,category:e.target.value}))}><option value="post_demo">Después de la demo</option><option value="no_show">No Show</option></select></div>
+                  <div className="input-group"><label>Fase</label><select className="input" value={form.phase ?? 0} onChange={e=>setForm(f=>({...f,phase:Number(e.target.value)}))}>{(form.category==='no_show'?NO_SHOW_PHASES:FOLLOWUP_PHASES).map(p=><option key={p.value} value={p.value}>{p.label}</option>)}</select></div>
                   <div className="input-group"><label>Canal</label><select className="input" value={form.channel || 'email'} onChange={e=>setForm(f=>({...f,channel:e.target.value}))}><option value="email">Correo</option><option value="whatsapp">WhatsApp</option></select></div>
                 </div>
                 <div className="input-group"><label>Nombre *</label><input className="input" value={form.name} onChange={e => setForm(f => ({ ...f, name:e.target.value }))} required/></div>

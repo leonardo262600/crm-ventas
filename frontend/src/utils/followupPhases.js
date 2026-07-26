@@ -9,3 +9,12 @@ export const FOLLOWUP_PHASES = [
 
 export const phaseByValue = value =>
   FOLLOWUP_PHASES.find(phase => phase.value === Number(value)) || FOLLOWUP_PHASES[0];
+
+export const NO_SHOW_PHASES = [
+  { value: 0, label: 'No Show 0 · Inmediato', timing: '5–10 min', summary: 'Comprobar si hubo un imprevisto y ofrecer reagendar sin reproches.' },
+  { value: 1, label: 'No Show 1 · Segundo intento', timing: '24 horas', summary: 'Ofrecer opciones simples de horario para facilitar la respuesta.' },
+  { value: 2, label: 'No Show 2 · Cierre', timing: '72 horas', summary: 'Cerrar el intento con elegancia y dejar la puerta abierta.' },
+];
+
+export const noShowPhaseByValue = value =>
+  NO_SHOW_PHASES.find(phase => phase.value === Number(value)) || NO_SHOW_PHASES[0];

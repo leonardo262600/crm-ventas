@@ -66,7 +66,7 @@ const createCall = async (req, res) => {
 const listTemplates = async (req, res) => {
   try {
     const [rows] = await db.query(
-      'SELECT * FROM comm_templates WHERE tenant_id = ? ORDER BY phase, channel, name',
+      'SELECT * FROM comm_templates WHERE tenant_id = ? ORDER BY category, phase, channel, name',
       [req.user.tenant_id]
     );
     res.json(rows);
@@ -74,22 +74,22 @@ const listTemplates = async (req, res) => {
 };
 
 const createTemplate = async (req, res) => {
-  const { name, subject, body, channel = 'email', phase = 0, summary = '' } = req.body;
+  const { name, subject, body, channel = 'email', phase = 0, summary = '', category = 'post_demo' } = req.body;
   try {
     const [r] = await db.query(
-      'INSERT INTO comm_templates (tenant_id, name, subject, body, channel, phase, summary, created_by) VALUES (?,?,?,?,?,?,?,?)',
-      [req.user.tenant_id, name, subject, body, channel, phase, summary, req.user.id]
+      'INSERT INTO comm_templates (tenant_id, name, subject, body, channel, phase, summary, category, created_by) VALUES (?,?,?,?,?,?,?,?,?)',
+      [req.user.tenant_id, name, subject, body, channel, phase, summary, category, req.user.id]
     );
     res.status(201).json({ id: r.insertId, name });
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
 
 const updateTemplate = async (req, res) => {
-  const { name, subject, body, channel = 'email', phase = 0, summary = '' } = req.body;
+  const { name, subject, body, channel = 'email', phase = 0, summary = '', category = 'post_demo' } = req.body;
   try {
     await db.query(
-      'UPDATE comm_templates SET name=?,subject=?,body=?,channel=?,phase=?,summary=? WHERE id=? AND tenant_id=?',
-      [name, subject, body, channel, phase, summary, req.params.id, req.user.tenant_id]
+      'UPDATE comm_templates SET name=?,subject=?,body=?,channel=?,phase=?,summary=?,category=? WHERE id=? AND tenant_id=?',
+      [name, subject, body, channel, phase, summary, category, req.params.id, req.user.tenant_id]
     );
     res.json({ message: 'Actualizado' });
   } catch (err) { res.status(500).json({ message: err.message }); }

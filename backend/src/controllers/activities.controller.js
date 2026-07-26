@@ -93,7 +93,7 @@ const followups = async (req, res) => {
       `SELECT o.id, o.title, o.contact_id, o.zone, o.temperature, o.followup_phase, o.next_action, o.next_action_type,
               o.next_action_at, o.last_interaction_at, o.followup_attempts, o.objection_type,
               o.main_goal, o.current_problem, o.objection_detail, o.objection_response,
-              o.monthly_amount, o.proposal_period,
+              o.monthly_amount, o.proposal_period, o.demo_status, o.no_show_step, o.no_show_at,
               ps.name AS stage_name, ps.color AS stage_color,
               c.name AS contact_name, c.company, c.phone, c.email,
               TIMESTAMPDIFF(DAY, COALESCE(o.last_interaction_at,o.created_at), NOW()) AS days_without_contact,

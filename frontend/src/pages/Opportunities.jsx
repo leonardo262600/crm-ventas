@@ -14,7 +14,7 @@ const empty = {
   urgency_reason:'', decision_criteria:'', client_quote:'', objection_type:'',
   objection_detail:'', objection_response:'', objection_status:'pendiente',
   next_action:'', next_action_type:'', next_action_at:'', latest_response:'',
-  decision_date:'', resume_date:'', followup_phase:0
+  decision_date:'', resume_date:'', followup_phase:0, demo_status:'programada', no_show_step:0, no_show_at:''
 };
 
 import { fmtCurrency as fmt } from '../utils/format';
@@ -95,6 +95,14 @@ export default function Opportunities() {
       setWonModal(null); setLostModal(null);
       load();
     } catch { toast.error('Error al cambiar estado'); }
+  };
+
+  const markNoShow = async opp => {
+    try {
+      await api.patch(`/opportunities/${opp.id}/demo-status`, { demo_status:'no_show' });
+      toast.success('Marcado como No Show. Ya aparece en Seguimientos.');
+      load();
+    } catch (error) { toast.error(error.response?.data?.message || 'No se pudo marcar'); }
   };
 
   const badgeClass = (status) => status==='won'?'badge-green':status==='lost'?'badge-red':'badge-blue';
@@ -178,6 +186,9 @@ export default function Opportunities() {
                   
                   {/* Acciones Rápidas */}
                   <div style={{ display:'flex', gap:6, marginTop:12, paddingTop:12, borderTop:'1px dashed #e2e8f0' }} onClick={e => e.stopPropagation()}>
+                    <button className="btn btn-sm" style={{ flex:1, background:'#fff7ed', color:'#c2410c', border:'1px solid #fed7aa' }} onClick={() => markNoShow(opp)}>
+                      No Show
+                    </button>
                     <button className="btn btn-sm" style={{ flex:1, background:'#ecfdf5', color:'#059669', border:'1px solid #a7f3d0' }} onClick={() => setWonModal({ ...opp, final_amount: opp.amount, cash_collected: opp.amount, commission_amount: '', close_date: new Date().toISOString().split('T')[0] })}>
                       <CheckCircle2 size={14}/> Ganada
                     </button>
@@ -266,6 +277,11 @@ export default function Opportunities() {
                   <div className="input-group"><label>Zona prioritaria</label><input className="input" value={form.zone} onChange={e=>setForm(f=>({...f,zone:e.target.value}))} placeholder="Ej. Chamberí, Madrid"/></div>
                   <div className="input-group"><label>Provincia</label><input className="input" value={form.province} onChange={e=>setForm(f=>({...f,province:e.target.value}))}/></div>
                   <div className="input-group"><label>Fecha de la demo</label><input className="input" type="datetime-local" value={form.demo_date} onChange={e=>setForm(f=>({...f,demo_date:e.target.value}))}/></div>
+                  <div className="input-group"><label>Estado de la demo</label>
+                    <select className="input" value={form.demo_status || 'programada'} onChange={e=>setForm(f=>({...f,demo_status:e.target.value}))}>
+                      <option value="programada">Programada</option><option value="realizada">Realizada</option><option value="no_show">No Show</option><option value="reagendada">Reagendada</option>
+                    </select>
+                  </div>
                   <div className="input-group"><label>Decisor principal</label><input className="input" value={form.decision_maker} onChange={e=>setForm(f=>({...f,decision_maker:e.target.value}))}/></div>
                 </div>
                 <h4 style={{ marginTop:6 }}>Descubrimiento de la demo</h4>

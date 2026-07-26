@@ -5,9 +5,10 @@ import { es } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { FOLLOWUP_PHASES, phaseByValue } from '../utils/followupPhases';
+import { FOLLOWUP_PHASES, NO_SHOW_PHASES, phaseByValue, noShowPhaseByValue } from '../utils/followupPhases';
 
 const FILTERS = [
+  ['no_show', 'No Show'],
   ['vencido', 'Vencidos'],
   ['hoy', 'Para hoy'],
   ['proximo', 'Próximos 7 días'],
@@ -33,6 +34,7 @@ export default function FollowUps() {
   const [loading, setLoading] = useState(true);
   const [activity, setActivity] = useState(null);
   const [templates, setTemplates] = useState([]);
+  const [reschedule, setReschedule] = useState(null);
 
   const load = () => {
     setLoading(true);
@@ -50,12 +52,16 @@ export default function FollowUps() {
   }, []);
 
   const filtered = useMemo(
-    () => filter === 'todos' ? items : items.filter(item => item.followup_status === filter),
+    () => filter === 'todos' ? items : filter === 'no_show'
+      ? items.filter(item => item.demo_status === 'no_show')
+      : items.filter(item => item.followup_status === filter && item.demo_status !== 'no_show'),
     [filter, items]
   );
 
   const counts = useMemo(() => FILTERS.reduce((acc, [key]) => {
-    acc[key] = key === 'todos' ? items.length : items.filter(item => item.followup_status === key).length;
+    acc[key] = key === 'todos' ? items.length : key === 'no_show'
+      ? items.filter(item => item.demo_status === 'no_show').length
+      : items.filter(item => item.followup_status === key && item.demo_status !== 'no_show').length;
     return acc;
   }, {}), [items]);
 
@@ -98,12 +104,24 @@ export default function FollowUps() {
     } catch (error) { toast.error(error.response?.data?.message || 'No se pudo cambiar la fase'); }
   };
 
+  const changeNoShowStep = async (item, value) => {
+    try {
+      await api.patch(`/opportunities/${item.id}/no-show-step`, { no_show_step: Number(value) });
+      setItems(current => current.map(row => row.id === item.id ? { ...row, no_show_step: Number(value) } : row));
+      toast.success(`Actualizado a ${noShowPhaseByValue(value).label}`);
+    } catch (error) { toast.error(error.response?.data?.message || 'No se pudo cambiar el intento'); }
+  };
+
   const prepareWhatsApp = item => {
+    const isNoShow = item.demo_status === 'no_show';
+    const step = isNoShow ? item.no_show_step : item.followup_phase;
     const template = templates.find(row =>
-      row.channel === 'whatsapp' && Number(row.phase || 0) === Number(item.followup_phase || 0)
+      row.channel === 'whatsapp' &&
+      (row.category || 'post_demo') === (isNoShow ? 'no_show' : 'post_demo') &&
+      Number(row.phase || 0) === Number(step || 0)
     );
     if (!template) {
-      toast.error(`No hay una plantilla de WhatsApp para la fase ${item.followup_phase || 0}`);
+      toast.error(`No hay una plantilla de WhatsApp para este ${isNoShow ? 'intento No Show' : 'fase'}`);
       return;
     }
 
@@ -131,6 +149,19 @@ export default function FollowUps() {
     let phone = (item.phone || '').replace(/\D/g, '');
     if (phone.length === 9) phone = `34${phone}`;
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+  };
+
+  const saveReschedule = async event => {
+    event.preventDefault();
+    try {
+      await api.patch(`/opportunities/${reschedule.id}/demo-status`, {
+        demo_status: 'reagendada',
+        demo_date: reschedule.demo_date,
+      });
+      toast.success('Demo reagendada');
+      setReschedule(null);
+      load();
+    } catch (error) { toast.error(error.response?.data?.message || 'No se pudo reagendar'); }
   };
 
   if (loading) return <div className="spinner" />;
@@ -181,7 +212,9 @@ export default function FollowUps() {
                       <strong>{item.company || item.title}</strong>
                       <span className={`badge ${temperatureClass[item.temperature] || 'badge-gray'}`}>{item.temperature || 'sin clasificar'}</span>
                       <span className="badge badge-gray">{item.stage_name || 'Sin etapa'}</span>
-                      <span className="badge badge-blue">{phaseByValue(item.followup_phase).label}</span>
+                      {item.demo_status === 'no_show'
+                        ? <span className="badge badge-red">{noShowPhaseByValue(item.no_show_step).label}</span>
+                        : <span className="badge badge-blue">{phaseByValue(item.followup_phase).label}</span>}
                     </div>
                     <p>{item.contact_name || 'Sin contacto'}{item.zone ? ` · ${item.zone}` : ''}</p>
                     <p className="followup-action">{item.next_action || 'Falta definir la próxima acción'}</p>
@@ -194,10 +227,16 @@ export default function FollowUps() {
                     </div>
                   </div>
                   <div className="followup-actions">
-                    <select className="input" value={item.followup_phase ?? 0} onChange={e => changePhase(item, e.target.value)} style={{ minWidth:190, padding:'7px 9px', fontSize:12 }}>
-                      {FOLLOWUP_PHASES.map(phase => <option key={phase.value} value={phase.value}>{phase.label}</option>)}
-                    </select>
-                    <Link className="btn btn-secondary btn-sm" to={`/communications?tab=plantillas&phase=${item.followup_phase ?? 0}`}>Ver plantilla</Link>
+                    {item.demo_status === 'no_show' ? (
+                      <select className="input" value={item.no_show_step ?? 0} onChange={e => changeNoShowStep(item, e.target.value)} style={{ minWidth:190, padding:'7px 9px', fontSize:12 }}>
+                        {NO_SHOW_PHASES.map(phase => <option key={phase.value} value={phase.value}>{phase.label}</option>)}
+                      </select>
+                    ) : (
+                      <select className="input" value={item.followup_phase ?? 0} onChange={e => changePhase(item, e.target.value)} style={{ minWidth:190, padding:'7px 9px', fontSize:12 }}>
+                        {FOLLOWUP_PHASES.map(phase => <option key={phase.value} value={phase.value}>{phase.label}</option>)}
+                      </select>
+                    )}
+                    <Link className="btn btn-secondary btn-sm" to={`/communications?tab=plantillas&category=${item.demo_status === 'no_show' ? 'no_show' : 'post_demo'}&phase=${item.demo_status === 'no_show' ? item.no_show_step ?? 0 : item.followup_phase ?? 0}`}>Ver plantilla</Link>
                     <button className="btn btn-primary btn-sm" onClick={() => openActivity(item)}>
                       Registrar contacto
                     </button>
@@ -206,6 +245,7 @@ export default function FollowUps() {
                         <MessageCircle size={14}/>Preparar WhatsApp
                       </button>
                     )}
+                    {item.demo_status === 'no_show' && <button className="btn btn-primary btn-sm" onClick={() => setReschedule({ id:item.id, title:item.company || item.title, demo_date:'' })}>Reagendar</button>}
                     <Link className="btn btn-secondary btn-sm" to={`/opportunities?edit=${item.id}`}>Abrir oportunidad</Link>
                   </div>
                 </article>
@@ -277,6 +317,21 @@ export default function FollowUps() {
                 <button type="button" className="btn btn-secondary" onClick={() => setActivity(null)}>Cancelar</button>
                 <button className="btn btn-primary" type="submit">Guardar interacción</button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {reschedule && (
+        <div className="modal-overlay" onClick={event => event.target === event.currentTarget && setReschedule(null)}>
+          <div className="modal" style={{maxWidth:440}}>
+            <div className="modal-header"><h3>Reagendar demo</h3><button className="btn-icon" onClick={()=>setReschedule(null)}>×</button></div>
+            <form onSubmit={saveReschedule}>
+              <div className="modal-body">
+                <p style={{fontSize:13,color:'#64748b',marginBottom:14}}>{reschedule.title}</p>
+                <div className="input-group"><label>Nueva fecha y hora</label><input className="input" type="datetime-local" value={reschedule.demo_date} onChange={e=>setReschedule(r=>({...r,demo_date:e.target.value}))} required/></div>
+              </div>
+              <div className="modal-footer"><button type="button" className="btn btn-secondary" onClick={()=>setReschedule(null)}>Cancelar</button><button className="btn btn-primary" type="submit">Guardar nueva demo</button></div>
             </form>
           </div>
         </div>

@@ -82,6 +82,8 @@ router.post('/opportunities',               auth, oppsCtrl.create);
 router.put('/opportunities/:id',            auth, oppsCtrl.update);
 router.patch('/opportunities/:id/stage',    auth, oppsCtrl.moveStage);
 router.patch('/opportunities/:id/followup-phase', auth, oppsCtrl.updateFollowupPhase);
+router.patch('/opportunities/:id/demo-status', auth, oppsCtrl.updateDemoStatus);
+router.patch('/opportunities/:id/no-show-step', auth, oppsCtrl.updateNoShowStep);
 router.patch('/opportunities/:id/status',   auth, oppsCtrl.updateStatus);
 router.delete('/opportunities/:id',         auth, requireRole('admin','gerente'), oppsCtrl.remove);
 

@@ -55,7 +55,7 @@ const create = async (req, res) => {
     'main_goal','current_problem','problem_impact','current_acquisition','current_captures','target_captures',
     'urgency','urgency_reason','decision_criteria','client_quote','objection_type','objection_detail',
     'objection_response','objection_status','next_action','next_action_type','next_action_at',
-    'latest_response','decision_date','resume_date','followup_phase'
+    'latest_response','decision_date','resume_date','followup_phase','demo_status','no_show_step','no_show_at'
   ];
   const values = fields.map(field => req.body[field] === '' || req.body[field] === undefined ? null : req.body[field]);
   try {
@@ -80,7 +80,7 @@ const update = async (req, res) => {
     'main_goal','current_problem','problem_impact','current_acquisition','current_captures','target_captures',
     'urgency','urgency_reason','decision_criteria','client_quote','objection_type','objection_detail',
     'objection_response','objection_status','next_action','next_action_type','next_action_at',
-    'latest_response','decision_date','resume_date','followup_phase'
+    'latest_response','decision_date','resume_date','followup_phase','demo_status','no_show_step','no_show_at'
   ];
   const values = fields.map(field => {
     if (field === 'status') return req.body[field] || 'open';
@@ -124,6 +124,43 @@ const updateFollowupPhase = async (req, res) => {
       [phase, req.params.id, req.user.tenant_id]
     );
     res.json({ message: 'Fase de seguimiento actualizada', followup_phase: phase });
+  } catch (err) { res.status(500).json({ message: err.message }); }
+};
+
+const updateDemoStatus = async (req, res) => {
+  const { demo_status, demo_date } = req.body;
+  const allowed = ['programada', 'realizada', 'no_show', 'reagendada'];
+  if (!allowed.includes(demo_status)) return res.status(400).json({ message: 'Estado de demo no válido' });
+  try {
+    let sql = 'UPDATE opportunities SET demo_status=?';
+    const params = [demo_status];
+    if (demo_status === 'no_show') {
+      sql += ", no_show_at=NOW(), no_show_step=0, next_action='Intentar reagendar la demo', next_action_type='whatsapp', next_action_at=NOW()";
+    }
+    if (demo_status === 'reagendada') {
+      if (!demo_date) return res.status(400).json({ message: 'Indica la nueva fecha de la demo' });
+      sql += ", demo_date=?, next_action='Realizar demo reagendada', next_action_type='reunion', next_action_at=?";
+      params.push(demo_date, demo_date);
+    }
+    if (demo_status === 'realizada') {
+      sql += ', no_show_step=0';
+    }
+    sql += ' WHERE id=? AND tenant_id=?';
+    params.push(req.params.id, req.user.tenant_id);
+    await db.query(sql, params);
+    res.json({ message: 'Estado de la demo actualizado' });
+  } catch (err) { res.status(500).json({ message: err.message }); }
+};
+
+const updateNoShowStep = async (req, res) => {
+  const step = Number(req.body.no_show_step);
+  if (!Number.isInteger(step) || step < 0 || step > 2) return res.status(400).json({ message: 'El intento debe estar entre 0 y 2' });
+  try {
+    await db.query(
+      "UPDATE opportunities SET demo_status='no_show', no_show_step=? WHERE id=? AND tenant_id=?",
+      [step, req.params.id, req.user.tenant_id]
+    );
+    res.json({ message: 'Intento No Show actualizado', no_show_step: step });
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
 
@@ -213,4 +250,4 @@ const remove = async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
 
-module.exports = { list, stages, getOne, create, update, moveStage, updateFollowupPhase, updateStatus, forecast, remove };
+module.exports = { list, stages, getOne, create, update, moveStage, updateFollowupPhase, updateDemoStatus, updateNoShowStep, updateStatus, forecast, remove };
