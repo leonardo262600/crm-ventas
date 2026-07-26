@@ -250,6 +250,27 @@ tr:hover td { background: #f8fafc; }
   .dashboard-bottom-row { grid-template-columns: 1fr !important; gap: 14px !important; }
   .pipeline-chart .recharts-responsive-container { height: 290px !important; }
   .pipeline-chart .recharts-legend-wrapper { line-height: 1.55; padding: 0 8px; }
+  .kanban-board {
+    gap: 12px;
+    scroll-snap-type: x mandatory;
+    scroll-padding-left: 0;
+  }
+  .kanban-col {
+    min-width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+    scroll-snap-align: start;
+  }
+  .kanban-card { overflow: hidden; }
+  .kanban-card .badge {
+    max-width: 100%;
+    white-space: normal;
+    line-height: 1.25;
+  }
+  .kanban-card .btn {
+    min-width: 0;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
 }
 
 @media (display-mode: standalone) {
