@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Plus, Search, Pencil, Trash2, User, Phone, Mail, Building2, X, Upload, Eye, Copy } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, User, Phone, Mail, Building2, X, Upload, Eye, Copy, MoreHorizontal, MessageCircle, CalendarPlus, Target } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import ContactDetail from '../components/ContactDetail';
@@ -25,6 +25,8 @@ export default function Contacts() {
   const [importing, setImporting] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [actionContactId, setActionContactId] = useState(null);
+  const [quickTask, setQuickTask] = useState(null);
   const fileRef = useRef();
 
   const load = () => {
@@ -183,6 +185,61 @@ export default function Contacts() {
     }
   };
 
+  const copyValue = async (value, label) => {
+    if (!value) return toast.error(`El contacto no tiene ${label.toLowerCase()}`);
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(`${label} copiado`);
+      setActionContactId(null);
+    } catch {
+      toast.error(`No se pudo copiar ${label.toLowerCase()}`);
+    }
+  };
+
+  const openWhatsApp = contact => {
+    const phone = String(contact.phone || '').replace(/\D/g, '');
+    if (!phone) return toast.error('El contacto no tiene teléfono');
+    window.open(`https://wa.me/${phone}`, '_blank', 'noopener,noreferrer');
+    setActionContactId(null);
+  };
+
+  const openOpportunityFor = contact => {
+    openEdit(contact);
+    setOpportunityForm({
+      enabled:true,
+      title:contact.company || contact.name,
+      stage_id:stages[0]?.id || '',
+      amount:'',
+      demo_date:'',
+    });
+    setActionContactId(null);
+  };
+
+  const saveQuickTask = async event => {
+    event.preventDefault();
+    try {
+      await api.post('/activities', {
+        title:quickTask.title,
+        type:quickTask.type,
+        scheduled_at:quickTask.scheduled_at,
+        due_at:quickTask.scheduled_at,
+        contact_id:quickTask.contact.id,
+        assigned_to:quickTask.contact.assigned_to || '',
+      });
+      toast.success('Tarea creada');
+      setQuickTask(null);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'No se pudo crear la tarea');
+    }
+  };
+
+  const missingFields = contact => [
+    !contact.phone && 'teléfono',
+    !contact.email && 'correo',
+    !contact.company && 'empresa',
+    !contact.postal_code && 'código postal',
+  ].filter(Boolean);
+
   const toggleAllVisible = () => {
     const visibleIds = contacts.map(contact => contact.id);
     const allSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.includes(id));
@@ -318,6 +375,11 @@ export default function Contacts() {
                           {c.name.charAt(0).toUpperCase()}
                         </div>
                         <span style={{ fontWeight: 500 }}>{c.name}</span>
+                        {missingFields(c).length > 0 && (
+                          <span className="badge badge-yellow" title={`Falta: ${missingFields(c).join(', ')}`}>
+                            Faltan {missingFields(c).length}
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td><div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Building2 size={14} color="#94a3b8" />{c.company || '—'}</div></td>
@@ -354,6 +416,18 @@ export default function Contacts() {
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button className="btn-icon" title="Ver ficha 360°" onClick={() => setDetailId(c.id)}><Eye size={14} /></button>
                         <button className="btn-icon" onClick={() => openEdit(c)}><Pencil size={14} /></button>
+                        <div style={{ position:'relative' }}>
+                          <button className="btn-icon" title="Acciones rápidas" onClick={() => setActionContactId(current => current === c.id ? null : c.id)}><MoreHorizontal size={15}/></button>
+                          {actionContactId === c.id && (
+                            <div style={{ position:'absolute', right:0, top:'calc(100% + 5px)', width:190, background:'#fff', border:'1px solid #e2e8f0', borderRadius:9, boxShadow:'0 8px 24px rgba(0,0,0,.14)', padding:5, zIndex:40 }}>
+                              <button className="quick-action-menu-item" onClick={() => copyValue(c.phone, 'Teléfono')}><Phone size={14}/>Copiar teléfono</button>
+                              <button className="quick-action-menu-item" onClick={() => copyValue(c.email, 'Correo')}><Mail size={14}/>Copiar correo</button>
+                              <button className="quick-action-menu-item" onClick={() => openWhatsApp(c)}><MessageCircle size={14}/>Abrir WhatsApp</button>
+                              <button className="quick-action-menu-item" onClick={() => { setQuickTask({ contact:c, title:`Contactar con ${c.name}`, type:'llamada', scheduled_at:'' }); setActionContactId(null); }}><CalendarPlus size={14}/>Crear tarea</button>
+                              <button className="quick-action-menu-item" onClick={() => openOpportunityFor(c)}><Target size={14}/>Crear oportunidad</button>
+                            </div>
+                          )}
+                        </div>
                         <button
                           className="btn-icon"
                           title="Eliminar contacto y todos sus datos"
@@ -472,6 +546,24 @@ export default function Contacts() {
       )}
 
       {detailId && <ContactDetail contactId={detailId} onClose={() => setDetailId(null)} />}
+
+      {quickTask && (
+        <div className="modal-overlay" onClick={event => event.target === event.currentTarget && setQuickTask(null)}>
+          <div className="modal" style={{ maxWidth:430 }}>
+            <div className="modal-header"><h3>Crear tarea para {quickTask.contact.name}</h3><button className="btn-icon" onClick={() => setQuickTask(null)}><X size={18}/></button></div>
+            <form onSubmit={saveQuickTask}>
+              <div className="modal-body">
+                <div className="input-group"><label>Tarea *</label><input className="input" value={quickTask.title} onChange={event => setQuickTask(current => ({ ...current, title:event.target.value }))} required/></div>
+                <div className="form-grid">
+                  <div className="input-group"><label>Tipo</label><select className="input" value={quickTask.type} onChange={event => setQuickTask(current => ({ ...current, type:event.target.value }))}><option value="llamada">Llamada</option><option value="tarea">Tarea</option><option value="recordatorio">Recordatorio</option><option value="reunion">Reunión</option></select></div>
+                  <div className="input-group"><label>Fecha y hora *</label><input className="input" type="datetime-local" value={quickTask.scheduled_at} onChange={event => setQuickTask(current => ({ ...current, scheduled_at:event.target.value }))} required/></div>
+                </div>
+              </div>
+              <div className="modal-footer"><button type="button" className="btn btn-secondary" onClick={() => setQuickTask(null)}>Cancelar</button><button className="btn btn-primary">Crear tarea</button></div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Import CSV modal */}
       {importModal && (

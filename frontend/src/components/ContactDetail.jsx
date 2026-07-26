@@ -22,6 +22,12 @@ export default function ContactDetail({ contactId, onClose }) {
   );
 
   const oppTotal = (data.opportunities||[]).reduce((s,o)=>s+Number(o.amount||0),0);
+  const missingFields = [
+    !data.phone && 'teléfono',
+    !data.email && 'correo',
+    !data.company && 'empresa',
+    !data.postal_code && 'código postal',
+  ].filter(Boolean);
 
   return (
     <>
@@ -46,6 +52,11 @@ export default function ContactDetail({ contactId, onClose }) {
         </div>
 
         <div style={{ padding:20, display:'flex', flexDirection:'column', gap:20 }}>
+          {missingFields.length > 0 && (
+            <div style={{ padding:'10px 12px', borderRadius:9, background:'#fffbeb', border:'1px solid #fde68a', color:'#92400e', fontSize:12 }}>
+              <strong>Información incompleta:</strong> falta {missingFields.join(', ')}.
+            </div>
+          )}
           {/* Info */}
           <div className="card" style={{ padding:16 }}>
             <h4 style={{ fontWeight:600, marginBottom:12, fontSize:13, color:'#64748b', textTransform:'uppercase', letterSpacing:.5 }}>Información de contacto</h4>

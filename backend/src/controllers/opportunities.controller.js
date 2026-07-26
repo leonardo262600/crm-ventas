@@ -5,7 +5,8 @@ const { syncDemoTasks, completePendingDemoTasks } = require('../services/demoAut
 const list = async (req, res) => {
   const { stage_id, status, assigned_to } = req.query;
   let sql = `SELECT o.*, ps.name as stage_name, ps.color as stage_color,
-             c.name as contact_name, u.name as assigned_name
+             c.name as contact_name, c.company, c.phone, c.email, c.postal_code,
+             u.name as assigned_name
              FROM opportunities o
              LEFT JOIN pipeline_stages ps ON o.stage_id = ps.id
              LEFT JOIN contacts c ON o.contact_id = c.id

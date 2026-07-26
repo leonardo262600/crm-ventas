@@ -25,6 +25,7 @@ import Settings from './pages/Settings';
 import Backup from './pages/Backup';
 import FollowUps from './pages/FollowUps';
 import DailyProspecting from './pages/DailyProspecting';
+import Demos from './pages/Demos';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -42,6 +43,7 @@ const AppRoutes = () => {
         <Route index                element={<Dashboard />} />
         <Route path="contacts"      element={<Contacts />} />
         <Route path="opportunities" element={<Opportunities />} />
+        <Route path="demos"          element={<Demos />} />
         <Route path="activities"    element={<Activities />} />
         <Route path="followups"     element={<FollowUps />} />
         <Route path="prospecting"   element={<DailyProspecting />} />

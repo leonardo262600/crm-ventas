@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
-  LayoutDashboard, Users2, Target, CalendarCheck,
+  LayoutDashboard, Users2, Target, CalendarCheck, CalendarClock,
   BarChart2, Users, LogOut,
   MessageSquare, Settings, UserCircle, SlidersHorizontal, DatabaseBackup, Building2
 } from 'lucide-react';
@@ -20,6 +20,7 @@ const nav = [
   { to: '/',               icon: LayoutDashboard, label: 'Inicio',             mobileLabel: 'Inicio', exact: true },
   { to: '/contacts',       icon: Users2,          label: 'Contactos',          mobileLabel: 'Contactos' },
   { to: '/opportunities',  icon: Target,          label: 'Oportunidades',      mobileLabel: 'Oportun.' },
+  { to: '/demos',          icon: CalendarClock,   label: 'Centro de demos',    mobileLabel: 'Demos' },
   { to: '/followups',      icon: CalendarCheck,   label: 'Seguimientos',       mobileLabel: 'Seguim.' },
   { to: '/activities',     icon: CalendarCheck,   label: 'Tareas diarias',     mobileLabel: 'T. diarias' },
   { to: '/prospecting',    icon: Building2,       label: 'Prospección diaria', mobileLabel: 'P. diaria' },
