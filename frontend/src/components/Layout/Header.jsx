@@ -15,6 +15,7 @@ export default function Header() {
   const [overdue, setOverdue] = useState([]);
   const [showNotif, setShowNotif] = useState(false);
   const ref = useRef();
+  const notificationRef = useRef();
 
   useEffect(() => {
     Promise.all([api.get('/activities', { params: { status: 'pendiente' } }), api.get('/activities/followups')])
@@ -39,7 +40,10 @@ export default function Header() {
   }, [query]);
 
   useEffect(() => {
-    const handler = e => { if (ref.current && !ref.current.contains(e.target)) { setOpen(false); setShowNotif(false); } };
+    const handler = e => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      if (notificationRef.current && !notificationRef.current.contains(e.target)) setShowNotif(false);
+    };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
@@ -125,7 +129,7 @@ export default function Header() {
 
       <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:12 }}>
         {/* Notifications */}
-        <div style={{ position:'relative' }} ref={null}>
+        <div style={{ position:'relative' }} ref={notificationRef}>
           <button className="btn-icon" onClick={() => { setShowNotif(v => !v); setOpen(false); }} style={{ position:'relative' }}>
             <Bell size={18}/>
             {(upcoming.length + overdue.length) > 0 && (
