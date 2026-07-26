@@ -6,6 +6,7 @@ import ContactDetail from '../components/ContactDetail';
 import ExportButtons from '../components/ExportButtons';
 
 const empty = { name:'', email:'', phone:'', company:'', position:'', address:'', tags:'', notes:'', assigned_to:'' };
+const emptyOpportunity = { enabled:false, title:'', stage_id:'', amount:'', demo_date:'' };
 
 export default function Contacts() {
   const [contacts, setContacts] = useState([]);
@@ -16,6 +17,8 @@ export default function Contacts() {
   const [form, setForm] = useState(empty);
   const [editId, setEditId] = useState(null);
   const [users, setUsers] = useState([]);
+  const [stages, setStages] = useState([]);
+  const [opportunityForm, setOpportunityForm] = useState(emptyOpportunity);
   const [detailId, setDetailId] = useState(null);
   const [importModal, setImportModal] = useState(false);
   const [csvPreview, setCsvPreview] = useState([]);
@@ -41,20 +44,62 @@ export default function Contacts() {
     setSelectedIds([]);
     load();
   }, [search, tagFilter]);
-  useEffect(() => { api.get('/users').then(r => setUsers(r.data)).catch(() => {}); }, []);
+  useEffect(() => {
+    api.get('/users').then(r => setUsers(r.data)).catch(() => {});
+    api.get('/opportunities/stages').then(r => setStages(r.data)).catch(() => {});
+  }, []);
 
-  const openNew = () => { setForm(empty); setEditId(null); setModal(true); };
-  const openEdit = (c) => { setForm({ ...c, assigned_to: c.assigned_to || '' }); setEditId(c.id); setModal(true); };
+  const openNew = () => {
+    setForm(empty);
+    setOpportunityForm({ ...emptyOpportunity, stage_id:stages[0]?.id || '' });
+    setEditId(null);
+    setModal(true);
+  };
+  const openEdit = (c) => {
+    setForm({ ...c, assigned_to: c.assigned_to || '' });
+    setOpportunityForm({ ...emptyOpportunity, title:c.company || c.name, stage_id:stages[0]?.id || '' });
+    setEditId(c.id);
+    setModal(true);
+  };
 
   const save = async (e) => {
     e.preventDefault();
     const persist = payload => editId
       ? api.put(`/contacts/${editId}`, payload)
       : api.post('/contacts', payload);
+    const persistAll = async payload => {
+      const response = await persist(payload);
+      if (opportunityForm.enabled) {
+        try {
+          await api.post('/opportunities', {
+            title: opportunityForm.title,
+            contact_id: editId || response.data.id,
+            stage_id: opportunityForm.stage_id || null,
+            amount: opportunityForm.amount || 0,
+            demo_date: opportunityForm.demo_date,
+            demo_status: 'programada',
+            assigned_to: form.assigned_to || null,
+            probability: 50,
+            temperature: 'templada',
+            followup_phase: 0,
+          });
+        } catch (opportunityError) {
+          toast.error(`El contacto se guardó, pero la oportunidad no: ${opportunityError.response?.data?.message || 'error inesperado'}`);
+          setModal(false);
+          load();
+          return;
+        }
+      }
+      toast.success(
+        opportunityForm.enabled
+          ? `${editId ? 'Contacto actualizado' : 'Contacto creado'} y oportunidad creada`
+          : editId ? 'Contacto actualizado' : 'Contacto creado'
+      );
+      setModal(false);
+      load();
+    };
     try {
-      await persist(form);
-      toast.success(editId ? 'Contacto actualizado' : 'Contacto creado');
-      setModal(false); load();
+      await persistAll(form);
     } catch (err) {
       const data = err.response?.data;
       if (err.response?.status === 409 && data?.code === 'DUPLICATE_CONTACT') {
@@ -66,9 +111,7 @@ export default function Contacts() {
         );
         if (!accepted) return;
         try {
-          await persist({ ...form, allow_duplicate:true });
-          toast.success(editId ? 'Contacto actualizado' : 'Contacto creado');
-          setModal(false); load();
+          await persistAll({ ...form, allow_duplicate:true });
         } catch (retryError) {
           toast.error(retryError.response?.data?.message || 'Error');
         }
@@ -330,6 +373,47 @@ export default function Contacts() {
                 <div className="input-group"><label>Etiquetas (separadas por comas)</label><input className="input" value={form.tags} placeholder="prospecto, cliente, vip" onChange={e => setForm(f=>({...f,tags:e.target.value}))} /></div>
                 <div className="input-group"><label>Dirección</label><input className="input" value={form.address} onChange={e => setForm(f=>({...f,address:e.target.value}))} /></div>
                 <div className="input-group"><label>Notas</label><textarea className="input" rows={3} value={form.notes} onChange={e => setForm(f=>({...f,notes:e.target.value}))} style={{ resize: 'vertical' }} /></div>
+                <div style={{ marginTop:16, padding:14, border:'1px solid #bfdbfe', background:'#eff6ff', borderRadius:10 }}>
+                    <label style={{ display:'flex', alignItems:'center', gap:9, cursor:'pointer', fontWeight:700, color:'#1e3a8a' }}>
+                      <input
+                        type="checkbox"
+                        checked={opportunityForm.enabled}
+                        onChange={e => setOpportunityForm(current => ({
+                          ...current,
+                          enabled:e.target.checked,
+                          title:current.title || form.company || form.name,
+                          stage_id:current.stage_id || stages[0]?.id || '',
+                        }))}
+                      />
+                      {editId ? 'Crear una oportunidad para este contacto' : 'Crear también una oportunidad'}
+                    </label>
+                    <p style={{ fontSize:12, color:'#64748b', margin:'5px 0 0 25px' }}>
+                      Quedará vinculada al contacto y, si indicas una demo, se crearán sus tareas automáticamente.
+                    </p>
+                    {opportunityForm.enabled && (
+                      <div className="form-grid" style={{ marginTop:14 }}>
+                        <div className="input-group" style={{ gridColumn:'1/-1' }}>
+                          <label>Título de la oportunidad *</label>
+                          <input className="input" value={opportunityForm.title} onChange={e => setOpportunityForm(current => ({ ...current, title:e.target.value }))} required />
+                        </div>
+                        <div className="input-group">
+                          <label>Etapa</label>
+                          <select className="input" value={opportunityForm.stage_id} onChange={e => setOpportunityForm(current => ({ ...current, stage_id:e.target.value }))}>
+                            <option value="">Sin etapa</option>
+                            {stages.map(stage => <option key={stage.id} value={stage.id}>{stage.name}</option>)}
+                          </select>
+                        </div>
+                        <div className="input-group">
+                          <label>Importe estimado (€)</label>
+                          <input className="input" type="number" min="0" step="0.01" value={opportunityForm.amount} onChange={e => setOpportunityForm(current => ({ ...current, amount:e.target.value }))} />
+                        </div>
+                        <div className="input-group" style={{ gridColumn:'1/-1' }}>
+                          <label>Fecha y hora de la demo *</label>
+                          <input className="input" type="datetime-local" value={opportunityForm.demo_date} onChange={e => setOpportunityForm(current => ({ ...current, demo_date:e.target.value }))} required />
+                        </div>
+                      </div>
+                    )}
+                  </div>
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setModal(false)}>Cancelar</button>
