@@ -36,6 +36,7 @@ const dashboard = async (req, res) => {
         SUM(next_action_at IS NULL) AS without_next_action,
         SUM(demo_date >= DATE_SUB(NOW(), INTERVAL 7 DAY)) AS demos_week,
         SUM(DATE(demo_date) = CURDATE() AND demo_status IN ('programada','reagendada')) AS demos_today,
+        SUM(demo_date < NOW() AND demo_status IN ('programada','reagendada')) AS demo_results_pending,
         SUM(demo_status = 'no_show') AS no_shows_pending,
         SUM(stage_id IN (SELECT id FROM pipeline_stages WHERE tenant_id=? AND name='Propuesta enviada')) AS proposals_pending,
         SUM(stage_id IN (SELECT id FROM pipeline_stages WHERE tenant_id=? AND name='Decisión pendiente')) AS decisions_pending,

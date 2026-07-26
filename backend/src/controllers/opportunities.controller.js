@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const { runAutomations } = require('../services/automations.service');
+const { syncDemoTasks, completePendingDemoTasks } = require('../services/demoAutomation.service');
 
 const list = async (req, res) => {
   const { stage_id, status, assigned_to } = req.query;
@@ -58,18 +59,36 @@ const create = async (req, res) => {
     'latest_response','decision_date','resume_date','followup_phase','demo_status','no_show_step','no_show_at'
   ];
   const values = fields.map(field => req.body[field] === '' || req.body[field] === undefined ? null : req.body[field]);
+  const connection = await db.getConnection();
   try {
-    const [result] = await db.query(
+    await connection.beginTransaction();
+    const [result] = await connection.query(
       `INSERT INTO opportunities (tenant_id, ${fields.join(',')}, created_by)
        VALUES (?,${fields.map(() => '?').join(',')},?)`,
       [req.user.tenant_id, ...values, req.user.id]
     );
+    await syncDemoTasks(connection, {
+      tenantId: req.user.tenant_id,
+      userId: req.user.id,
+      opportunityId: result.insertId,
+      title: req.body.title,
+      contactId: req.body.contact_id,
+      assignedTo: req.body.assigned_to,
+      demoDate: req.body.demo_date,
+      demoStatus: req.body.demo_status || 'programada',
+    });
+    await connection.commit();
     runAutomations('opportunity_created', {
       tenant_id: req.user.tenant_id, user_id: req.user.id,
       record: { id: result.insertId, title: req.body.title, contact_id: req.body.contact_id, stage_id: req.body.stage_id, amount: req.body.amount, assigned_to: req.body.assigned_to }
     });
     res.status(201).json({ id: result.insertId, title: req.body.title });
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) {
+    await connection.rollback();
+    res.status(500).json({ message: err.message });
+  } finally {
+    connection.release();
+  }
 };
 
 const update = async (req, res) => {
@@ -86,14 +105,32 @@ const update = async (req, res) => {
     if (field === 'status') return req.body[field] || 'open';
     return req.body[field] === '' || req.body[field] === undefined ? null : req.body[field];
   });
+  const connection = await db.getConnection();
   try {
-    await db.query(
+    await connection.beginTransaction();
+    await connection.query(
       `UPDATE opportunities SET ${fields.map(field => `${field}=?`).join(',')}
        WHERE id=? AND tenant_id=?`,
       [...values, req.params.id, req.user.tenant_id]
     );
+    await syncDemoTasks(connection, {
+      tenantId: req.user.tenant_id,
+      userId: req.user.id,
+      opportunityId: req.params.id,
+      title: req.body.title,
+      contactId: req.body.contact_id,
+      assignedTo: req.body.assigned_to,
+      demoDate: req.body.demo_date,
+      demoStatus: req.body.demo_status || 'programada',
+    });
+    await connection.commit();
     res.json({ message: 'Oportunidad actualizada' });
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) {
+    await connection.rollback();
+    res.status(500).json({ message: err.message });
+  } finally {
+    connection.release();
+  }
 };
 
 const moveStage = async (req, res) => {
@@ -139,9 +176,11 @@ const updateFollowupPhase = async (req, res) => {
 
 const updateDemoStatus = async (req, res) => {
   const { demo_status, demo_date } = req.body;
-  const allowed = ['programada', 'realizada', 'no_show', 'reagendada'];
+  const allowed = ['programada', 'realizada', 'no_show', 'reagendada', 'cancelada'];
   if (!allowed.includes(demo_status)) return res.status(400).json({ message: 'Estado de demo no válido' });
+  const connection = await db.getConnection();
   try {
+    await connection.beginTransaction();
     let sql = 'UPDATE opportunities SET demo_status=?';
     const params = [demo_status];
     if (demo_status === 'no_show') {
@@ -153,13 +192,41 @@ const updateDemoStatus = async (req, res) => {
       params.push(demo_date, demo_date);
     }
     if (demo_status === 'realizada') {
-      sql += ', no_show_step=0';
+      sql += ", no_show_step=0, followup_phase=0, next_action='Enviar resumen y propuesta después de la demo', next_action_type='email', next_action_at=DATE_ADD(NOW(), INTERVAL 1 DAY)";
+    }
+    if (demo_status === 'cancelada') {
+      sql += ", next_action='Valorar si conviene retomar el contacto', next_action_type='llamada', next_action_at=DATE_ADD(NOW(), INTERVAL 30 DAY)";
     }
     sql += ' WHERE id=? AND tenant_id=?';
     params.push(req.params.id, req.user.tenant_id);
-    await db.query(sql, params);
+    await connection.query(sql, params);
+
+    const [[opportunity]] = await connection.query(
+      'SELECT * FROM opportunities WHERE id=? AND tenant_id=?',
+      [req.params.id, req.user.tenant_id]
+    );
+    if (demo_status === 'reagendada') {
+      await syncDemoTasks(connection, {
+        tenantId: req.user.tenant_id,
+        userId: req.user.id,
+        opportunityId: opportunity.id,
+        title: opportunity.title,
+        contactId: opportunity.contact_id,
+        assignedTo: opportunity.assigned_to,
+        demoDate: opportunity.demo_date,
+        demoStatus,
+      });
+    } else {
+      await completePendingDemoTasks(connection, req.user.tenant_id, req.params.id);
+    }
+    await connection.commit();
     res.json({ message: 'Estado de la demo actualizado' });
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) {
+    await connection.rollback();
+    res.status(500).json({ message: err.message });
+  } finally {
+    connection.release();
+  }
 };
 
 const updateNoShowStep = async (req, res) => {

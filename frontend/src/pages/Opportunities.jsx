@@ -41,6 +41,7 @@ export default function Opportunities() {
   const [dragging, setDragging] = useState(null);
   const [wonModal, setWonModal] = useState(null);
   const [lostModal, setLostModal] = useState(null);
+  const [rescheduleModal, setRescheduleModal] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const load = () => Promise.all([
@@ -130,6 +131,43 @@ export default function Opportunities() {
     } catch (error) { toast.error(error.response?.data?.message || 'No se pudo marcar'); }
   };
 
+  const setDemoResult = async (opp, demo_status) => {
+    try {
+      await api.patch(`/opportunities/${opp.id}/demo-status`, { demo_status });
+      const messages = {
+        realizada: 'Demo realizada. Seguimiento inicial programado.',
+        no_show: 'Marcada como No Show. Intento de reagendado programado.',
+        cancelada: 'Demo cancelada. Revisión futura programada.',
+      };
+      toast.success(messages[demo_status] || 'Resultado guardado');
+      load();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'No se pudo guardar el resultado');
+    }
+  };
+
+  const saveReschedule = async e => {
+    e.preventDefault();
+    try {
+      await api.patch(`/opportunities/${rescheduleModal.id}/demo-status`, {
+        demo_status:'reagendada',
+        demo_date:rescheduleModal.demo_date,
+      });
+      toast.success('Demo reagendada y tareas actualizadas');
+      setRescheduleModal(null);
+      load();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'No se pudo reagendar');
+    }
+  };
+
+  const pendingDemoResults = opps.filter(opp =>
+    opp.status === 'open'
+    && opp.demo_date
+    && ['programada', 'reagendada'].includes(opp.demo_status)
+    && new Date(opp.demo_date) < new Date()
+  );
+
   const badgeClass = (status) => status==='won'?'badge-green':status==='lost'?'badge-red':'badge-blue';
 
   return (
@@ -154,6 +192,36 @@ export default function Opportunities() {
           <button className="btn btn-primary" onClick={() => openNew()}><Plus size={16} />Nueva oportunidad</button>
         </div>
       </div>
+
+      {pendingDemoResults.length > 0 && (
+        <div className="card" style={{ marginBottom:20, border:'1px solid #fbbf24', background:'#fffbeb' }}>
+          <div style={{ display:'flex', gap:10, alignItems:'flex-start', marginBottom:12 }}>
+            <TriangleAlert size={20} color="#b45309" style={{ flexShrink:0 }} />
+            <div>
+              <h3 style={{ fontWeight:700, color:'#92400e' }}>Indica el resultado de {pendingDemoResults.length === 1 ? 'esta demo' : 'estas demos'}</h3>
+              <p style={{ fontSize:13, color:'#a16207' }}>No desaparecerán de esta lista hasta que registres qué ocurrió.</p>
+            </div>
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            {pendingDemoResults.map(opp => (
+              <div key={opp.id} style={{ background:'#fff', borderRadius:10, padding:12, display:'flex', gap:12, alignItems:'center', flexWrap:'wrap' }}>
+                <div style={{ flex:'1 1 220px' }}>
+                  <strong style={{ fontSize:14 }}>{opp.contact_name || opp.title}</strong>
+                  <p style={{ fontSize:12, color:'#64748b' }}>
+                    {new Date(opp.demo_date).toLocaleString('es-ES', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}
+                  </p>
+                </div>
+                <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                  <button className="btn btn-primary btn-sm" onClick={() => setDemoResult(opp, 'realizada')}>Realizada</button>
+                  <button className="btn btn-secondary btn-sm" onClick={() => setDemoResult(opp, 'no_show')}>No Show</button>
+                  <button className="btn btn-secondary btn-sm" onClick={() => setRescheduleModal({ id:opp.id, title:opp.contact_name || opp.title, demo_date:'' })}>Reagendar</button>
+                  <button className="btn btn-secondary btn-sm" onClick={() => setDemoResult(opp, 'cancelada')}>Cancelada</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="kanban-board">
         {stages.map(stage => {
@@ -304,7 +372,7 @@ export default function Opportunities() {
                   <div className="input-group"><label>Fecha de la demo</label><input className="input" type="datetime-local" value={form.demo_date} onChange={e=>setForm(f=>({...f,demo_date:e.target.value}))}/></div>
                   <div className="input-group"><label>Estado de la demo</label>
                     <select className="input" value={form.demo_status || 'programada'} onChange={e=>setForm(f=>({...f,demo_status:e.target.value}))}>
-                      <option value="programada">Programada</option><option value="realizada">Realizada</option><option value="no_show">No Show</option><option value="reagendada">Reagendada</option>
+                      <option value="programada">Programada</option><option value="realizada">Realizada</option><option value="no_show">No Show</option><option value="reagendada">Reagendada</option><option value="cancelada">Cancelada</option>
                     </select>
                   </div>
                   <div className="input-group"><label>Decisor principal</label><input className="input" value={form.decision_maker} onChange={e=>setForm(f=>({...f,decision_maker:e.target.value}))}/></div>
@@ -357,6 +425,37 @@ export default function Opportunities() {
           </div>
         </div>
       )}
+
+      {rescheduleModal && (
+        <div className="modal-overlay" onClick={e => e.target===e.currentTarget && setRescheduleModal(null)}>
+          <div className="modal" style={{ maxWidth:420 }}>
+            <div className="modal-header">
+              <h3>Reagendar demo</h3>
+              <button className="btn-icon" onClick={() => setRescheduleModal(null)}><X size={18}/></button>
+            </div>
+            <form onSubmit={saveReschedule}>
+              <div className="modal-body">
+                <p style={{ fontSize:13, color:'#64748b', marginBottom:14 }}>{rescheduleModal.title}</p>
+                <div className="input-group">
+                  <label>Nueva fecha y hora</label>
+                  <input
+                    className="input"
+                    type="datetime-local"
+                    value={rescheduleModal.demo_date}
+                    onChange={e => setRescheduleModal(current => ({ ...current, demo_date:e.target.value }))}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setRescheduleModal(null)}>Cancelar</button>
+                <button type="submit" className="btn btn-primary">Guardar nueva fecha</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Won Modal */}
       {wonModal && (
         <div className="modal-overlay" onClick={e => e.target===e.currentTarget && setWonModal(null)}>

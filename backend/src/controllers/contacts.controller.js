@@ -1,6 +1,30 @@
 const db = require('../config/db');
 const { runAutomations } = require('../services/automations.service');
 
+const normalizeText = value => String(value || '').trim().toLocaleLowerCase('es');
+const normalizePhone = value => String(value || '').replace(/\D/g, '').replace(/^34(?=\d{9}$)/, '');
+
+const findDuplicates = async (tenantId, data, excludeId = null) => {
+  const [contacts] = await db.query(
+    `SELECT id,name,email,phone,company FROM contacts
+     WHERE tenant_id=?${excludeId ? ' AND id<>?' : ''}`,
+    excludeId ? [tenantId, excludeId] : [tenantId]
+  );
+  const email = normalizeText(data.email);
+  const phone = normalizePhone(data.phone);
+  const name = normalizeText(data.name);
+  const company = normalizeText(data.company);
+
+  return contacts.filter(contact => {
+    const sameEmail = email && normalizeText(contact.email) === email;
+    const samePhone = phone && normalizePhone(contact.phone) === phone;
+    const sameIdentity = name && company
+      && normalizeText(contact.name) === name
+      && normalizeText(contact.company) === company;
+    return sameEmail || samePhone || sameIdentity;
+  });
+};
+
 const list = async (req, res) => {
   const { search, tag } = req.query;
   let sql = `SELECT c.*, u.name as assigned_name
@@ -58,6 +82,16 @@ const getOne = async (req, res) => {
 const create = async (req, res) => {
   const { name, email, phone, company, position, address, tags, notes, assigned_to } = req.body;
   try {
+    if (!req.body.allow_duplicate) {
+      const duplicates = await findDuplicates(req.user.tenant_id, req.body);
+      if (duplicates.length) {
+        return res.status(409).json({
+          code: 'DUPLICATE_CONTACT',
+          message: 'Ya existe un contacto con datos coincidentes',
+          duplicates,
+        });
+      }
+    }
     const [result] = await db.query(
       `INSERT INTO contacts (tenant_id, name, email, phone, company, position, address, tags, notes, assigned_to, created_by)
        VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
@@ -74,6 +108,16 @@ const create = async (req, res) => {
 const update = async (req, res) => {
   const { name, email, phone, company, position, address, tags, notes, assigned_to } = req.body;
   try {
+    if (!req.body.allow_duplicate) {
+      const duplicates = await findDuplicates(req.user.tenant_id, req.body, Number(req.params.id));
+      if (duplicates.length) {
+        return res.status(409).json({
+          code: 'DUPLICATE_CONTACT',
+          message: 'Otro contacto tiene datos coincidentes',
+          duplicates,
+        });
+      }
+    }
     await db.query(
       `UPDATE contacts SET name=?,email=?,phone=?,company=?,position=?,address=?,tags=?,notes=?,assigned_to=?
        WHERE id=? AND tenant_id=?`,

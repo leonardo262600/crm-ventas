@@ -67,6 +67,7 @@ export default function Dashboard() {
         <div className="daily-plan-grid">
           {[
             { label:'Demos de hoy', value:stats.demos_today || 0, href:'/opportunities', color:'#3454d1' },
+            { label:'Resultados de demo', value:stats.demo_results_pending || 0, href:'/opportunities', color:'#b45309' },
             { label:'Seguimientos vencidos', value:stats.overdue_followups || 0, href:'/followups', color:'#dc2626' },
             { label:'Tareas de hoy', value:stats.tasks_today || 0, href:'/activities', color:'#d97706' },
             { label:'No Shows pendientes', value:stats.no_shows_pending || 0, href:'/followups', color:'#7c3aed' },

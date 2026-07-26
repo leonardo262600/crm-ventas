@@ -43,16 +43,34 @@ export default function Contacts() {
 
   const save = async (e) => {
     e.preventDefault();
+    const persist = payload => editId
+      ? api.put(`/contacts/${editId}`, payload)
+      : api.post('/contacts', payload);
     try {
-      if (editId) {
-        await api.put(`/contacts/${editId}`, form);
-        toast.success('Contacto actualizado');
-      } else {
-        await api.post('/contacts', form);
-        toast.success('Contacto creado');
-      }
+      await persist(form);
+      toast.success(editId ? 'Contacto actualizado' : 'Contacto creado');
       setModal(false); load();
-    } catch (err) { toast.error(err.response?.data?.message || 'Error'); }
+    } catch (err) {
+      const data = err.response?.data;
+      if (err.response?.status === 409 && data?.code === 'DUPLICATE_CONTACT') {
+        const matches = data.duplicates
+          .map(item => `${item.name}${item.company ? ` · ${item.company}` : ''}`)
+          .join('\n');
+        const accepted = confirm(
+          `Parece que este contacto ya existe:\n\n${matches}\n\n¿Quieres guardarlo igualmente?`
+        );
+        if (!accepted) return;
+        try {
+          await persist({ ...form, allow_duplicate:true });
+          toast.success(editId ? 'Contacto actualizado' : 'Contacto creado');
+          setModal(false); load();
+        } catch (retryError) {
+          toast.error(retryError.response?.data?.message || 'Error');
+        }
+        return;
+      }
+      toast.error(data?.message || 'Error');
+    }
   };
 
   const parseCSV = (text) => {
