@@ -24,6 +24,7 @@ import WorkflowBuilder from './pages/WorkflowBuilder';
 import Settings from './pages/Settings';
 import Backup from './pages/Backup';
 import FollowUps from './pages/FollowUps';
+import DailyProspecting from './pages/DailyProspecting';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -43,6 +44,7 @@ const AppRoutes = () => {
         <Route path="opportunities" element={<Opportunities />} />
         <Route path="activities"    element={<Activities />} />
         <Route path="followups"     element={<FollowUps />} />
+        <Route path="prospecting"   element={<DailyProspecting />} />
         <Route path="quotes"        element={<Quotes />} />
         <Route path="invoices"      element={<Invoices />} />
         <Route path="products"      element={<Products />} />

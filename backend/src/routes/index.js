@@ -21,6 +21,7 @@ const priceCtrl      = require('../controllers/pricelists.controller');
 const chatCtrl       = require('../controllers/chat.controller');
 const profileCtrl    = require('../controllers/profile.controller');
 const settingsCtrl   = require('../controllers/settings.controller');
+const prospectingCtrl = require('../controllers/prospecting.controller');
 
 // Multer storage para logos
 const logoStorage = multer.diskStorage({
@@ -72,6 +73,13 @@ router.get('/contacts/:id',    auth, contactsCtrl.getOne);
 router.post('/contacts',       auth, contactsCtrl.create);
 router.put('/contacts/:id',    auth, contactsCtrl.update);
 router.delete('/contacts/:id', auth, requireRole('admin','gerente'), contactsCtrl.remove);
+
+// ── Prospección diaria ───────────────────────────────────
+router.get('/prospecting', auth, prospectingCtrl.list);
+router.get('/prospecting/summary', auth, prospectingCtrl.summary);
+router.post('/prospecting/bulk', auth, prospectingCtrl.bulkCreate);
+router.patch('/prospecting/:id', auth, prospectingCtrl.update);
+router.post('/prospecting/:id/convert', auth, prospectingCtrl.convert);
 
 // ── Opportunities ─────────────────────────────────────────
 router.get('/opportunities',                auth, oppsCtrl.list);

@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard, Users2, Target, CalendarCheck,
   BarChart2, Users, LogOut,
-  MessageSquare, Settings, UserCircle, SlidersHorizontal, DatabaseBackup
+  MessageSquare, Settings, UserCircle, SlidersHorizontal, DatabaseBackup, Building2
 } from 'lucide-react';
 
 const navStyle = isActive => ({
@@ -22,6 +22,7 @@ const nav = [
   { to: '/opportunities',  icon: Target,          label: 'Oportunidades' },
   { to: '/followups',      icon: CalendarCheck,   label: 'Seguimientos' },
   { to: '/activities',     icon: CalendarCheck,   label: 'Tareas diarias' },
+  { to: '/prospecting',    icon: Building2,       label: 'Prospección diaria' },
   { to: '/communications', icon: MessageSquare,   label: 'Plantillas' },
   { to: '/reports',        icon: BarChart2,       label: 'Informes' },
 ];
