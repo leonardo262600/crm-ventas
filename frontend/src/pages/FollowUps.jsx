@@ -32,6 +32,7 @@ export default function FollowUps() {
   const [filter, setFilter] = useState('vencido');
   const [loading, setLoading] = useState(true);
   const [activity, setActivity] = useState(null);
+  const [templates, setTemplates] = useState([]);
 
   const load = () => {
     setLoading(true);
@@ -41,7 +42,12 @@ export default function FollowUps() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    api.get('/communications/templates')
+      .then(response => setTemplates(response.data))
+      .catch(() => {});
+  }, []);
 
   const filtered = useMemo(
     () => filter === 'todos' ? items : items.filter(item => item.followup_status === filter),
@@ -90,6 +96,41 @@ export default function FollowUps() {
       setItems(current => current.map(row => row.id === item.id ? { ...row, followup_phase: Number(value) } : row));
       toast.success(`Actualizado a ${phaseByValue(value).label}`);
     } catch (error) { toast.error(error.response?.data?.message || 'No se pudo cambiar la fase'); }
+  };
+
+  const prepareWhatsApp = item => {
+    const template = templates.find(row =>
+      row.channel === 'whatsapp' && Number(row.phase || 0) === Number(item.followup_phase || 0)
+    );
+    if (!template) {
+      toast.error(`No hay una plantilla de WhatsApp para la fase ${item.followup_phase || 0}`);
+      return;
+    }
+
+    const nextDate = item.next_action_at
+      ? format(new Date(item.next_action_at), "dd 'de' MMMM 'a las' HH:mm", { locale: es })
+      : '';
+    const variables = {
+      nombre: item.contact_name || '',
+      agencia: item.company || item.title || '',
+      zona: item.zone || '',
+      objetivo: item.main_goal || '',
+      problema: item.current_problem || '',
+      objecion: item.objection_detail || item.objection_type || '',
+      respuesta_objecion: item.objection_response || '',
+      propuesta: item.proposal_period || '',
+      inversion: item.monthly_amount ? `${Number(item.monthly_amount).toLocaleString('es-ES')} €` : '',
+      fecha_proximo_paso: nextDate,
+      hora_proximo_paso: item.next_action_at ? format(new Date(item.next_action_at), 'HH:mm') : '',
+    };
+    const message = template.body
+      .replace(/\{\{(\w+)\}\}/g, (_, key) => variables[key] || '')
+      .replace(/[ \t]+\n/g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+    let phone = (item.phone || '').replace(/\D/g, '');
+    if (phone.length === 9) phone = `34${phone}`;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
   };
 
   if (loading) return <div className="spinner" />;
@@ -161,9 +202,9 @@ export default function FollowUps() {
                       Registrar contacto
                     </button>
                     {item.phone && (
-                      <a className="btn btn-secondary btn-sm" href={`https://wa.me/${item.phone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer">
-                        <MessageCircle size={14}/>WhatsApp
-                      </a>
+                      <button className="btn btn-secondary btn-sm" onClick={() => prepareWhatsApp(item)}>
+                        <MessageCircle size={14}/>Preparar WhatsApp
+                      </button>
                     )}
                     <Link className="btn btn-secondary btn-sm" to={`/opportunities?edit=${item.id}`}>Abrir oportunidad</Link>
                   </div>
