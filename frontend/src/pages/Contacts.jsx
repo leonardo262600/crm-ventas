@@ -20,6 +20,8 @@ export default function Contacts() {
   const [importModal, setImportModal] = useState(false);
   const [csvPreview, setCsvPreview] = useState([]);
   const [importing, setImporting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const fileRef = useRef();
 
   const load = () => {
@@ -35,7 +37,10 @@ export default function Contacts() {
     contacts.flatMap(c => (c.tags || '').split(',').map(t => t.trim()).filter(Boolean))
   )].sort();
 
-  useEffect(() => { load(); }, [search, tagFilter]);
+  useEffect(() => {
+    setSelectedIds([]);
+    load();
+  }, [search, tagFilter]);
   useEffect(() => { api.get('/users').then(r => setUsers(r.data)).catch(() => {}); }, []);
 
   const openNew = () => { setForm(empty); setEditId(null); setModal(true); };
@@ -119,6 +124,47 @@ export default function Contacts() {
     catch (err) { toast.error(err.response?.data?.message || 'Error'); }
   };
 
+  const toggleSelected = id => {
+    setSelectedIds(current =>
+      current.includes(id) ? current.filter(item => item !== id) : [...current, id]
+    );
+  };
+
+  const toggleAllVisible = () => {
+    const visibleIds = contacts.map(contact => contact.id);
+    const allSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.includes(id));
+    setSelectedIds(allSelected ? [] : visibleIds);
+  };
+
+  const bulkDelete = async () => {
+    if (!selectedIds.length) return;
+    const names = contacts
+      .filter(contact => selectedIds.includes(contact.id))
+      .slice(0, 5)
+      .map(contact => `• ${contact.name}`)
+      .join('\n');
+    const remaining = selectedIds.length > 5 ? `\n• y ${selectedIds.length - 5} más` : '';
+    const accepted = confirm(
+      `¿Eliminar definitivamente ${selectedIds.length} contacto${selectedIds.length === 1 ? '' : 's'}?\n\n` +
+      `${names}${remaining}\n\n` +
+      'También se eliminarán todas sus oportunidades, tareas, seguimientos, comunicaciones, presupuestos y facturas.\n\n' +
+      'Esta acción no se puede deshacer.'
+    );
+    if (!accepted) return;
+
+    setBulkDeleting(true);
+    try {
+      const { data } = await api.post('/contacts/bulk-delete', { ids:selectedIds });
+      toast.success(data.message);
+      setSelectedIds([]);
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'No se pudieron eliminar los contactos');
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
   return (
     <div>
       <div className="page-header">
@@ -143,6 +189,24 @@ export default function Contacts() {
       </div>
 
       <div className="card">
+        {selectedIds.length > 0 && (
+          <div style={{
+            display:'flex', justifyContent:'space-between', alignItems:'center', gap:12,
+            padding:'10px 12px', marginBottom:12, borderRadius:9,
+            background:'#fef2f2', border:'1px solid #fecaca', flexWrap:'wrap'
+          }}>
+            <strong style={{ fontSize:13, color:'#991b1b' }}>
+              {selectedIds.length} contacto{selectedIds.length === 1 ? '' : 's'} seleccionado{selectedIds.length === 1 ? '' : 's'}
+            </strong>
+            <div style={{ display:'flex', gap:8 }}>
+              <button className="btn btn-secondary btn-sm" onClick={() => setSelectedIds([])}>Cancelar selección</button>
+              <button className="btn btn-danger btn-sm" disabled={bulkDeleting} onClick={bulkDelete}>
+                <Trash2 size={14}/>
+                {bulkDeleting ? 'Eliminando...' : 'Eliminar seleccionados'}
+              </button>
+            </div>
+          </div>
+        )}
         <div className="search-bar">
           <div className="search-input-wrap" style={{ flex: 1 }}>
             <Search size={16} />
@@ -171,11 +235,29 @@ export default function Contacts() {
           <div className="table-wrap">
             <table>
               <thead>
-                <tr><th>Nombre</th><th>Empresa</th><th>Email</th><th>Teléfono</th><th>Etiquetas</th><th>Asignado a</th><th></th></tr>
+                <tr>
+                  <th style={{ width:38 }}>
+                    <input
+                      type="checkbox"
+                      aria-label="Seleccionar todos los contactos visibles"
+                      checked={contacts.length > 0 && contacts.every(contact => selectedIds.includes(contact.id))}
+                      onChange={toggleAllVisible}
+                    />
+                  </th>
+                  <th>Nombre</th><th>Empresa</th><th>Email</th><th>Teléfono</th><th>Etiquetas</th><th>Asignado a</th><th></th>
+                </tr>
               </thead>
               <tbody>
                 {contacts.map(c => (
-                  <tr key={c.id}>
+                  <tr key={c.id} style={{ background:selectedIds.includes(c.id) ? '#eff6ff' : undefined }}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        aria-label={`Seleccionar ${c.name}`}
+                        checked={selectedIds.includes(c.id)}
+                        onChange={() => toggleSelected(c.id)}
+                      />
+                    </td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg,#0f766e,#134e4a)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, flexShrink: 0 }}>

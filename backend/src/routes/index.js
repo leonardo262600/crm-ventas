@@ -72,6 +72,7 @@ router.get('/contacts',        auth, contactsCtrl.list);
 router.get('/contacts/:id',    auth, contactsCtrl.getOne);
 router.post('/contacts',       auth, contactsCtrl.create);
 router.put('/contacts/:id',    auth, contactsCtrl.update);
+router.post('/contacts/bulk-delete', auth, requireRole('admin','gerente'), contactsCtrl.bulkRemove);
 router.delete('/contacts/:id', auth, requireRole('admin','gerente'), contactsCtrl.remove);
 
 // ── Prospección diaria ───────────────────────────────────
