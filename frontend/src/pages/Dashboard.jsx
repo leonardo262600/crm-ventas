@@ -120,7 +120,7 @@ export default function Dashboard() {
       </div>
 
       {/* Charts row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20, marginBottom: 20 }}>
+      <div className="dashboard-charts-row" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20, marginBottom: 20 }}>
         {/* Area chart */}
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
@@ -153,7 +153,7 @@ export default function Dashboard() {
         </div>
 
         {/* Pipeline donut */}
-        <div className="card">
+        <div className="card pipeline-chart">
           <h3 style={{ fontWeight: 600, marginBottom: 4 }}>Pipeline por etapa</h3>
           <p className="text-muted text-sm" style={{ marginBottom: 16 }}>Oportunidades abiertas</p>
           {pipeline.length ? (
@@ -202,7 +202,7 @@ export default function Dashboard() {
       </div>
 
       {/* Bottom row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+      <div className="dashboard-bottom-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
         {/* Top sellers */}
         <div className="card">
           <h3 style={{ fontWeight: 600, marginBottom: 16 }}>Top vendedores</h3>

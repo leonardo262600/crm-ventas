@@ -217,6 +217,13 @@ tr:hover td { background: #f8fafc; }
     white-space: nowrap;
   }
   .sidebar-nav > a svg { width: 19px; height: 19px; }
+  .nav-label-desktop { display: none !important; }
+  .nav-label-mobile {
+    display: block !important;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   .app-content { margin-left: 0 !important; min-width: 0; }
   .app-main { padding: 14px 12px 20px !important; }
   .app-header {
@@ -239,6 +246,10 @@ tr:hover td { background: #f8fafc; }
   .followup-filter strong { font-size: 22px; }
   .modal { max-height: calc(100vh - 24px); overflow-y: auto; margin: 12px; }
   .table-wrap { -webkit-overflow-scrolling: touch; }
+  .dashboard-charts-row,
+  .dashboard-bottom-row { grid-template-columns: 1fr !important; gap: 14px !important; }
+  .pipeline-chart .recharts-responsive-container { height: 290px !important; }
+  .pipeline-chart .recharts-legend-wrapper { line-height: 1.55; padding: 0 8px; }
 }
 
 @media (display-mode: standalone) {
@@ -252,6 +263,7 @@ tr:hover td { background: #f8fafc; }
 
 /* Tag input */
 .tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; background: var(--primary-light); color: var(--primary-dark); border-radius: 20px; font-size: 11px; font-weight: 500; }
+.nav-label-mobile { display: none; }
 
 /* Spinner */
 .spinner { width: 36px; height: 36px; border: 3px solid #e2e8f0; border-top-color: var(--primary); border-radius: 50%; animation: spin .7s linear infinite; margin: 40px auto; }
