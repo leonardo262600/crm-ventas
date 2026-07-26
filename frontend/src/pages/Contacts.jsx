@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Plus, Search, Pencil, Trash2, User, Phone, Mail, Building2, X, Upload, Eye, Download } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, User, Phone, Mail, Building2, X, Upload, Eye, Copy } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import ContactDetail from '../components/ContactDetail';
 import ExportButtons from '../components/ExportButtons';
 
-const empty = { name:'', email:'', phone:'', company:'', position:'', address:'', tags:'', notes:'', assigned_to:'' };
+const empty = { name:'', email:'', phone:'', company:'', position:'', address:'', postal_code:'', tags:'', notes:'', assigned_to:'' };
 const emptyOpportunity = { enabled:false, title:'', stage_id:'', amount:'', demo_date:'' };
 
 export default function Contacts() {
@@ -173,6 +173,16 @@ export default function Contacts() {
     );
   };
 
+  const copyPostalCode = async postalCode => {
+    if (!postalCode) return;
+    try {
+      await navigator.clipboard.writeText(postalCode);
+      toast.success(`Código postal ${postalCode} copiado`);
+    } catch {
+      toast.error('No se pudo copiar el código postal');
+    }
+  };
+
   const toggleAllVisible = () => {
     const visibleIds = contacts.map(contact => contact.id);
     const allSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.includes(id));
@@ -222,6 +232,7 @@ export default function Contacts() {
               { header: 'Empresa', accessor: 'company' },
               { header: 'Email', accessor: 'email' },
               { header: 'Teléfono', accessor: 'phone' },
+              { header: 'Código postal', accessor: 'postal_code' },
               { header: 'Etiquetas', accessor: 'tags' },
               { header: 'Asignado a', accessor: 'assigned_name' },
             ]}
@@ -287,7 +298,7 @@ export default function Contacts() {
                       onChange={toggleAllVisible}
                     />
                   </th>
-                  <th>Nombre</th><th>Empresa</th><th>Email</th><th>Teléfono</th><th>Etiquetas</th><th>Asignado a</th><th></th>
+                  <th>Nombre</th><th>Empresa</th><th>Email</th><th>Teléfono</th><th>C. postal</th><th>Etiquetas</th><th>Asignado a</th><th></th>
                 </tr>
               </thead>
               <tbody>
@@ -312,6 +323,19 @@ export default function Contacts() {
                     <td><div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Building2 size={14} color="#94a3b8" />{c.company || '—'}</div></td>
                     <td><div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Mail size={14} color="#94a3b8" />{c.email || '—'}</div></td>
                     <td><div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Phone size={14} color="#94a3b8" />{c.phone || '—'}</div></td>
+                    <td>
+                      {c.postal_code ? (
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          title={`Copiar ${c.postal_code}`}
+                          onClick={() => copyPostalCode(c.postal_code)}
+                          style={{ whiteSpace:'nowrap' }}
+                        >
+                          {c.postal_code}<Copy size={12}/>
+                        </button>
+                      ) : '—'}
+                    </td>
                     <td>
                       {c.tags
                         ? c.tags.split(',').map(t => t.trim()).filter(Boolean).map(t => (
@@ -371,7 +395,30 @@ export default function Contacts() {
                   </div>
                 </div>
                 <div className="input-group"><label>Etiquetas (separadas por comas)</label><input className="input" value={form.tags} placeholder="prospecto, cliente, vip" onChange={e => setForm(f=>({...f,tags:e.target.value}))} /></div>
-                <div className="input-group"><label>Dirección</label><input className="input" value={form.address} onChange={e => setForm(f=>({...f,address:e.target.value}))} /></div>
+                <div className="form-grid">
+                  <div className="input-group">
+                    <label>Dirección</label>
+                    <input className="input" value={form.address} onChange={e => setForm(f=>({...f,address:e.target.value}))} />
+                  </div>
+                  <div className="input-group">
+                    <label>Código postal</label>
+                    <div style={{ display:'flex', gap:6 }}>
+                      <input
+                        className="input"
+                        value={form.postal_code || ''}
+                        inputMode="numeric"
+                        maxLength={12}
+                        placeholder="Ej. 03003"
+                        onChange={e => setForm(f=>({...f,postal_code:e.target.value.replace(/[^0-9A-Za-z -]/g,'')}))}
+                      />
+                      {form.postal_code && (
+                        <button type="button" className="btn-icon" title="Copiar código postal" onClick={() => copyPostalCode(form.postal_code)}>
+                          <Copy size={15}/>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
                 <div className="input-group"><label>Notas</label><textarea className="input" rows={3} value={form.notes} onChange={e => setForm(f=>({...f,notes:e.target.value}))} style={{ resize: 'vertical' }} /></div>
                 <div style={{ marginTop:16, padding:14, border:'1px solid #bfdbfe', background:'#eff6ff', borderRadius:10 }}>
                     <label style={{ display:'flex', alignItems:'center', gap:9, cursor:'pointer', fontWeight:700, color:'#1e3a8a' }}>

@@ -32,7 +32,10 @@ const list = async (req, res) => {
              LEFT JOIN users u ON c.assigned_to = u.id
              WHERE c.tenant_id = ?`;
   const params = [req.user.tenant_id];
-  if (search) { sql += ' AND (c.name LIKE ? OR c.email LIKE ? OR c.company LIKE ?)'; params.push(`%${search}%`, `%${search}%`, `%${search}%`); }
+  if (search) {
+    sql += ' AND (c.name LIKE ? OR c.email LIKE ? OR c.company LIKE ? OR c.postal_code LIKE ?)';
+    params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+  }
   if (tag)    { sql += ' AND c.tags LIKE ?'; params.push(`%${tag}%`); }
   sql += ' ORDER BY c.name';
   try {
@@ -80,7 +83,7 @@ const getOne = async (req, res) => {
 };
 
 const create = async (req, res) => {
-  const { name, email, phone, company, position, address, tags, notes, assigned_to } = req.body;
+  const { name, email, phone, company, position, address, postal_code, tags, notes, assigned_to } = req.body;
   try {
     if (!req.body.allow_duplicate) {
       const duplicates = await findDuplicates(req.user.tenant_id, req.body);
@@ -93,9 +96,9 @@ const create = async (req, res) => {
       }
     }
     const [result] = await db.query(
-      `INSERT INTO contacts (tenant_id, name, email, phone, company, position, address, tags, notes, assigned_to, created_by)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-      [req.user.tenant_id, name, email, phone, company, position, address, tags, notes, assigned_to || null, req.user.id]
+      `INSERT INTO contacts (tenant_id, name, email, phone, company, position, address, postal_code, tags, notes, assigned_to, created_by)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [req.user.tenant_id, name, email, phone, company, position, address, postal_code || null, tags, notes, assigned_to || null, req.user.id]
     );
     runAutomations('contact_created', {
       tenant_id: req.user.tenant_id, user_id: req.user.id,
@@ -106,7 +109,7 @@ const create = async (req, res) => {
 };
 
 const update = async (req, res) => {
-  const { name, email, phone, company, position, address, tags, notes, assigned_to } = req.body;
+  const { name, email, phone, company, position, address, postal_code, tags, notes, assigned_to } = req.body;
   try {
     if (!req.body.allow_duplicate) {
       const duplicates = await findDuplicates(req.user.tenant_id, req.body, Number(req.params.id));
@@ -119,9 +122,9 @@ const update = async (req, res) => {
       }
     }
     await db.query(
-      `UPDATE contacts SET name=?,email=?,phone=?,company=?,position=?,address=?,tags=?,notes=?,assigned_to=?
+      `UPDATE contacts SET name=?,email=?,phone=?,company=?,position=?,address=?,postal_code=?,tags=?,notes=?,assigned_to=?
        WHERE id=? AND tenant_id=?`,
-      [name, email, phone, company, position, address, tags, notes, assigned_to || null, req.params.id, req.user.tenant_id]
+      [name, email, phone, company, position, address, postal_code || null, tags, notes, assigned_to || null, req.params.id, req.user.tenant_id]
     );
     res.json({ message: 'Contacto actualizado' });
   } catch (err) { res.status(500).json({ message: err.message }); }

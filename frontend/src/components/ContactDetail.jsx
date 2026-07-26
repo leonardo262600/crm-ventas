@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { X, Mail, Phone, Building2, MapPin, Tag, Target, CalendarCheck, Download, History, ArrowRight } from 'lucide-react';
+import { X, Mail, Phone, Building2, MapPin, Tag, Target, CalendarCheck, Download, History, ArrowRight, Copy } from 'lucide-react';
 import api from '../services/api';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 import { fmtCurrency as fmt } from '../utils/format';
+import toast from 'react-hot-toast';
 
 export default function ContactDetail({ contactId, onClose }) {
   const [data, setData] = useState(null);
@@ -53,6 +54,23 @@ export default function ContactDetail({ contactId, onClose }) {
               {data.phone && <div style={{ display:'flex', gap:10, alignItems:'center' }}><Phone size={15} color="#0f766e"/><span style={{ fontSize:13 }}>{data.phone}</span></div>}
               {data.company && <div style={{ display:'flex', gap:10, alignItems:'center' }}><Building2 size={15} color="#0f766e"/><span style={{ fontSize:13 }}>{data.company}</span></div>}
               {data.address && <div style={{ display:'flex', gap:10, alignItems:'flex-start' }}><MapPin size={15} color="#0f766e" style={{ flexShrink:0, marginTop:2 }}/><span style={{ fontSize:13 }}>{data.address}</span></div>}
+              {data.postal_code && (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  style={{ alignSelf:'flex-start' }}
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(data.postal_code);
+                      toast.success(`Código postal ${data.postal_code} copiado`);
+                    } catch {
+                      toast.error('No se pudo copiar el código postal');
+                    }
+                  }}
+                >
+                  C. postal: {data.postal_code}<Copy size={12}/>
+                </button>
+              )}
               {data.tags && (
                 <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginTop:4 }}>
                   {data.tags.split(',').map(t => <span key={t} className="tag"><Tag size={10}/>{t.trim()}</span>)}
