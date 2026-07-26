@@ -21,6 +21,15 @@ import { fmtCurrency as fmt } from '../utils/format';
 import ExportButtons from '../components/ExportButtons';
 import { FOLLOWUP_PHASES, phaseByValue } from '../utils/followupPhases';
 
+const PHASE_CADENCE = {
+  0: { days:2, action:'Enviar recordatorio con valor', type:'whatsapp' },
+  1: { days:3, action:'Resolver la objeción principal', type:'llamada' },
+  2: { days:2, action:'Pedir una decisión concreta', type:'llamada' },
+  3: { days:3, action:'Realizar último intento activo', type:'whatsapp' },
+  4: { days:4, action:'Cerrar el ciclo de seguimiento', type:'email' },
+  5: { days:30, action:'Revisar si conviene retomar el contacto', type:'llamada' },
+};
+
 export default function Opportunities() {
   const [opps, setOpps] = useState([]);
   const [stages, setStages] = useState([]);
@@ -95,6 +104,22 @@ export default function Opportunities() {
       setWonModal(null); setLostModal(null);
       load();
     } catch { toast.error('Error al cambiar estado'); }
+  };
+
+  const applyPhaseCadence = value => {
+    const phase = Number(value);
+    const cadence = PHASE_CADENCE[phase];
+    const target = new Date();
+    target.setDate(target.getDate() + cadence.days);
+    target.setHours(10, 0, 0, 0);
+    const localTarget = new Date(target.getTime() - target.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    setForm(current => ({
+      ...current,
+      followup_phase: phase,
+      next_action: cadence.action,
+      next_action_type: cadence.type,
+      next_action_at: localTarget,
+    }));
   };
 
   const markNoShow = async opp => {
@@ -295,7 +320,7 @@ export default function Opportunities() {
                 <h4>Objeción y seguimiento</h4>
                 <div className="form-grid">
                   <div className="input-group" style={{gridColumn:'1/-1'}}><label>Fase de seguimiento</label>
-                    <select className="input" value={form.followup_phase ?? 0} onChange={e=>setForm(f=>({...f,followup_phase:Number(e.target.value)}))}>
+                    <select className="input" value={form.followup_phase ?? 0} onChange={e=>applyPhaseCadence(e.target.value)}>
                       {FOLLOWUP_PHASES.map(phase=><option key={phase.value} value={phase.value}>{phase.label} — {phase.timing}</option>)}
                     </select>
                     <small style={{color:'#64748b'}}>{phaseByValue(form.followup_phase).summary}</small>

@@ -59,6 +59,27 @@ export default function Dashboard() {
         </div>
       </div>
 
+      <div className="card" style={{marginBottom:20}}>
+        <div style={{marginBottom:14}}>
+          <h3 style={{fontWeight:700}}>Mi plan de hoy</h3>
+          <p className="text-muted text-sm">Empieza por la izquierda y deja cada elemento con una próxima acción</p>
+        </div>
+        <div className="daily-plan-grid">
+          {[
+            { label:'Demos de hoy', value:stats.demos_today || 0, href:'/opportunities', color:'#3454d1' },
+            { label:'Seguimientos vencidos', value:stats.overdue_followups || 0, href:'/followups', color:'#dc2626' },
+            { label:'Tareas de hoy', value:stats.tasks_today || 0, href:'/activities', color:'#d97706' },
+            { label:'No Shows pendientes', value:stats.no_shows_pending || 0, href:'/followups', color:'#7c3aed' },
+            { label:'Prospectos pendientes', value:stats.prospecting_pending || 0, href:'/prospecting', color:'#0f766e' },
+          ].map(item => (
+            <a key={item.label} href={item.href} className="daily-plan-item" style={{borderTop:`3px solid ${item.color}`}}>
+              <strong style={{color:item.color}}>{item.value}</strong>
+              <span>{item.label}</span>
+            </a>
+          ))}
+        </div>
+      </div>
+
       {/* Stats */}
       <div className="stats-grid">
         {[

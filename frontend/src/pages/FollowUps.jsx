@@ -28,6 +28,15 @@ const temperatureClass = {
   fria: 'badge-blue',
 };
 
+const QUICK_RESULTS = [
+  { code:'no_responde', label:'No responde', outcome:'No responde', contacted:false, days:1, action:'Reintentar contacto', type:'llamada' },
+  { code:'interesado', label:'Interesado', outcome:'Interesado; quiere avanzar', contacted:true, days:2, action:'Confirmar el siguiente paso', type:'llamada' },
+  { code:'revisandolo', label:'Revisándolo', outcome:'Está revisando la propuesta', contacted:true, days:3, action:'Pedir una decisión', type:'llamada' },
+  { code:'socio', label:'Consulta socio', outcome:'Debe consultarlo con su socio o director', contacted:true, days:2, action:'Retomar tras la consulta interna', type:'llamada' },
+  { code:'reagendar', label:'Reagendar', outcome:'Solicita reagendar el contacto', contacted:true, days:2, action:'Realizar contacto reagendado', type:'llamada' },
+  { code:'no_interesa', label:'No interesa', outcome:'Indica que no está interesado', contacted:true, days:1, action:'Confirmar cierre o pausar oportunidad', type:'llamada' },
+];
+
 export default function FollowUps() {
   const [items, setItems] = useState([]);
   const [filter, setFilter] = useState('vencido');
@@ -93,22 +102,39 @@ export default function FollowUps() {
       next_action: '',
       next_action_type: '',
       next_action_at: '',
+      quick_result: '',
     });
+  };
+
+  const applyQuickResult = result => {
+    const target = new Date();
+    target.setDate(target.getDate() + result.days);
+    target.setHours(10, 0, 0, 0);
+    const localTarget = new Date(target.getTime() - target.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    setActivity(current => ({
+      ...current,
+      quick_result: result.code,
+      outcome: result.outcome,
+      contacted: result.contacted,
+      next_action: result.action,
+      next_action_type: result.type,
+      next_action_at: localTarget,
+    }));
   };
 
   const changePhase = async (item, value) => {
     try {
-      await api.patch(`/opportunities/${item.id}/followup-phase`, { followup_phase: Number(value) });
-      setItems(current => current.map(row => row.id === item.id ? { ...row, followup_phase: Number(value) } : row));
-      toast.success(`Actualizado a ${phaseByValue(value).label}`);
+      const response = await api.patch(`/opportunities/${item.id}/followup-phase`, { followup_phase: Number(value) });
+      await load();
+      toast.success(`${phaseByValue(value).label} · próxima acción en ${response.data.days} días`);
     } catch (error) { toast.error(error.response?.data?.message || 'No se pudo cambiar la fase'); }
   };
 
   const changeNoShowStep = async (item, value) => {
     try {
-      await api.patch(`/opportunities/${item.id}/no-show-step`, { no_show_step: Number(value) });
-      setItems(current => current.map(row => row.id === item.id ? { ...row, no_show_step: Number(value) } : row));
-      toast.success(`Actualizado a ${noShowPhaseByValue(value).label}`);
+      const response = await api.patch(`/opportunities/${item.id}/no-show-step`, { no_show_step: Number(value) });
+      await load();
+      toast.success(`${noShowPhaseByValue(value).label} · próxima acción en ${response.data.days} días`);
     } catch (error) { toast.error(error.response?.data?.message || 'No se pudo cambiar el intento'); }
   };
 
@@ -279,6 +305,17 @@ export default function FollowUps() {
                     <label>Fecha y hora</label>
                     <input className="input" type="datetime-local" value={activity.scheduled_at} onChange={e => setActivity(a => ({ ...a, scheduled_at: e.target.value }))}/>
                   </div>
+                </div>
+                <div className="input-group">
+                  <label>Resultado rápido</label>
+                  <div style={{display:'flex',gap:7,flexWrap:'wrap'}}>
+                    {QUICK_RESULTS.map(result => (
+                      <button key={result.code} type="button" className={`btn btn-sm ${activity.quick_result===result.code?'btn-primary':'btn-secondary'}`} onClick={()=>applyQuickResult(result)}>
+                        {result.label}
+                      </button>
+                    ))}
+                  </div>
+                  <small style={{color:'#64748b'}}>Completa el resultado y propone la próxima acción. Puedes editar todo antes de guardar.</small>
                 </div>
                 <div className="input-group">
                   <label>Resultado</label>

@@ -35,11 +35,25 @@ const dashboard = async (req, res) => {
         SUM(DATE(next_action_at) = CURDATE()) AS today_followups,
         SUM(next_action_at IS NULL) AS without_next_action,
         SUM(demo_date >= DATE_SUB(NOW(), INTERVAL 7 DAY)) AS demos_week,
+        SUM(DATE(demo_date) = CURDATE() AND demo_status IN ('programada','reagendada')) AS demos_today,
+        SUM(demo_status = 'no_show') AS no_shows_pending,
         SUM(stage_id IN (SELECT id FROM pipeline_stages WHERE tenant_id=? AND name='Propuesta enviada')) AS proposals_pending,
         SUM(stage_id IN (SELECT id FROM pipeline_stages WHERE tenant_id=? AND name='Decisión pendiente')) AS decisions_pending,
         COALESCE(SUM(amount * probability / 100),0) AS weighted_pipeline
        FROM opportunities WHERE tenant_id=? AND status='open'`,
       [tid, tid, tid]
+    );
+    const [[todayActivityStats]] = await db.query(
+      `SELECT COUNT(*) AS tasks_today FROM activities
+       WHERE tenant_id=? AND status='pendiente'
+         AND (DATE(scheduled_at)=CURDATE() OR scheduled_at<NOW())`,
+      [tid]
+    );
+    const [[prospectingStats]] = await db.query(
+      `SELECT COUNT(*) AS prospecting_pending FROM daily_prospects
+       WHERE tenant_id=? AND status='pendiente'
+         AND batch_date=(SELECT MAX(batch_date) FROM daily_prospects WHERE tenant_id=?)`,
+      [tid, tid]
     );
 
     // Oportunidades por mes (últimos 12 meses o dentro del rango)
@@ -107,7 +121,7 @@ const dashboard = async (req, res) => {
     );
 
     res.json({
-      stats: { total_contacts, total_opportunities, total_activities, total_users, revenue_won, pipeline_value, ...followupStats, ...monthlyRevenue },
+      stats: { total_contacts, total_opportunities, total_activities, total_users, revenue_won, pipeline_value, ...followupStats, ...monthlyRevenue, ...todayActivityStats, ...prospectingStats },
       monthly, pipeline, top_sellers, upcoming, today_tasks, priorities,
       filters: { from: from || null, to: to || null },
     });

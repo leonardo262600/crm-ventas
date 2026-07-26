@@ -119,11 +119,21 @@ const updateFollowupPhase = async (req, res) => {
     return res.status(400).json({ message: 'La fase debe estar entre 0 y 5' });
   }
   try {
+    const cadence = {
+      0: { days: 2, action: 'Enviar recordatorio con valor', type: 'whatsapp' },
+      1: { days: 3, action: 'Resolver la objeción principal', type: 'llamada' },
+      2: { days: 2, action: 'Pedir una decisión concreta', type: 'llamada' },
+      3: { days: 3, action: 'Realizar último intento activo', type: 'whatsapp' },
+      4: { days: 4, action: 'Cerrar el ciclo de seguimiento', type: 'email' },
+      5: { days: 30, action: 'Revisar si conviene retomar el contacto', type: 'llamada' },
+    }[phase];
     await db.query(
-      'UPDATE opportunities SET followup_phase=? WHERE id=? AND tenant_id=?',
-      [phase, req.params.id, req.user.tenant_id]
+      `UPDATE opportunities SET followup_phase=?, next_action=?, next_action_type=?,
+       next_action_at=DATE_ADD(NOW(), INTERVAL ${cadence.days} DAY)
+       WHERE id=? AND tenant_id=?`,
+      [phase, cadence.action, cadence.type, req.params.id, req.user.tenant_id]
     );
-    res.json({ message: 'Fase de seguimiento actualizada', followup_phase: phase });
+    res.json({ message: 'Fase y próxima acción actualizadas', followup_phase: phase, ...cadence });
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
 
@@ -156,11 +166,18 @@ const updateNoShowStep = async (req, res) => {
   const step = Number(req.body.no_show_step);
   if (!Number.isInteger(step) || step < 0 || step > 2) return res.status(400).json({ message: 'El intento debe estar entre 0 y 2' });
   try {
+    const cadence = {
+      0: { days: 1, action: 'Segundo intento para reagendar la demo', type: 'whatsapp' },
+      1: { days: 2, action: 'Último intento para reagendar la demo', type: 'whatsapp' },
+      2: { days: 30, action: 'Revisar si conviene retomar el No Show', type: 'llamada' },
+    }[step];
     await db.query(
-      "UPDATE opportunities SET demo_status='no_show', no_show_step=? WHERE id=? AND tenant_id=?",
-      [step, req.params.id, req.user.tenant_id]
+      `UPDATE opportunities SET demo_status='no_show', no_show_step=?, next_action=?,
+       next_action_type=?, next_action_at=DATE_ADD(NOW(), INTERVAL ${cadence.days} DAY)
+       WHERE id=? AND tenant_id=?`,
+      [step, cadence.action, cadence.type, req.params.id, req.user.tenant_id]
     );
-    res.json({ message: 'Intento No Show actualizado', no_show_step: step });
+    res.json({ message: 'Intento No Show y próxima acción actualizados', no_show_step: step, ...cadence });
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
 
