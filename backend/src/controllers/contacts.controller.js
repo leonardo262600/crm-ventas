@@ -84,11 +84,95 @@ const update = async (req, res) => {
 };
 
 const remove = async (req, res) => {
+  const connection = await db.getConnection();
   try {
-    await db.query('DELETE FROM contacts WHERE id=? AND tenant_id=?',
-      [req.params.id, req.user.tenant_id]);
-    res.json({ message: 'Contacto eliminado' });
-  } catch (err) { res.status(500).json({ message: err.message }); }
+    const contactId = Number(req.params.id);
+    const tenantId = req.user.tenant_id;
+
+    await connection.beginTransaction();
+
+    const [[contact]] = await connection.query(
+      'SELECT id, name FROM contacts WHERE id=? AND tenant_id=? FOR UPDATE',
+      [contactId, tenantId]
+    );
+    if (!contact) {
+      await connection.rollback();
+      return res.status(404).json({ message: 'Contacto no encontrado' });
+    }
+
+    const [opportunities] = await connection.query(
+      'SELECT id FROM opportunities WHERE contact_id=? AND tenant_id=?',
+      [contactId, tenantId]
+    );
+    const opportunityIds = opportunities.map(({ id }) => id);
+
+    const [quotes] = opportunityIds.length
+      ? await connection.query(
+          'SELECT id FROM quotes WHERE tenant_id=? AND (contact_id=? OR opportunity_id IN (?))',
+          [tenantId, contactId, opportunityIds]
+        )
+      : await connection.query(
+          'SELECT id FROM quotes WHERE tenant_id=? AND contact_id=?',
+          [tenantId, contactId]
+        );
+    const quoteIds = quotes.map(({ id }) => id);
+
+    const [invoices] = quoteIds.length
+      ? await connection.query(
+          'SELECT id FROM invoices WHERE tenant_id=? AND (contact_id=? OR quote_id IN (?))',
+          [tenantId, contactId, quoteIds]
+        )
+      : await connection.query(
+          'SELECT id FROM invoices WHERE tenant_id=? AND contact_id=?',
+          [tenantId, contactId]
+        );
+    const invoiceIds = invoices.map(({ id }) => id);
+
+    if (invoiceIds.length) {
+      await connection.query('DELETE FROM invoice_items WHERE invoice_id IN (?)', [invoiceIds]);
+    }
+    if (invoiceIds.length) {
+      await connection.query('DELETE FROM invoices WHERE tenant_id=? AND id IN (?)', [tenantId, invoiceIds]);
+    }
+    if (quoteIds.length) {
+      await connection.query('DELETE FROM quote_items WHERE quote_id IN (?)', [quoteIds]);
+    }
+    if (opportunityIds.length) {
+      await connection.query(
+        'DELETE FROM activities WHERE tenant_id=? AND (contact_id=? OR opportunity_id IN (?))',
+        [tenantId, contactId, opportunityIds]
+      );
+    } else {
+      await connection.query(
+        'DELETE FROM activities WHERE tenant_id=? AND contact_id=?',
+        [tenantId, contactId]
+      );
+    }
+    await connection.query('DELETE FROM comm_emails WHERE tenant_id=? AND contact_id=?', [tenantId, contactId]);
+    await connection.query('DELETE FROM comm_calls WHERE tenant_id=? AND contact_id=?', [tenantId, contactId]);
+    if (quoteIds.length) {
+      await connection.query('DELETE FROM quotes WHERE tenant_id=? AND id IN (?)', [tenantId, quoteIds]);
+    }
+    await connection.query('UPDATE daily_prospects SET converted_contact_id=NULL WHERE tenant_id=? AND converted_contact_id=?', [tenantId, contactId]);
+    await connection.query('DELETE FROM opportunities WHERE tenant_id=? AND contact_id=?', [tenantId, contactId]);
+    await connection.query('DELETE FROM contacts WHERE id=? AND tenant_id=?', [contactId, tenantId]);
+
+    await connection.commit();
+    res.json({
+      message: `${contact.name} y todos sus datos asociados han sido eliminados`,
+      deleted: {
+        opportunities: opportunityIds.length,
+        activities: true,
+        quotes: quoteIds.length,
+        invoices: invoiceIds.length
+      }
+    });
+  } catch (err) {
+    await connection.rollback();
+    res.status(500).json({ message: err.message });
+  } finally {
+    connection.release();
+  }
 };
 
 module.exports = { list, getOne, create, update, remove };

@@ -86,9 +86,18 @@ export default function Contacts() {
     finally { setImporting(false); }
   };
 
-  const del = async (id) => {
-    if (!confirm('¿Eliminar contacto?')) return;
-    try { await api.delete(`/contacts/${id}`); toast.success('Eliminado'); load(); }
+  const del = async (contact) => {
+    const accepted = confirm(
+      `¿Eliminar definitivamente a ${contact.name}?\n\n` +
+      'También se eliminarán todas sus oportunidades, tareas, seguimientos, comunicaciones, presupuestos y facturas.\n\n' +
+      'Esta acción no se puede deshacer.'
+    );
+    if (!accepted) return;
+    try {
+      const { data } = await api.delete(`/contacts/${contact.id}`);
+      toast.success(data.message || 'Contacto y datos asociados eliminados');
+      load();
+    }
     catch (err) { toast.error(err.response?.data?.message || 'Error'); }
   };
 
@@ -178,7 +187,14 @@ export default function Contacts() {
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button className="btn-icon" title="Ver ficha 360°" onClick={() => setDetailId(c.id)}><Eye size={14} /></button>
                         <button className="btn-icon" onClick={() => openEdit(c)}><Pencil size={14} /></button>
-                        <button className="btn-icon" style={{ color: '#ef4444' }} onClick={() => del(c.id)}><Trash2 size={14} /></button>
+                        <button
+                          className="btn-icon"
+                          title="Eliminar contacto y todos sus datos"
+                          style={{ color: '#ef4444' }}
+                          onClick={() => del(c)}
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     </td>
                   </tr>
