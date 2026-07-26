@@ -58,7 +58,17 @@ const create = async (req, res) => {
     'objection_response','objection_status','next_action','next_action_type','next_action_at',
     'latest_response','decision_date','resume_date','followup_phase','demo_status','no_show_step','no_show_at'
   ];
-  const values = fields.map(field => req.body[field] === '' || req.body[field] === undefined ? null : req.body[field]);
+  const createDefaults = {
+    probability: 0,
+    followup_phase: 0,
+    demo_status: 'programada',
+    no_show_step: 0,
+  };
+  const values = fields.map(field => {
+    const value = req.body[field];
+    if (value !== '' && value !== undefined && value !== null) return value;
+    return Object.prototype.hasOwnProperty.call(createDefaults, field) ? createDefaults[field] : null;
+  });
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
