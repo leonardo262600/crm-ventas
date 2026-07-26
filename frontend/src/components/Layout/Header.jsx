@@ -3,6 +3,7 @@ import { Search, Bell, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import toast from 'react-hot-toast';
 
 export default function Header() {
   const { user } = useAuth();
@@ -17,7 +18,7 @@ export default function Header() {
 
   useEffect(() => {
     Promise.all([api.get('/activities', { params: { status: 'pendiente' } }), api.get('/activities/followups')])
-      .then(([a, f]) => { setUpcoming(a.data.slice(0, 5)); setOverdue(f.data.filter(item => item.followup_status === 'vencido')); })
+      .then(([a, f]) => { setUpcoming(a.data); setOverdue(f.data.filter(item => item.followup_status === 'vencido')); })
       .catch(() => {});
   }, []);
 
@@ -44,6 +45,17 @@ export default function Header() {
   }, []);
 
   const go = (path) => { navigate(path); setQuery(''); setOpen(false); };
+  const removeTask = async (event, activity) => {
+    event.stopPropagation();
+    if (!confirm(`¿Eliminar el aviso "${activity.title}"?`)) return;
+    try {
+      await api.delete(`/activities/${activity.id}`);
+      setUpcoming(current => current.filter(item => item.id !== activity.id));
+      toast.success('Aviso eliminado');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'No se pudo eliminar el aviso');
+    }
+  };
 
   return (
     <header className="app-header" style={{
@@ -123,7 +135,7 @@ export default function Header() {
             )}
           </button>
           {showNotif && (
-            <div style={{ position:'absolute', right:0, top:'calc(100% + 8px)', width:300, background:'#fff', border:'1px solid #e2e8f0', borderRadius:12, boxShadow:'0 8px 30px rgba(0,0,0,.12)', zIndex:200, overflow:'hidden' }}>
+            <div style={{ position:'absolute', right:0, top:'calc(100% + 8px)', width:300, maxHeight:'70vh', overflowY:'auto', background:'#fff', border:'1px solid #e2e8f0', borderRadius:12, boxShadow:'0 8px 30px rgba(0,0,0,.12)', zIndex:200 }}>
               <div style={{ padding:'12px 16px', borderBottom:'1px solid #f1f5f9', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                 <p style={{ fontWeight:600, fontSize:14 }}>Avisos del CRM</p>
                 <span className="badge badge-red">{upcoming.length + overdue.length}</span>
@@ -132,12 +144,23 @@ export default function Header() {
               {overdue.slice(0,5).map(item => <div key={`fu-${item.id}`} style={{padding:'10px 16px',borderBottom:'1px solid #fee2e2',cursor:'pointer'}} onClick={()=>{go('/followups');setShowNotif(false);}}><p style={{fontWeight:600,fontSize:13,color:'#b91c1c'}}>{item.company || item.title}</p><p style={{fontSize:11,color:'#64748b',marginTop:2}}>Fase {item.followup_phase ?? 0} · {item.next_action || 'Seguimiento pendiente'}</p></div>)}
               {upcoming.length > 0 && <p style={{padding:'8px 16px',fontSize:11,fontWeight:700,color:'#64748b',background:'#f8fafc'}}>TAREAS PENDIENTES</p>}
               {upcoming.map(a => (
-                <div key={a.id} style={{ padding:'10px 16px', borderBottom:'1px solid #f8fafc', cursor:'pointer' }}
+                <div key={a.id} style={{ padding:'10px 12px 10px 16px', borderBottom:'1px solid #f8fafc', cursor:'pointer', display:'flex', gap:8, alignItems:'center' }}
                   onClick={() => { go('/activities'); setShowNotif(false); }}
                   onMouseEnter={e => e.currentTarget.style.background='#f8fafc'}
                   onMouseLeave={e => e.currentTarget.style.background='#fff'}>
-                  <p style={{ fontWeight:500, fontSize:13 }}>{a.title}</p>
-                  <p style={{ fontSize:11, color:'#94a3b8', marginTop:2 }}>{a.type} · {a.contact_name || 'Sin contacto'}</p>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ fontWeight:500, fontSize:13 }}>{a.title}</p>
+                    <p style={{ fontSize:11, color:'#94a3b8', marginTop:2 }}>{a.type} · {a.contact_name || 'Sin contacto'}</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-icon"
+                    title="Eliminar aviso"
+                    onClick={event => removeTask(event, a)}
+                    style={{ color:'#ef4444', flexShrink:0 }}
+                  >
+                    <X size={14}/>
+                  </button>
                 </div>
               ))}
               {!upcoming.length && !overdue.length && <p style={{ padding:16, fontSize:13, color:'#94a3b8', textAlign:'center' }}>Todo al día</p>}

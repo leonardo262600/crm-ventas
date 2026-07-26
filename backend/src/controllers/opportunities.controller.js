@@ -337,11 +337,29 @@ const forecast = async (req, res) => {
 };
 
 const remove = async (req, res) => {
+  const connection = await db.getConnection();
   try {
-    await db.query('DELETE FROM opportunities WHERE id=? AND tenant_id=?',
-      [req.params.id, req.user.tenant_id]);
+    await connection.beginTransaction();
+    await connection.query(
+      'DELETE FROM activities WHERE opportunity_id=? AND tenant_id=?',
+      [req.params.id, req.user.tenant_id]
+    );
+    await connection.query(
+      'UPDATE quotes SET opportunity_id=NULL WHERE opportunity_id=? AND tenant_id=?',
+      [req.params.id, req.user.tenant_id]
+    );
+    await connection.query(
+      'DELETE FROM opportunities WHERE id=? AND tenant_id=?',
+      [req.params.id, req.user.tenant_id]
+    );
+    await connection.commit();
     res.json({ message: 'Oportunidad eliminada' });
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) {
+    await connection.rollback();
+    res.status(500).json({ message: err.message });
+  } finally {
+    connection.release();
+  }
 };
 
 module.exports = { list, stages, getOne, create, update, moveStage, updateFollowupPhase, updateDemoStatus, updateNoShowStep, updateStatus, forecast, remove };
