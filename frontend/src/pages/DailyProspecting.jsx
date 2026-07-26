@@ -14,6 +14,14 @@ const STATUSES = [
 
 const statusLabel = Object.fromEntries(STATUSES);
 
+const spanishPhone = value => {
+  if (!value) return '';
+  let digits = String(value).replace(/\D/g, '');
+  if (digits.startsWith('0034')) digits = digits.slice(4);
+  if (digits.startsWith('34') && digits.length === 11) digits = digits.slice(2);
+  return digits.length === 9 ? `+34 ${digits.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3')}` : value;
+};
+
 export default function DailyProspecting() {
   const [items, setItems] = useState([]);
   const [summary, setSummary] = useState(null);
@@ -119,7 +127,7 @@ export default function DailyProspecting() {
                       {item.website && <a href={item.website} target="_blank" rel="noreferrer" style={{fontSize:11,display:'inline-flex',gap:4,alignItems:'center',marginTop:5}}>Abrir web <ExternalLink size={11}/></a>}
                     </td>
                     <td style={{minWidth:190}}>
-                      {item.phone && <div style={{display:'flex',alignItems:'center',gap:5,marginBottom:6}}><Phone size={13}/><span>{item.phone}</span><button className="btn-icon" onClick={()=>copy(item.phone,`p${item.id}`)}>{copied===`p${item.id}`?<Check size={13}/>:<Copy size={13}/>}</button></div>}
+                      {item.phone && <div style={{display:'flex',alignItems:'center',gap:5,marginBottom:6}}><Phone size={13}/><span>{spanishPhone(item.phone)}</span><button className="btn-icon" onClick={()=>copy(spanishPhone(item.phone),`p${item.id}`)}>{copied===`p${item.id}`?<Check size={13}/>:<Copy size={13}/>}</button></div>}
                       {item.email && <div style={{display:'flex',alignItems:'center',gap:5}}><Mail size={13}/><span style={{maxWidth:170,overflow:'hidden',textOverflow:'ellipsis'}}>{item.email}</span><button className="btn-icon" onClick={()=>copy(item.email,`e${item.id}`)}>{copied===`e${item.id}`?<Check size={13}/>:<Copy size={13}/>}</button></div>}
                       {!item.phone && !item.email && <span className="text-muted text-sm">Ver web</span>}
                     </td>
@@ -128,7 +136,7 @@ export default function DailyProspecting() {
                     <td><input className="input" type="datetime-local" value={item.follow_up_at?.slice(0,16) || ''} onChange={e=>patch(item,{follow_up_at:e.target.value,status:e.target.value?'volver_contactar':item.status})} style={{minWidth:175,padding:'7px 8px'}}/></td>
                     <td>
                       <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-                        {item.phone && <a className="btn btn-secondary btn-sm" href={`tel:${item.phone}`}><Phone size={13}/>Llamar</a>}
+                        {item.phone && <a className="btn btn-secondary btn-sm" href={`tel:${spanishPhone(item.phone).replace(/\s/g,'')}`}><Phone size={13}/>Llamar</a>}
                         {!item.converted_contact_id ? <button className="btn btn-primary btn-sm" onClick={()=>convert(item)}><UserPlus size={13}/>Convertir</button> : <span className="badge badge-green">Convertida</span>}
                       </div>
                     </td>

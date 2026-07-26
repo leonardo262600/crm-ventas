@@ -6,6 +6,15 @@ const normalize = value => (value || '')
 
 const makeKey = item => `${normalize(item.agency_name)}|${normalize(item.city || item.zone)}|${(item.phone || '').replace(/\D/g, '')}`;
 
+const normalizeSpanishPhone = value => {
+  if (!value) return null;
+  let digits = String(value).replace(/\D/g, '');
+  if (digits.startsWith('0034')) digits = digits.slice(4);
+  if (digits.startsWith('34') && digits.length === 11) digits = digits.slice(2);
+  if (digits.length === 9) return `+34 ${digits.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3')}`;
+  return String(value).trim();
+};
+
 const list = async (req, res) => {
   const { date, status, search, page = 1, limit = 50 } = req.query;
   const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
@@ -57,7 +66,7 @@ const bulkCreate = async (req, res) => {
          (tenant_id,batch_date,zone,city,province,agency_name,phone,email,website,address,source_url,normalized_key,created_by)
          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         [req.user.tenant_id, batchDate, item.zone || item.city || null, item.city || null, item.province || null,
-         item.agency_name, item.phone || null, item.email || null, item.website || null, item.address || null,
+         item.agency_name, normalizeSpanishPhone(item.phone), item.email || null, item.website || null, item.address || null,
          item.source_url || item.website || null, makeKey(item), req.user.id]
       );
       if (result.affectedRows) inserted += 1; else duplicates += 1;
