@@ -4,7 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard, Users2, Target, CalendarCheck, CalendarClock,
   BarChart2, Users, LogOut,
-  MessageSquare, Settings, UserCircle, SlidersHorizontal, DatabaseBackup, Building2
+  MessageSquare, Settings, UserCircle, SlidersHorizontal, DatabaseBackup, Building2,
+  Milestone, FileText
 } from 'lucide-react';
 import api from '../../services/api';
 import { io } from 'socket.io-client';
@@ -27,11 +28,11 @@ const nav = [
   { to: '/contacts',       icon: Users2,          label: 'Contactos',          mobileLabel: 'Contactos' },
   { to: '/opportunities',  icon: Target,          label: 'Oportunidades',      mobileLabel: 'Oportun.' },
   { to: '/demos',          icon: CalendarClock,   label: 'Centro de demos',    mobileLabel: 'Demos' },
-  { to: '/followups',      icon: CalendarCheck,   label: 'Seguimientos',       mobileLabel: 'Seguim.' },
+  { to: '/followups',      icon: Milestone,       label: 'Seguimientos',       mobileLabel: 'Seguim.' },
   { to: '/activities',     icon: CalendarCheck,   label: 'Tareas diarias',     mobileLabel: 'T. diarias' },
   { to: '/prospecting',    icon: Building2,       label: 'Prospección diaria', mobileLabel: 'P. diaria' },
   { to: '/chat',           icon: MessageSquare,   label: 'Chat',               mobileLabel: 'Chat' },
-  { to: '/communications', icon: MessageSquare,   label: 'Plantillas',         mobileLabel: 'Plantillas' },
+  { to: '/communications', icon: FileText,        label: 'Plantillas',         mobileLabel: 'Plantillas' },
   { to: '/reports',        icon: BarChart2,       label: 'Informes',           mobileLabel: 'Informes' },
 ];
 
