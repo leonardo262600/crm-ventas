@@ -267,9 +267,9 @@ const scheduleDemo = async (req, res) => {
     await connection.query(
       `INSERT INTO activities
        (tenant_id,title,type,description,scheduled_at,due_at,status,contact_id,opportunity_id,assigned_to,created_by)
-       VALUES (?,?, 'recordatorio', ?, NOW(), NOW(), 'pendiente', ?, ?, ?, ?)`,
-      [req.user.tenant_id, `Nueva oportunidad agendada: ${prospect.agency_name}`,
-       `${req.user.name || 'El setter'} ha agendado una demo para ${new Date(demo_date).toLocaleString('es-ES')}.`,
+       VALUES (?,?, 'tarea', ?, NOW(), NOW(), 'pendiente', ?, ?, ?, ?)`,
+      [req.user.tenant_id, `Agendar en mi Calendar: ${prospect.agency_name}`,
+       `${req.user.name || 'El setter'} ha agendado una demo para ${new Date(demo_date).toLocaleString('es-ES')}. Añádela al Calendar corporativo y confirma los datos de la reunión.`,
        contactId, opportunity.insertId, owner.id, req.user.id]
     );
     await connection.query(
