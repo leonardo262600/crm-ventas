@@ -109,11 +109,32 @@ const unreadCount = async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
 
+const clearConversation = async (req, res) => {
+  const { room } = req.body;
+  if (!canAccessRoom(room, req.user.id)) {
+    return res.status(403).json({ message: 'Conversación no autorizada' });
+  }
+  try {
+    const [result] = await db.query(
+      'DELETE FROM chat_messages WHERE tenant_id=? AND room=?',
+      [req.user.tenant_id, room]
+    );
+    await db.query(
+      'DELETE FROM chat_reads WHERE tenant_id=? AND room=?',
+      [req.user.tenant_id, room]
+    );
+    const { getIo } = require('../config/socket');
+    getIo()?.to(`chat_${req.user.tenant_id}_${room}`).emit('conversation_cleared', { room });
+    res.json({ message: 'Conversación vaciada', deleted: result.affectedRows });
+  } catch (err) { res.status(500).json({ message: err.message }); }
+};
+
 module.exports = {
   getPeers,
   getHistory,
   markRead,
   unreadCount,
+  clearConversation,
   canAccessRoom,
   roomParticipants,
 };

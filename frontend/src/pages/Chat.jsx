@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bell, Circle, MessageSquare, Send, Volume2, VolumeX } from 'lucide-react';
+import { Bell, Circle, MessageSquare, Send, Trash2, Volume2, VolumeX } from 'lucide-react';
 import { io } from 'socket.io-client';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
-import { enablePushNotifications } from '../utils/pushNotifications';
+import { enablePushNotifications, playChatSound } from '../utils/pushNotifications';
 
 const SOCKET_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5080/api').replace(/\/api\/?$/, '');
 const timeLabel = value => value ? new Date(value).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' }) : '';
@@ -18,6 +18,7 @@ export default function Chat() {
   const [connected, setConnected] = useState(false);
   const [typing, setTyping] = useState('');
   const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('crm_chat_sound') !== 'off');
+  const [soundTone, setSoundTone] = useState(() => localStorage.getItem('crm_chat_tone') || 'clasico');
   const [pushPermission, setPushPermission] = useState(() => 'Notification' in window ? Notification.permission : 'unsupported');
   const socketRef = useRef(null);
   const bottomRef = useRef(null);
@@ -49,6 +50,9 @@ export default function Chat() {
     socket.on('connect', () => setConnected(true));
     socket.on('disconnect', () => setConnected(false));
     socket.on('room_history', setMessages);
+    socket.on('conversation_cleared', ({ room }) => {
+      if (room === selectedRef.current?.room) setMessages([]);
+    });
     socket.on('new_message', message => {
       if (message.room !== selectedRef.current?.room) return;
       setMessages(current => current.some(item => item.id === message.id) ? current : [...current, message]);
@@ -96,6 +100,24 @@ export default function Chat() {
     toast.success(next ? 'Sonido activado' : 'Sonido desactivado');
   };
 
+  const changeTone = event => {
+    const next = event.target.value;
+    setSoundTone(next);
+    localStorage.setItem('crm_chat_tone', next);
+    playChatSound(true);
+  };
+
+  const clearConversation = async () => {
+    if (!selected || !window.confirm(`¿Vaciar toda la conversación con ${selected.name}? Los mensajes se eliminarán para ambos.`)) return;
+    try {
+      await api.delete('/chat/conversation', { data:{ room:selected.room } });
+      setMessages([]);
+      toast.success('Conversación eliminada para ambos');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'No se pudo vaciar la conversación');
+    }
+  };
+
   const enablePush = async () => {
     try {
       const permission = await enablePushNotifications();
@@ -110,6 +132,11 @@ export default function Chat() {
         <div><h1>Chat interno</h1><p>Comunicación privada entre el asesor y sus setters</p></div>
         <div className="chat-header-actions">
           <button className="btn btn-secondary btn-sm" onClick={toggleSound}>{soundEnabled?<Volume2 size={15}/>:<VolumeX size={15}/>}Sonido {soundEnabled?'activo':'inactivo'}</button>
+          <select className="chat-tone-select" value={soundTone} onChange={changeTone} aria-label="Tono de notificación">
+            <option value="suave">Tono suave</option>
+            <option value="clasico">Tono clásico</option>
+            <option value="doble">Tono doble</option>
+          </select>
           {pushPermission !== 'granted' && pushPermission !== 'unsupported' && <button className="btn btn-primary btn-sm" onClick={enablePush}><Bell size={15}/>Activar avisos</button>}
           <div className="chat-connection"><Circle size={9} fill={connected?'#10b981':'#ef4444'} color={connected?'#10b981':'#ef4444'}/>{connected?'En tiempo real':'Reconectando…'}</div>
         </div>
@@ -132,7 +159,14 @@ export default function Chat() {
           {!selected ? (
             <div className="empty-state"><MessageSquare size={42}/><h3>Selecciona una conversación</h3></div>
           ) : <>
-            <header className="chat-header"><strong>{selected.name}</strong><span>{selected.role==='setter'?'Setter':'Asesor'}</span></header>
+            <header className="chat-header">
+              <div><strong>{selected.name}</strong><span>{selected.role==='setter'?'Setter':'Asesor'}</span></div>
+              {user?.role === 'admin' && (
+                <button className="btn btn-danger btn-sm" type="button" onClick={clearConversation}>
+                  <Trash2 size={15}/>Vaciar conversación
+                </button>
+              )}
+            </header>
             <div className="chat-messages">
               {!messages.length && <div className="chat-empty"><MessageSquare size={38}/><p>Empieza la conversación con {selected.name}</p></div>}
               {messages.map(message => {

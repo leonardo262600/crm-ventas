@@ -157,6 +157,7 @@ router.get('/chat/peers',        auth, chatCtrl.getPeers);
 router.get('/chat/history',      auth, chatCtrl.getHistory);
 router.get('/chat/unread-count', auth, chatCtrl.unreadCount);
 router.post('/chat/read',        auth, chatCtrl.markRead);
+router.delete('/chat/conversation', auth, requireRole('admin'), chatCtrl.clearConversation);
 
 // ── Automations ───────────────────────────────────────────
 router.get('/automations',            auth, automCtrl.list);

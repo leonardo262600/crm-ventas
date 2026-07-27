@@ -27,23 +27,35 @@ export const enablePushNotifications = async () => {
   return permission;
 };
 
-export const playChatSound = () => {
-  if (localStorage.getItem('crm_chat_sound') === 'off') return;
+const CHAT_TONES = {
+  suave: [{ frequency:620, duration:0.11 }, { frequency:780, duration:0.14 }],
+  clasico: [{ frequency:740, duration:0.08 }, { frequency:880, duration:0.15 }],
+  doble: [{ frequency:880, duration:0.08 }, { frequency:0, duration:0.06 }, { frequency:880, duration:0.11 }],
+};
+
+export const playChatSound = (force = false) => {
+  if (!force && localStorage.getItem('crm_chat_sound') === 'off') return;
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     const context = new AudioContext();
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(740, context.currentTime);
-    oscillator.frequency.setValueAtTime(880, context.currentTime + 0.08);
-    gain.gain.setValueAtTime(0.0001, context.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.16, context.currentTime + 0.015);
-    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.22);
-    oscillator.connect(gain);
-    gain.connect(context.destination);
-    oscillator.start();
-    oscillator.stop(context.currentTime + 0.23);
-    oscillator.onended = () => context.close();
+    const tone = CHAT_TONES[localStorage.getItem('crm_chat_tone')] || CHAT_TONES.clasico;
+    let cursor = context.currentTime;
+    tone.forEach(note => {
+      if (note.frequency) {
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(note.frequency, cursor);
+        gain.gain.setValueAtTime(0.0001, cursor);
+        gain.gain.exponentialRampToValueAtTime(0.14, cursor + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, cursor + note.duration);
+        oscillator.connect(gain);
+        gain.connect(context.destination);
+        oscillator.start(cursor);
+        oscillator.stop(cursor + note.duration);
+      }
+      cursor += note.duration;
+    });
+    window.setTimeout(() => context.close(), Math.ceil((cursor - context.currentTime + 0.1) * 1000));
   } catch {}
 };
