@@ -93,7 +93,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 .chat-bubble p { white-space:pre-wrap; overflow-wrap:anywhere; font-size:13px; line-height:1.45; }
 .chat-bubble time { display:block; margin-top:3px; font-size:9px; opacity:.65; text-align:right; }
 .chat-typing { color:#64748b; font-size:11px; font-style:italic; padding:4px; }
-.chat-compose { border-top:1px solid #e2e8f0; padding:10px; display:flex; align-items:flex-end; gap:8px; }
+.chat-compose { border-top:1px solid #e2e8f0; padding:10px 54px 10px 10px; display:flex; align-items:flex-end; gap:8px; }
 .chat-compose textarea { flex:1; resize:none; min-height:44px; max-height:110px; border:1px solid #cbd5e1; border-radius:10px; padding:10px 12px; font:inherit; font-size:13px; outline:none; }
 .chat-compose textarea:focus { border-color:#3b82f6; }
 .btn-call-ready { color: #15803d; border: 1px solid #86efac; background: #dcfce7; }
@@ -354,7 +354,7 @@ tr:hover td { background: #f8fafc; }
   .chat-header { height:52px; flex-basis:52px; padding:8px 12px; }
   .chat-messages { padding:12px 9px; }
   .chat-bubble { max-width:85%; }
-  .chat-compose { padding:8px; }
+  .chat-compose { padding:8px 48px 8px 8px; }
   .chat-compose .btn { padding:10px; }
   .chat-compose .btn svg { margin:0; }
   .chat-compose .btn { font-size:0; }
