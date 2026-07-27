@@ -131,7 +131,7 @@ export default function Sidebar() {
             <NavLink to="/backups"
               style={({ isActive }) => navStyle(isActive)}>
               <DatabaseBackup size={17}/>
-              Backups y Datos
+              Copias de seguridad
             </NavLink>
             <NavLink to="/admin"
               style={({ isActive }) => navStyle(isActive)}>

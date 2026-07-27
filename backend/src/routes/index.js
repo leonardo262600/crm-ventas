@@ -217,27 +217,10 @@ router.delete('/settings/logo',      auth, requireRole('admin'),           setti
 const backupCtrl = require('../controllers/backup.controller');
 
 // Multer para restaurar desde archivo SQL subido
-const sqlStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = path.join(__dirname, '../../tmp_restore');
-    fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => cb(null, `restore-${Date.now()}.sql`),
-});
-const sqlUpload = multer({
-  storage: sqlStorage,
-  limits: { fileSize: 500 * 1024 * 1024 }, // 500 MB
-  fileFilter: (req, file, cb) => cb(null, file.originalname.endsWith('.sql')),
-});
-
 router.get('/backup/info',                  auth, requireRole('admin'),           backupCtrl.info);
 router.get('/backup/list',                  auth, requireRole('admin'),           backupCtrl.list);
 router.post('/backup/generate',             auth, requireRole('admin'),           backupCtrl.generate);
 router.get('/backup/download/:filename',    auth, requireRole('admin'),           backupCtrl.download);
 router.delete('/backup/:filename',          auth, requireRole('admin'),           backupCtrl.remove);
-router.post('/backup/restore/:filename',    auth, requireRole('admin'),           backupCtrl.restoreFromFile);
-router.post('/backup/restore/upload',       auth, requireRole('admin'), sqlUpload.single('sqlfile'), backupCtrl.restoreFromUpload);
-router.post('/backup/reset',               auth, requireRole('admin'),           backupCtrl.resetSystem);
 
 module.exports = router;
