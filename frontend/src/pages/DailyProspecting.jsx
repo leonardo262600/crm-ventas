@@ -37,7 +37,7 @@ export default function DailyProspecting() {
   const [items, setItems] = useState([]);
   const [summary, setSummary] = useState(null);
   const [date, setDate] = useState('');
-  const [filter, setFilter] = useState('todos');
+  const [filter, setFilter] = useState('pendiente');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState('');
@@ -78,7 +78,9 @@ export default function DailyProspecting() {
 
   const patch = async (item, changes, silent = false) => {
     const previous = items;
-    setItems(current => current.map(row => row.id === item.id ? { ...row, ...changes } : row));
+    setItems(current => current
+      .map(row => row.id === item.id ? { ...row, ...changes } : row)
+      .filter(row => filter === 'todos' || row.status === filter));
     try {
       await api.patch(`/prospecting/${item.id}`, changes);
       if (!silent) toast.success('Actualizado');
@@ -170,8 +172,8 @@ export default function DailyProspecting() {
           <button className="btn btn-primary" onClick={()=>load()}>Buscar</button>
         </div>
         <div className="tabs" style={{marginTop:14,marginBottom:0,overflowX:'auto'}}>
-          <button className={`tab ${filter==='todos'?'active':''}`} onClick={()=>setFilter('todos')}>Todos</button>
           {STATUSES.map(([value,label])=><button key={value} className={`tab ${filter===value?'active':''}`} onClick={()=>setFilter(value)}>{label}</button>)}
+          <button className={`tab ${filter==='todos'?'active':''}`} onClick={()=>setFilter('todos')}>Todos</button>
         </div>
       </div>
 
