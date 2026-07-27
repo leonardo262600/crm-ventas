@@ -28,11 +28,7 @@ const list = async (req, res) => {
   const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
   const offset = (Math.max(Number(page) || 1, 1) - 1) * safeLimit;
   try {
-    let selectedDate = date;
-    if (!selectedDate) {
-      const [[latest]] = await db.query('SELECT MAX(batch_date) AS batch_date FROM daily_prospects WHERE tenant_id=?', [req.user.tenant_id]);
-      selectedDate = latest?.batch_date || null;
-    }
+    const selectedDate = date || null;
     let sql = 'SELECT * FROM daily_prospects WHERE tenant_id=?';
     const params = [req.user.tenant_id];
     if (selectedDate) { sql += ' AND batch_date=DATE(?)'; params.push(selectedDate); }
@@ -52,12 +48,12 @@ const list = async (req, res) => {
 
 const summary = async (req, res) => {
   try {
-    const [[latest]] = await db.query('SELECT MAX(batch_date) AS batch_date FROM daily_prospects WHERE tenant_id=?', [req.user.tenant_id]);
     const [rows] = await db.query(
       `SELECT status, COUNT(*) AS total FROM daily_prospects
-       WHERE tenant_id=? AND batch_date=? GROUP BY status`,
-      [req.user.tenant_id, latest?.batch_date]
+       WHERE tenant_id=? GROUP BY status`,
+      [req.user.tenant_id]
     );
+    const [[latest]] = await db.query('SELECT MAX(batch_date) AS batch_date FROM daily_prospects WHERE tenant_id=?', [req.user.tenant_id]);
     const [[history]] = await db.query('SELECT COUNT(*) AS total FROM daily_prospects WHERE tenant_id=?', [req.user.tenant_id]);
     let performance = null;
     if (req.user.role === 'setter') {

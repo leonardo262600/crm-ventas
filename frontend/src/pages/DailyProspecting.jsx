@@ -56,7 +56,7 @@ export default function DailyProspecting() {
     setLoading(true);
     try {
       const [list, stats] = await Promise.all([
-        api.get('/prospecting', { params: { date: requestedDate || undefined, status: filter, search } }),
+        api.get('/prospecting', { params: { date: requestedDate || undefined, status: filter, search, limit:100 } }),
         api.get('/prospecting/summary'),
       ]);
       setItems(list.data.items);
@@ -199,7 +199,7 @@ export default function DailyProspecting() {
 
       <div className="card" style={{marginBottom:16}}>
         <div style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'end'}}>
-          <div className="input-group" style={{margin:0,minWidth:170}}><label>Fecha de lista</label><input className="input" type="date" value={date} onChange={e=>{setDate(e.target.value);load(e.target.value);}}/></div>
+          <div className="input-group" style={{margin:0,minWidth:170}}><label>Filtrar por fecha (opcional)</label><input className="input" type="date" value={date} onChange={e=>{setDate(e.target.value);load(e.target.value);}}/></div>
           <div className="input-group" style={{margin:0,flex:1,minWidth:220}}><label>Buscar</label><div style={{position:'relative'}}><Search size={15} style={{position:'absolute',left:11,top:12,color:'#94a3b8'}}/><input className="input" value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>e.key==='Enter'&&load()} placeholder="Agencia, ciudad, teléfono o correo" style={{paddingLeft:34}}/></div></div>
           <button className="btn btn-primary" onClick={()=>load()}>Buscar</button>
         </div>
