@@ -4,11 +4,14 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 import ContactDetail from '../components/ContactDetail';
 import ExportButtons from '../components/ExportButtons';
+import { useAuth } from '../context/AuthContext';
 
 const empty = { name:'', email:'', phone:'', company:'', position:'', address:'', postal_code:'', tags:'', notes:'', assigned_to:'' };
 const emptyOpportunity = { enabled:false, title:'', stage_id:'', amount:'', demo_date:'' };
 
 export default function Contacts() {
+  const { user } = useAuth();
+  const isSetter = user?.role === 'setter';
   const [contacts, setContacts] = useState([]);
   const [search, setSearch] = useState('');
   const [tagFilter, setTagFilter] = useState('');
@@ -47,13 +50,17 @@ export default function Contacts() {
     load();
   }, [search, tagFilter]);
   useEffect(() => {
-    api.get('/users').then(r => setUsers(r.data)).catch(() => {});
+    if (!isSetter) api.get('/users').then(r => setUsers(r.data)).catch(() => {});
     api.get('/opportunities/stages').then(r => setStages(r.data)).catch(() => {});
-  }, []);
+  }, [isSetter]);
 
   const openNew = () => {
     setForm(empty);
-    setOpportunityForm({ ...emptyOpportunity, stage_id:stages[0]?.id || '' });
+    setOpportunityForm({
+      ...emptyOpportunity,
+      enabled:isSetter,
+      stage_id:stages.find(stage => stage.name?.toLowerCase().includes('demo agendada'))?.id || stages[0]?.id || '',
+    });
     setEditId(null);
     setModal(true);
   };
@@ -278,9 +285,9 @@ export default function Contacts() {
   return (
     <div>
       <div className="page-header">
-        <div><h1>Contactos</h1><p>Gestiona tus clientes y prospectos</p></div>
+        <div><h1>{isSetter ? 'Mis contactos y demos' : 'Contactos'}</h1><p>{isSetter ? 'Añade una agencia prospectada por tu cuenta y agenda su reunión' : 'Gestiona tus clientes y prospectos'}</p></div>
         <div style={{ display:'flex', gap:8 }}>
-          <ExportButtons 
+          {!isSetter && <ExportButtons
             data={contacts} 
             filename="contactos" 
             title="Directorio de Contactos"
@@ -293,14 +300,14 @@ export default function Contacts() {
               { header: 'Etiquetas', accessor: 'tags' },
               { header: 'Asignado a', accessor: 'assigned_name' },
             ]}
-          />
-          <button className="btn btn-secondary" onClick={() => setImportModal(true)}><Upload size={16}/>Importar CSV</button>
-          <button className="btn btn-primary" onClick={openNew}><Plus size={16} />Nuevo contacto</button>
+          />}
+          {!isSetter && <button className="btn btn-secondary" onClick={() => setImportModal(true)}><Upload size={16}/>Importar CSV</button>}
+          <button className="btn btn-primary" onClick={openNew}><Plus size={16} />{isSetter ? 'Nuevo contacto y demo' : 'Nuevo contacto'}</button>
         </div>
       </div>
 
       <div className="card">
-        {selectedIds.length > 0 && (
+        {!isSetter && selectedIds.length > 0 && (
           <div style={{
             display:'flex', justifyContent:'space-between', alignItems:'center', gap:12,
             padding:'10px 12px', marginBottom:12, borderRadius:9,
@@ -347,28 +354,28 @@ export default function Contacts() {
             <table>
               <thead>
                 <tr>
-                  <th style={{ width:38 }}>
+                  {!isSetter && <th style={{ width:38 }}>
                     <input
                       type="checkbox"
                       aria-label="Seleccionar todos los contactos visibles"
                       checked={contacts.length > 0 && contacts.every(contact => selectedIds.includes(contact.id))}
                       onChange={toggleAllVisible}
                     />
-                  </th>
+                  </th>}
                   <th>Nombre</th><th>Empresa</th><th>Email</th><th>Teléfono</th><th>C. postal</th><th>Etiquetas</th><th>Asignado a</th><th></th>
                 </tr>
               </thead>
               <tbody>
                 {contacts.map(c => (
                   <tr key={c.id} style={{ background:selectedIds.includes(c.id) ? '#eff6ff' : undefined }}>
-                    <td>
+                    {!isSetter && <td>
                       <input
                         type="checkbox"
                         aria-label={`Seleccionar ${c.name}`}
                         checked={selectedIds.includes(c.id)}
                         onChange={() => toggleSelected(c.id)}
                       />
-                    </td>
+                    </td>}
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg,#0f766e,#134e4a)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, flexShrink: 0 }}>
@@ -416,7 +423,9 @@ export default function Contacts() {
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button className="btn-icon" title="Ver ficha 360°" onClick={() => setDetailId(c.id)}><Eye size={14} /></button>
                         <button className="btn-icon" onClick={() => openEdit(c)}><Pencil size={14} /></button>
-                        <div style={{ position:'relative' }}>
+                        {isSetter ? (
+                          <button className="btn-icon" title="Crear demo" onClick={() => openOpportunityFor(c)}><Target size={14}/></button>
+                        ) : <div style={{ position:'relative' }}>
                           <button className="btn-icon" title="Acciones rápidas" onClick={() => setActionContactId(current => current === c.id ? null : c.id)}><MoreHorizontal size={15}/></button>
                           {actionContactId === c.id && (
                             <div style={{ position:'absolute', right:0, top:'calc(100% + 5px)', width:190, background:'#fff', border:'1px solid #e2e8f0', borderRadius:9, boxShadow:'0 8px 24px rgba(0,0,0,.14)', padding:5, zIndex:40 }}>
@@ -427,15 +436,15 @@ export default function Contacts() {
                               <button className="quick-action-menu-item" onClick={() => openOpportunityFor(c)}><Target size={14}/>Crear oportunidad</button>
                             </div>
                           )}
-                        </div>
-                        <button
+                        </div>}
+                        {!isSetter && <button
                           className="btn-icon"
                           title="Eliminar contacto y todos sus datos"
                           style={{ color: '#ef4444' }}
                           onClick={() => del(c)}
                         >
                           <Trash2 size={14} />
-                        </button>
+                        </button>}
                       </div>
                     </td>
                   </tr>

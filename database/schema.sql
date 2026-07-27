@@ -46,11 +46,13 @@ CREATE TABLE contacts (
   tags VARCHAR(500) DEFAULT NULL,
   notes TEXT DEFAULT NULL,
   assigned_to INT DEFAULT NULL,
+  setter_id INT DEFAULT NULL,
   created_by INT DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (tenant_id) REFERENCES tenants(id),
   FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL,
+  FOREIGN KEY (setter_id) REFERENCES users(id) ON DELETE SET NULL,
   FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
@@ -77,6 +79,9 @@ CREATE TABLE opportunities (
   contact_id INT DEFAULT NULL,
   stage_id INT DEFAULT NULL,
   amount DECIMAL(15,2) DEFAULT 0,
+  cash_collected DECIMAL(15,2) DEFAULT 0,
+  commission_amount DECIMAL(15,2) DEFAULT 0,
+  setter_commission_amount DECIMAL(15,2) DEFAULT 0,
   probability INT DEFAULT 0,
   close_date DATE DEFAULT NULL,
   assigned_to INT DEFAULT NULL,

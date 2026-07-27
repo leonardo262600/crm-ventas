@@ -6,11 +6,12 @@ const list = async (req, res) => {
   const { stage_id, status, assigned_to } = req.query;
   let sql = `SELECT o.*, ps.name as stage_name, ps.color as stage_color,
              c.name as contact_name, c.company, c.phone, c.email, c.postal_code,
-             u.name as assigned_name
+             u.name as assigned_name, setter.name as setter_name
              FROM opportunities o
              LEFT JOIN pipeline_stages ps ON o.stage_id = ps.id
              LEFT JOIN contacts c ON o.contact_id = c.id
              LEFT JOIN users u ON o.assigned_to = u.id
+             LEFT JOIN users setter ON o.setter_id = setter.id
              WHERE o.tenant_id = ?`;
   const params = [req.user.tenant_id];
   if (stage_id)   { sql += ' AND o.stage_id = ?'; params.push(stage_id); }
@@ -65,6 +66,17 @@ const create = async (req, res) => {
     demo_status: 'programada',
     no_show_step: 0,
   };
+  if (req.user.role === 'setter') {
+    const [[owner]] = await db.query(
+      `SELECT id FROM users WHERE tenant_id=? AND active=1 AND role='admin'
+       ORDER BY CASE WHEN LOWER(name) LIKE 'leonardo%' THEN 0 ELSE 1 END,id LIMIT 1`,
+      [req.user.tenant_id]
+    );
+    if (!owner) return res.status(409).json({ message: 'No hay un asesor activo para asignar la demo' });
+    req.body.assigned_to = owner.id;
+    req.body.setter_id = req.user.id;
+    req.body.lead_source = req.body.lead_source || 'prospección setter';
+  }
   const values = fields.map(field => {
     const value = req.body[field];
     if (value !== '' && value !== undefined && value !== null) return value;
@@ -74,9 +86,9 @@ const create = async (req, res) => {
   try {
     await connection.beginTransaction();
     const [result] = await connection.query(
-      `INSERT INTO opportunities (tenant_id, ${fields.join(',')}, created_by)
-       VALUES (?,${fields.map(() => '?').join(',')},?)`,
-      [req.user.tenant_id, ...values, req.user.id]
+      `INSERT INTO opportunities (tenant_id, ${fields.join(',')}, setter_id, created_by)
+       VALUES (?,${fields.map(() => '?').join(',')},?,?)`,
+      [req.user.tenant_id, ...values, req.body.setter_id || null, req.user.id]
     );
     await syncDemoTasks(connection, {
       tenantId: req.user.tenant_id,
@@ -88,6 +100,16 @@ const create = async (req, res) => {
       demoDate: req.body.demo_date,
       demoStatus: req.body.demo_status || 'programada',
     });
+    if (req.user.role === 'setter' && req.body.demo_date) {
+      await connection.query(
+        `INSERT INTO activities
+         (tenant_id,title,type,description,scheduled_at,due_at,status,contact_id,opportunity_id,assigned_to,created_by)
+         VALUES (?,?,'tarea',?,NOW(),NOW(),'pendiente',?,?,?,?)`,
+        [req.user.tenant_id, `Agendar en mi Calendar: ${req.body.title}`,
+         `${req.user.name} ha creado y agendado esta demo para ${new Date(req.body.demo_date).toLocaleString('es-ES')}.`,
+         req.body.contact_id, result.insertId, req.body.assigned_to, req.user.id]
+      );
+    }
     await connection.commit();
     runAutomations('opportunity_created', {
       tenant_id: req.user.tenant_id, user_id: req.user.id,
@@ -260,7 +282,7 @@ const updateNoShowStep = async (req, res) => {
 };
 
 const updateStatus = async (req, res) => {
-  const { status, amount, close_date, cash_collected, commission_amount, lost_reason, lost_detail, competitor_chosen, activation_date, resume_date } = req.body;
+  const { status, amount, close_date, cash_collected, commission_amount, setter_id, setter_commission_amount, lost_reason, lost_detail, competitor_chosen, activation_date, resume_date } = req.body;
   try {
     let sql = 'UPDATE opportunities SET status=?';
     const params = [status];
@@ -269,6 +291,8 @@ const updateStatus = async (req, res) => {
     if (close_date !== undefined) { sql += ', close_date=?'; params.push(close_date); }
     if (cash_collected !== undefined) { sql += ', cash_collected=?'; params.push(cash_collected || 0); }
     if (commission_amount !== undefined) { sql += ', commission_amount=?'; params.push(commission_amount || 0); }
+    if (setter_id !== undefined) { sql += ', setter_id=?'; params.push(setter_id || null); }
+    if (setter_commission_amount !== undefined) { sql += ', setter_commission_amount=?'; params.push(setter_commission_amount || 0); }
     
     if (lost_reason !== undefined) { sql += ', lost_reason=?'; params.push(lost_reason || null); }
     if (lost_detail !== undefined) { sql += ', lost_detail=?'; params.push(lost_detail || null); }

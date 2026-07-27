@@ -59,7 +59,20 @@ const summary = async (req, res) => {
       [req.user.tenant_id, latest?.batch_date]
     );
     const [[history]] = await db.query('SELECT COUNT(*) AS total FROM daily_prospects WHERE tenant_id=?', [req.user.tenant_id]);
-    res.json({ date: latest?.batch_date || null, statuses: rows, history: history.total });
+    let performance = null;
+    if (req.user.role === 'setter') {
+      [[performance]] = await db.query(
+        `SELECT COUNT(*) AS sales,
+                COALESCE(SUM(cash_collected),0) AS cash_collected,
+                COALESCE(SUM(setter_commission_amount),0) AS commission
+         FROM opportunities
+         WHERE tenant_id=? AND setter_id=? AND status='won'
+           AND close_date>=DATE_FORMAT(CURDATE(),'%Y-%m-01')
+           AND close_date<DATE_ADD(DATE_FORMAT(CURDATE(),'%Y-%m-01'),INTERVAL 1 MONTH)`,
+        [req.user.tenant_id, req.user.id]
+      );
+    }
+    res.json({ date: latest?.batch_date || null, statuses: rows, history: history.total, performance });
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
 
@@ -246,10 +259,10 @@ const scheduleDemo = async (req, res) => {
     const [opportunity] = await connection.query(
       `INSERT INTO opportunities
        (tenant_id,title,contact_id,stage_id,status,temperature,zone,city,province,lead_source,
-        assigned_to,created_by,next_action,next_action_type,next_action_at,demo_date,demo_status,followup_phase)
-       VALUES (?,?,?,?,'open','templada',?,?,?,'prospección setter',?,?,?,'reunion',?,?,'programada',0)`,
+        assigned_to,setter_id,created_by,next_action,next_action_type,next_action_at,demo_date,demo_status,followup_phase)
+       VALUES (?,?,?,?,'open','templada',?,?,?,'prospección setter',?,?,?,?,'reunion',?,?,'programada',0)`,
       [req.user.tenant_id, `Demo · ${prospect.agency_name}`, contactId, stage?.id || null,
-       prospect.zone || prospect.city, prospect.city, prospect.province, owner.id, req.user.id,
+       prospect.zone || prospect.city, prospect.city, prospect.province, owner.id, req.user.id, req.user.id,
        'Realizar demo agendada', demo_date, demo_date]
     );
 

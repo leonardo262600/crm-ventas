@@ -32,6 +32,10 @@ const list = async (req, res) => {
              LEFT JOIN users u ON c.assigned_to = u.id
              WHERE c.tenant_id = ?`;
   const params = [req.user.tenant_id];
+  if (req.user.role === 'setter') {
+    sql += ' AND c.created_by=?';
+    params.push(req.user.id);
+  }
   if (search) {
     sql += ' AND (c.name LIKE ? OR c.email LIKE ? OR c.company LIKE ? OR c.postal_code LIKE ?)';
     params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
@@ -49,8 +53,10 @@ const getOne = async (req, res) => {
     const [rows] = await db.query(
       `SELECT c.*, u.name as assigned_name FROM contacts c
        LEFT JOIN users u ON c.assigned_to = u.id
-       WHERE c.id = ? AND c.tenant_id = ?`,
-      [req.params.id, req.user.tenant_id]
+       WHERE c.id = ? AND c.tenant_id = ?${req.user.role === 'setter' ? ' AND c.created_by=?' : ''}`,
+      req.user.role === 'setter'
+        ? [req.params.id, req.user.tenant_id, req.user.id]
+        : [req.params.id, req.user.tenant_id]
     );
     if (!rows.length) return res.status(404).json({ message: 'Contacto no encontrado' });
     const contact = rows[0];
@@ -121,10 +127,16 @@ const update = async (req, res) => {
         });
       }
     }
+    const setterRestriction = req.user.role === 'setter' ? ' AND created_by=?' : '';
+    const params = [
+      name, email, phone, company, position, address, postal_code || null, tags, notes,
+      assigned_to || null, req.params.id, req.user.tenant_id,
+    ];
+    if (req.user.role === 'setter') params.push(req.user.id);
     await db.query(
       `UPDATE contacts SET name=?,email=?,phone=?,company=?,position=?,address=?,postal_code=?,tags=?,notes=?,assigned_to=?
-       WHERE id=? AND tenant_id=?`,
-      [name, email, phone, company, position, address, postal_code || null, tags, notes, assigned_to || null, req.params.id, req.user.tenant_id]
+       WHERE id=? AND tenant_id=?${setterRestriction}`,
+      params
     );
     res.json({ message: 'Contacto actualizado' });
   } catch (err) { res.status(500).json({ message: err.message }); }

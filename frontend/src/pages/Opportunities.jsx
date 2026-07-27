@@ -265,6 +265,11 @@ export default function Opportunities() {
                       <User size={11} />{opp.assigned_name}
                     </p>
                   )}
+                  {opp.setter_name && (
+                    <p style={{ fontSize:11, color:'#0f766e', marginTop:4, display:'flex', alignItems:'center', gap:4, fontWeight:600 }}>
+                      <User size={11} />Agendada por {opp.setter_name}
+                    </p>
+                  )}
                   <div style={{ marginTop:8 }}>
                     <span className={`badge ${opp.temperature==='caliente'?'badge-red':opp.temperature==='fria'?'badge-blue':'badge-yellow'}`}>
                       {opp.temperature || 'sin clasificar'}
@@ -282,7 +287,7 @@ export default function Opportunities() {
                     <button className="btn btn-sm" style={{ flex:1, background:'#fff7ed', color:'#c2410c', border:'1px solid #fed7aa' }} onClick={() => markNoShow(opp)}>
                       No Show
                     </button>
-                    <button className="btn btn-sm" style={{ flex:1, background:'#ecfdf5', color:'#059669', border:'1px solid #a7f3d0' }} onClick={() => setWonModal({ ...opp, final_amount: opp.amount, cash_collected: opp.amount, commission_amount: '', close_date: new Date().toISOString().split('T')[0] })}>
+                    <button className="btn btn-sm" style={{ flex:1, background:'#ecfdf5', color:'#059669', border:'1px solid #a7f3d0' }} onClick={() => setWonModal({ ...opp, final_amount: opp.amount, cash_collected: opp.amount, commission_amount: '', setter_id:opp.setter_id || '', setter_commission_amount:'', close_date: new Date().toISOString().split('T')[0] })}>
                       <CheckCircle2 size={14}/> Ganada
                     </button>
                     <button className="btn btn-sm" style={{ flex:1, background:'#fef2f2', color:'#dc2626', border:'1px solid #fecaca' }} onClick={() => setLostModal({ ...opp, lost_reason: '' })}>
@@ -464,7 +469,7 @@ export default function Opportunities() {
               <h3><CheckCircle2 size={18} color="#059669" style={{ display:'inline', verticalAlign:'middle', marginRight:6 }}/> Marcar como Ganada</h3>
               <button className="btn-icon" onClick={() => setWonModal(null)}><X size={18}/></button>
             </div>
-            <form onSubmit={e => { e.preventDefault(); changeStatus(wonModal.id, 'won', { amount: wonModal.final_amount, cash_collected: wonModal.cash_collected, commission_amount: wonModal.commission_amount, close_date: wonModal.close_date }); }}>
+            <form onSubmit={e => { e.preventDefault(); changeStatus(wonModal.id, 'won', { amount: wonModal.final_amount, cash_collected: wonModal.cash_collected, commission_amount: wonModal.commission_amount, setter_id:wonModal.setter_id || null, setter_commission_amount:wonModal.setter_commission_amount || 0, close_date: wonModal.close_date }); }}>
               <div className="modal-body">
                 <p style={{ fontSize:13, color:'#64748b', marginBottom:16 }}>Confirma el monto final y la fecha de cierre de la venta.</p>
                 <div className="input-group">
@@ -479,6 +484,17 @@ export default function Opportunities() {
                   <label>Mi comisión (€)</label>
                   <input className="input" type="number" min="0" step="0.01" value={wonModal.commission_amount} onChange={e => setWonModal(w => ({...w, commission_amount: e.target.value}))} required />
                 </div>
+                <div className="input-group">
+                  <label>Setter que agendó la reunión</label>
+                  <select className="input" value={wonModal.setter_id || ''} onChange={e => setWonModal(w => ({...w,setter_id:e.target.value}))}>
+                    <option value="">Sin Setter</option>
+                    {users.filter(item => item.role === 'setter').map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+                  </select>
+                </div>
+                {wonModal.setter_id && <div className="input-group">
+                  <label>Comisión del Setter (€)</label>
+                  <input className="input" type="number" min="0" step="0.01" value={wonModal.setter_commission_amount} onChange={e => setWonModal(w => ({...w, setter_commission_amount:e.target.value}))} required />
+                </div>}
                 <div className="input-group">
                   <label>Fecha de Cierre</label>
                   <input className="input" type="date" value={wonModal.close_date} onChange={e => setWonModal(w => ({...w, close_date: e.target.value}))} required />

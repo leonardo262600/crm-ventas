@@ -79,7 +79,7 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="sidebar-nav" style={{ flex: 1, padding: '10px 10px', overflowY: 'auto' }}>
-        {(user?.role === 'setter' ? nav.filter(item => item.to === '/prospecting') : nav).map(({ to, icon: Icon, label, mobileLabel, exact }) => (
+        {(user?.role === 'setter' ? nav.filter(item => ['/prospecting','/contacts'].includes(item.to)) : nav).map(({ to, icon: Icon, label, mobileLabel, exact }) => (
           <NavLink key={to} to={to} end={exact}
             style={({ isActive }) => navStyle(isActive)}>
             <Icon size={17}/>

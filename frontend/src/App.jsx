@@ -56,7 +56,7 @@ const AppRoutes = () => {
       <Route path="/quote/:token" element={<QuoteAccept />} />
       <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route index                element={<HomeRoute />} />
-        <Route path="contacts"      element={<OperationalRoute><Contacts /></OperationalRoute>} />
+        <Route path="contacts"      element={<Contacts />} />
         <Route path="opportunities" element={<OperationalRoute><Opportunities /></OperationalRoute>} />
         <Route path="demos"          element={<OperationalRoute><Demos /></OperationalRoute>} />
         <Route path="activities"    element={<OperationalRoute><Activities /></OperationalRoute>} />

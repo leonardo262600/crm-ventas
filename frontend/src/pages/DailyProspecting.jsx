@@ -3,6 +3,7 @@ import { Building2, CalendarClock, CalendarPlus, Check, ClipboardPaste, Link2, M
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+import { fmtCurrency as fmt } from '../utils/format';
 
 const STATUSES = [
   ['pendiente', 'Pendiente'],
@@ -186,12 +187,15 @@ export default function DailyProspecting() {
         </div>
       </div>
 
-      <div className="followup-summary prospect-summary">
-        <div className="followup-filter active"><span>{isSetter ? 'Para llamar' : 'Lista del día'}</span><strong>{isSetter ? summaryCount('llamar') : Object.values(summary?.statuses || {}).length ? summary?.statuses?.reduce((sum,row)=>sum+Number(row.total),0) : items.length}</strong></div>
-        <div className="followup-filter"><span>{isSetter ? 'Agendadas' : 'Pendientes'}</span><strong>{summaryCount(isSetter ? 'agendada' : 'pendiente')}</strong></div>
-        <div className="followup-filter"><span>{isSetter ? 'Contactadas' : 'Para llamar'}</span><strong>{summaryCount(isSetter ? 'contactada' : 'llamar')}</strong></div>
-        <div className="followup-filter"><span>{isSetter ? 'Volver a llamar' : 'Contactadas'}</span><strong>{summaryCount(isSetter ? 'volver_contactar' : 'contactada')}</strong></div>
-        <div className="followup-filter"><span>Histórico total</span><strong>{summary?.history || 0}</strong></div>
+      <div className="followup-summary prospect-summary" style={isSetter ? {gridTemplateColumns:'repeat(auto-fit,minmax(130px,1fr))',gap:12} : undefined}>
+        <div className="followup-filter active" style={isSetter ? {borderTop:'4px solid #3b5bdb',padding:'12px 16px'} : undefined}><span>{isSetter ? 'Para llamar' : 'Lista del día'}</span><strong>{isSetter ? summaryCount('llamar') : Object.values(summary?.statuses || {}).length ? summary?.statuses?.reduce((sum,row)=>sum+Number(row.total),0) : items.length}</strong></div>
+        <div className="followup-filter" style={isSetter ? {borderTop:'4px solid #7c3aed',padding:'12px 16px'} : undefined}><span>{isSetter ? 'Agendadas' : 'Pendientes'}</span><strong>{summaryCount(isSetter ? 'agendada' : 'pendiente')}</strong></div>
+        <div className="followup-filter" style={isSetter ? {borderTop:'4px solid #0f766e',padding:'12px 16px'} : undefined}><span>{isSetter ? 'Contactadas' : 'Para llamar'}</span><strong>{summaryCount(isSetter ? 'contactada' : 'llamar')}</strong></div>
+        <div className="followup-filter" style={isSetter ? {borderTop:'4px solid #d97706',padding:'12px 16px'} : undefined}><span>{isSetter ? 'Volver a llamar' : 'Contactadas'}</span><strong>{summaryCount(isSetter ? 'volver_contactar' : 'contactada')}</strong></div>
+        {isSetter && <div className="followup-filter" style={{borderTop:'4px solid #16a34a',padding:'12px 16px'}}><span>Ventas del mes</span><strong>{summary?.performance?.sales || 0}</strong></div>}
+        {isSetter && <div className="followup-filter" style={{borderTop:'4px solid #0891b2',padding:'12px 16px'}}><span>Cash collected</span><strong style={{fontSize:20}}>{fmt(summary?.performance?.cash_collected || 0)}</strong></div>}
+        {isSetter && <div className="followup-filter" style={{borderTop:'4px solid #db2777',padding:'12px 16px'}}><span>Mi comisión</span><strong style={{fontSize:20}}>{fmt(summary?.performance?.commission || 0)}</strong></div>}
+        {!isSetter && <div className="followup-filter"><span>Histórico total</span><strong>{summary?.history || 0}</strong></div>}
       </div>
 
       <div className="card" style={{marginBottom:16}}>
