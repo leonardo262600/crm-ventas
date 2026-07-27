@@ -17,8 +17,8 @@ const SOCKET_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5080/api')
 const navStyle = isActive => ({
   display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px',
   borderRadius: 10, marginBottom: 2, textDecoration: 'none',
-  color: isActive ? '#173b60' : '#345879',
-  background: isActive ? '#fff' : 'transparent',
+  color: isActive ? 'var(--nav-active-text)' : 'var(--nav-text)',
+  background: isActive ? 'var(--nav-active)' : 'transparent',
   fontWeight: isActive ? 600 : 400, fontSize: 14,
   transition: 'all .15s',
 });
