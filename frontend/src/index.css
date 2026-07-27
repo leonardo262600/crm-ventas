@@ -69,7 +69,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 .app-loading { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; background:#f4f8fc; color:#52708d; font-size:13px; font-weight:600; }
 .app-loading img { width:48px; height:48px; border-radius:12px; animation:loadingPulse 1.1s ease-in-out infinite alternate; }
 @keyframes loadingPulse { from { opacity:.55; transform:scale(.96); } to { opacity:1; transform:scale(1.04); } }
-.chat-shell { padding:0; display:flex; height:500px; min-height:420px; overflow:hidden; }
+.chat-shell { padding:0; display:flex; height:550px; min-height:440px; overflow:hidden; }
 .chat-people { width:250px; flex:0 0 250px; border-right:1px solid #e2e8f0; padding:10px; overflow-y:auto; }
 .chat-section-title { padding:7px 9px 10px; color:#64748b; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
 .chat-person { width:100%; display:flex; align-items:center; gap:9px; border:0; background:transparent; padding:9px; border-radius:10px; cursor:pointer; text-align:left; color:#1e293b; }

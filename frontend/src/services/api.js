@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const apiBaseUrl = import.meta.env.VITE_API_URL || 'https://crm-ventas-backend-lidd.onrender.com/api';
-const api = axios.create({ baseURL: apiBaseUrl });
+const api = axios.create({ baseURL: apiBaseUrl, timeout: 20000 });
 
 api.interceptors.request.use(cfg => {
   const token = localStorage.getItem('crm_token');

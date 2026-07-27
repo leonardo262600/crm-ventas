@@ -8,14 +8,16 @@ export const AuthProvider = ({ children }) => {
     try { return JSON.parse(localStorage.getItem('crm_user')); } catch { return null; }
   })();
   const [user, setUser] = useState(cachedUser);
-  const [loading, setLoading] = useState(true);
+  // Si ya existe una sesión válida guardada, mostramos el CRM inmediatamente
+  // mientras la confirmación con el servidor se realiza en segundo plano.
+  const [loading, setLoading] = useState(!cachedUser);
 
   useEffect(() => {
     const token = localStorage.getItem('crm_token');
     if (token) {
       const validateSession = async () => {
         try {
-          const r = await api.get('/auth/me');
+          const r = await api.get('/auth/me', { timeout: 12000 });
           setUser(r.data);
           localStorage.setItem('crm_user', JSON.stringify(r.data));
           // Cargar configuración de la empresa para formateo global
@@ -33,7 +35,7 @@ export const AuthProvider = ({ children }) => {
             // Render puede tardar en despertar. Un fallo temporal no invalida el token.
             await new Promise(resolve => setTimeout(resolve, 1200));
             try {
-              const retry = await api.get('/auth/me');
+              const retry = await api.get('/auth/me', { timeout: 12000 });
               setUser(retry.data);
               localStorage.setItem('crm_user', JSON.stringify(retry.data));
             } catch (retryErr) {
