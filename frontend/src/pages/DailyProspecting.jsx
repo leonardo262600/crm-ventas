@@ -35,13 +35,7 @@ const websiteName = value => {
 const websiteUrl = value => /^https?:\/\//i.test(value) ? value : `https://${value}`;
 
 const prospectPostalCode = item => item.postal_code || String(item.address || '').match(/\b\d{5}\b/)?.[0] || '';
-const hasExtraDetails = item => [
-  item.contact_person,
-  item.secondary_phone,
-  item.secondary_email,
-  item.google_maps_url,
-  item.extra_info,
-].some(value => String(value || '').trim());
+const hasExtraDetails = item => Boolean(String(item.extra_info || '').trim());
 
 export default function DailyProspecting() {
   const { user } = useAuth();
