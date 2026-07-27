@@ -190,6 +190,7 @@ tr:hover td { background: #f8fafc; }
 .kanban-card:active { cursor: grabbing; }
 .kanban-card h4 { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
 .kanban-card .amount { font-size: 15px; font-weight: 700; color: var(--primary); }
+.opportunity-quick-actions .btn { min-width:0; justify-content:center; padding-left:7px; padding-right:7px; }
 
 /* Calendar */
 .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
@@ -235,6 +236,9 @@ tr:hover td { background: #f8fafc; }
 
 /* Aplicación instalada / navegación móvil */
 @media (max-width: 768px) {
+  .opportunity-quick-actions { gap:4px !important; }
+  .opportunity-quick-actions .btn { padding:6px 5px; font-size:11px; gap:3px; }
+  .opportunity-quick-actions .btn svg { width:13px; height:13px; flex:0 0 13px; }
   :root { --sidebar-width: 0px; }
   body { padding-bottom: calc(66px + env(safe-area-inset-bottom)); }
   .app-sidebar {

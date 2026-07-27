@@ -283,7 +283,7 @@ export default function Opportunities() {
                   </p>
                   
                   {/* Acciones Rápidas */}
-                  <div style={{ display:'flex', gap:6, marginTop:12, paddingTop:12, borderTop:'1px dashed #e2e8f0' }} onClick={e => e.stopPropagation()}>
+                  <div className="opportunity-quick-actions" style={{ display:'flex', gap:6, marginTop:12, paddingTop:12, borderTop:'1px dashed #e2e8f0' }} onClick={e => e.stopPropagation()}>
                     <button className="btn btn-sm" style={{ flex:1, background:'#fff7ed', color:'#c2410c', border:'1px solid #fed7aa' }} onClick={() => markNoShow(opp)}>
                       No Show
                     </button>
