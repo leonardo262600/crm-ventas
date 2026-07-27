@@ -1,32 +1,33 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout/Layout';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import Contacts from './pages/Contacts';
-import Opportunities from './pages/Opportunities';
-import Activities from './pages/Activities';
-import Quotes from './pages/Quotes';
-import Invoices from './pages/Invoices';
-import Products from './pages/Products';
-import Reports from './pages/Reports';
-import Users from './pages/Users';
-import Communications from './pages/Communications';
-import Automations from './pages/Automations';
-import Admin from './pages/Admin';
-import Forecast from './pages/Forecast';
-import Profile from './pages/Profile';
-import QuoteAccept from './pages/QuoteAccept';
-import Workflows from './pages/Workflows';
-import WorkflowBuilder from './pages/WorkflowBuilder';
-import Settings from './pages/Settings';
-import Backup from './pages/Backup';
-import FollowUps from './pages/FollowUps';
-import DailyProspecting from './pages/DailyProspecting';
-import Demos from './pages/Demos';
-import Chat from './pages/Chat';
+
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Contacts = lazy(() => import('./pages/Contacts'));
+const Opportunities = lazy(() => import('./pages/Opportunities'));
+const Activities = lazy(() => import('./pages/Activities'));
+const Quotes = lazy(() => import('./pages/Quotes'));
+const Invoices = lazy(() => import('./pages/Invoices'));
+const Products = lazy(() => import('./pages/Products'));
+const Reports = lazy(() => import('./pages/Reports'));
+const Users = lazy(() => import('./pages/Users'));
+const Communications = lazy(() => import('./pages/Communications'));
+const Automations = lazy(() => import('./pages/Automations'));
+const Admin = lazy(() => import('./pages/Admin'));
+const Forecast = lazy(() => import('./pages/Forecast'));
+const Profile = lazy(() => import('./pages/Profile'));
+const QuoteAccept = lazy(() => import('./pages/QuoteAccept'));
+const Workflows = lazy(() => import('./pages/Workflows'));
+const WorkflowBuilder = lazy(() => import('./pages/WorkflowBuilder'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Backup = lazy(() => import('./pages/Backup'));
+const FollowUps = lazy(() => import('./pages/FollowUps'));
+const DailyProspecting = lazy(() => import('./pages/DailyProspecting'));
+const Demos = lazy(() => import('./pages/Demos'));
+const Chat = lazy(() => import('./pages/Chat'));
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -87,7 +88,9 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <AppRoutes />
+        <Suspense fallback={<div className="app-loading"><img src="/icons/icon-192.png" alt=""/><span>Cargando CRM…</span></div>}>
+          <AppRoutes />
+        </Suspense>
         <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
       </BrowserRouter>
     </AuthProvider>

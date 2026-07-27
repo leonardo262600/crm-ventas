@@ -43,7 +43,7 @@ export default function Chat() {
   useEffect(() => {
     const socket = io(SOCKET_URL, {
       auth: { token: localStorage.getItem('crm_token') },
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'],
     });
     socketRef.current = socket;
     socket.on('connect', () => setConnected(true));

@@ -49,7 +49,7 @@ export default function Sidebar() {
   useEffect(() => {
     const socket = io(SOCKET_URL, {
       auth:{ token:localStorage.getItem('crm_token') },
-      transports:['websocket','polling'],
+      transports:['polling','websocket'],
     });
     socket.on('chat_notification', message => {
       if (Number(message.user_id) === Number(user?.id)) return;
