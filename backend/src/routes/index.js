@@ -78,10 +78,11 @@ router.delete('/contacts/:id', auth, requireRole('admin','gerente'), contactsCtr
 // ── Prospección diaria ───────────────────────────────────
 router.get('/prospecting', auth, prospectingCtrl.list);
 router.get('/prospecting/summary', auth, prospectingCtrl.summary);
-router.post('/prospecting/bulk', auth, prospectingCtrl.bulkCreate);
+router.post('/prospecting/bulk', auth, requireRole('admin','gerente','vendedor'), prospectingCtrl.bulkCreate);
 router.patch('/prospecting/:id', auth, prospectingCtrl.update);
 router.post('/prospecting/:id/follow-up', auth, prospectingCtrl.scheduleFollowUp);
-router.post('/prospecting/:id/convert', auth, prospectingCtrl.convert);
+router.post('/prospecting/:id/schedule-demo', auth, prospectingCtrl.scheduleDemo);
+router.post('/prospecting/:id/convert', auth, requireRole('admin','gerente','vendedor'), prospectingCtrl.convert);
 
 // ── Opportunities ─────────────────────────────────────────
 router.get('/opportunities',                auth, oppsCtrl.list);

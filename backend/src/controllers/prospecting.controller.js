@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { syncDemoTasks } = require('../services/demoAutomation.service');
 
 const normalize = value => (value || '')
   .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -35,12 +36,15 @@ const list = async (req, res) => {
     let sql = 'SELECT * FROM daily_prospects WHERE tenant_id=?';
     const params = [req.user.tenant_id];
     if (selectedDate) { sql += ' AND batch_date=DATE(?)'; params.push(selectedDate); }
+    if (req.user.role === 'setter') {
+      sql += " AND status IN ('llamar','volver_contactar','contactada','agendada','ya_realadvisor','no_interesa','no_localizable')";
+    }
     if (status && status !== 'todos') { sql += ' AND status=?'; params.push(status); }
     if (search) {
       sql += ' AND (agency_name LIKE ? OR city LIKE ? OR province LIKE ? OR email LIKE ? OR phone LIKE ?)';
       params.push(...Array(5).fill(`%${search}%`));
     }
-    sql += ` ORDER BY FIELD(status,'llamar','pendiente','volver_contactar','contactada','ya_realadvisor','no_interesa','no_localizable'), agency_name LIMIT ${safeLimit} OFFSET ${offset}`;
+    sql += ` ORDER BY FIELD(status,'llamar','pendiente','volver_contactar','agendada','contactada','ya_realadvisor','no_interesa','no_localizable'), agency_name LIMIT ${safeLimit} OFFSET ${offset}`;
     const [rows] = await db.query(sql, params);
     res.json({ date: selectedDate, items: rows });
   } catch (err) { res.status(500).json({ message: err.message }); }
@@ -83,7 +87,7 @@ const bulkCreate = async (req, res) => {
 };
 
 const update = async (req, res) => {
-  const allowedStatuses = ['pendiente','llamar','contactada','ya_realadvisor','no_interesa','volver_contactar','no_localizable'];
+  const allowedStatuses = ['pendiente','llamar','contactada','agendada','ya_realadvisor','no_interesa','volver_contactar','no_localizable'];
   const { status } = req.body;
   if (status && !allowedStatuses.includes(status)) return res.status(400).json({ message: 'Estado no válido' });
   try {
@@ -193,4 +197,99 @@ const convert = async (req, res) => {
   } finally { connection.release(); }
 };
 
-module.exports = { list, summary, bulkCreate, update, scheduleFollowUp, convert };
+const scheduleDemo = async (req, res) => {
+  const { demo_date } = req.body;
+  if (!demo_date || Number.isNaN(new Date(demo_date).getTime())) {
+    return res.status(400).json({ message: 'Selecciona una fecha y hora válidas' });
+  }
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [[prospect]] = await connection.query(
+      'SELECT * FROM daily_prospects WHERE id=? AND tenant_id=? FOR UPDATE',
+      [req.params.id, req.user.tenant_id]
+    );
+    if (!prospect) {
+      await connection.rollback();
+      return res.status(404).json({ message: 'Agencia no encontrada' });
+    }
+
+    const [[owner]] = await connection.query(
+      `SELECT id,name FROM users
+       WHERE tenant_id=? AND active=1 AND role='admin'
+       ORDER BY CASE WHEN LOWER(name) LIKE 'leonardo%' THEN 0 ELSE 1 END,id LIMIT 1`,
+      [req.user.tenant_id]
+    );
+    if (!owner) {
+      await connection.rollback();
+      return res.status(409).json({ message: 'No hay un asesor administrador activo para asignar la demo' });
+    }
+
+    let contactId = prospect.converted_contact_id;
+    if (!contactId) {
+      const [contact] = await connection.query(
+        `INSERT INTO contacts
+         (tenant_id,name,email,phone,company,address,postal_code,tags,notes,assigned_to,created_by)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+        [req.user.tenant_id, prospect.agency_name, prospect.email, prospect.phone,
+         prospect.agency_name, prospect.address, prospect.postal_code, 'prospección diaria',
+         prospect.notes, owner.id, req.user.id]
+      );
+      contactId = contact.insertId;
+    }
+
+    const [[stage]] = await connection.query(
+      `SELECT id FROM pipeline_stages WHERE tenant_id=?
+       ORDER BY CASE WHEN LOWER(name) LIKE '%demo agendada%' THEN 0 ELSE 1 END,order_index LIMIT 1`,
+      [req.user.tenant_id]
+    );
+    const [opportunity] = await connection.query(
+      `INSERT INTO opportunities
+       (tenant_id,title,contact_id,stage_id,status,temperature,zone,city,province,lead_source,
+        assigned_to,created_by,next_action,next_action_type,next_action_at,demo_date,demo_status,followup_phase)
+       VALUES (?,?,?,?,'open','templada',?,?,?,'prospección setter',?,?,?,'reunion',?,?,'programada',0)`,
+      [req.user.tenant_id, `Demo · ${prospect.agency_name}`, contactId, stage?.id || null,
+       prospect.zone || prospect.city, prospect.city, prospect.province, owner.id, req.user.id,
+       'Realizar demo agendada', demo_date, demo_date]
+    );
+
+    await syncDemoTasks(connection, {
+      tenantId: req.user.tenant_id,
+      userId: req.user.id,
+      opportunityId: opportunity.insertId,
+      title: `Demo · ${prospect.agency_name}`,
+      contactId,
+      assignedTo: owner.id,
+      demoDate: demo_date,
+      demoStatus: 'programada',
+    });
+
+    await connection.query(
+      `INSERT INTO activities
+       (tenant_id,title,type,description,scheduled_at,due_at,status,contact_id,opportunity_id,assigned_to,created_by)
+       VALUES (?,?, 'recordatorio', ?, NOW(), NOW(), 'pendiente', ?, ?, ?, ?)`,
+      [req.user.tenant_id, `Nueva oportunidad agendada: ${prospect.agency_name}`,
+       `${req.user.name || 'El setter'} ha agendado una demo para ${new Date(demo_date).toLocaleString('es-ES')}.`,
+       contactId, opportunity.insertId, owner.id, req.user.id]
+    );
+    await connection.query(
+      `UPDATE daily_prospects
+       SET status='agendada',follow_up_at=?,converted_contact_id=?,contacted_at=COALESCE(contacted_at,NOW())
+       WHERE id=? AND tenant_id=?`,
+      [demo_date, contactId, prospect.id, req.user.tenant_id]
+    );
+    await connection.commit();
+    res.status(201).json({
+      message: 'Demo agendada y oportunidad creada',
+      status: 'agendada',
+      contact_id: contactId,
+      opportunity_id: opportunity.insertId,
+      assigned_to: owner.name,
+    });
+  } catch (err) {
+    await connection.rollback();
+    res.status(500).json({ message: err.message });
+  } finally { connection.release(); }
+};
+
+module.exports = { list, summary, bulkCreate, update, scheduleFollowUp, scheduleDemo, convert };

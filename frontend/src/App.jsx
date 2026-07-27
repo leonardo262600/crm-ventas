@@ -38,6 +38,16 @@ const RoleRoute = ({ roles, children }) => {
   return roles.includes(user?.role) ? children : <Navigate to="/" replace />;
 };
 
+const OperationalRoute = ({ children }) => {
+  const { user } = useAuth();
+  return user?.role === 'setter' ? <Navigate to="/prospecting" replace /> : children;
+};
+
+const HomeRoute = () => {
+  const { user } = useAuth();
+  return user?.role === 'setter' ? <Navigate to="/prospecting" replace /> : <Dashboard />;
+};
+
 const AppRoutes = () => {
   const { user } = useAuth();
   return (
@@ -45,24 +55,24 @@ const AppRoutes = () => {
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
       <Route path="/quote/:token" element={<QuoteAccept />} />
       <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
-        <Route index                element={<Dashboard />} />
-        <Route path="contacts"      element={<Contacts />} />
-        <Route path="opportunities" element={<Opportunities />} />
-        <Route path="demos"          element={<Demos />} />
-        <Route path="activities"    element={<Activities />} />
-        <Route path="followups"     element={<FollowUps />} />
+        <Route index                element={<HomeRoute />} />
+        <Route path="contacts"      element={<OperationalRoute><Contacts /></OperationalRoute>} />
+        <Route path="opportunities" element={<OperationalRoute><Opportunities /></OperationalRoute>} />
+        <Route path="demos"          element={<OperationalRoute><Demos /></OperationalRoute>} />
+        <Route path="activities"    element={<OperationalRoute><Activities /></OperationalRoute>} />
+        <Route path="followups"     element={<OperationalRoute><FollowUps /></OperationalRoute>} />
         <Route path="prospecting"   element={<DailyProspecting />} />
-        <Route path="quotes"        element={<Quotes />} />
-        <Route path="invoices"      element={<Invoices />} />
-        <Route path="products"      element={<Products />} />
-        <Route path="reports"       element={<Reports />} />
+        <Route path="quotes"        element={<OperationalRoute><Quotes /></OperationalRoute>} />
+        <Route path="invoices"      element={<OperationalRoute><Invoices /></OperationalRoute>} />
+        <Route path="products"      element={<OperationalRoute><Products /></OperationalRoute>} />
+        <Route path="reports"       element={<OperationalRoute><Reports /></OperationalRoute>} />
         <Route path="users"         element={<RoleRoute roles={['admin','gerente']}><Users /></RoleRoute>} />
-        <Route path="communications" element={<Communications />} />
-        <Route path="automations"   element={<Automations />} />
-        <Route path="workflows"     element={<Workflows />} />
-        <Route path="workflows/:id" element={<WorkflowBuilder />} />
+        <Route path="communications" element={<OperationalRoute><Communications /></OperationalRoute>} />
+        <Route path="automations"   element={<OperationalRoute><Automations /></OperationalRoute>} />
+        <Route path="workflows"     element={<OperationalRoute><Workflows /></OperationalRoute>} />
+        <Route path="workflows/:id" element={<OperationalRoute><WorkflowBuilder /></OperationalRoute>} />
         <Route path="admin"         element={<RoleRoute roles={['admin','gerente']}><Admin /></RoleRoute>} />
-        <Route path="forecast"      element={<Forecast />} />
+        <Route path="forecast"      element={<OperationalRoute><Forecast /></OperationalRoute>} />
         <Route path="profile"      element={<Profile />} />
         <Route path="settings"     element={<RoleRoute roles={['admin','gerente']}><Settings /></RoleRoute>} />
         <Route path="backups"      element={<RoleRoute roles={['admin','gerente']}><Backup /></RoleRoute>} />

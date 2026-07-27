@@ -16,12 +16,21 @@ export default function Header() {
   const [showNotif, setShowNotif] = useState(false);
   const ref = useRef();
   const notificationRef = useRef();
+  const isSetter = user?.role === 'setter';
 
   useEffect(() => {
-    Promise.all([api.get('/activities', { params: { status: 'pendiente' } }), api.get('/activities/followups')])
-      .then(([a, f]) => { setUpcoming(a.data); setOverdue(f.data.filter(item => item.followup_status === 'vencido')); })
-      .catch(() => {});
-  }, []);
+    if (isSetter) return undefined;
+    const loadNotifications = () => Promise.all([
+      api.get('/activities', { params: { status: 'pendiente' } }),
+      api.get('/activities/followups'),
+    ]).then(([a, f]) => {
+      setUpcoming(a.data);
+      setOverdue(f.data.filter(item => item.followup_status === 'vencido'));
+    }).catch(() => {});
+    loadNotifications();
+    const timer = setInterval(loadNotifications, 30000);
+    return () => clearInterval(timer);
+  }, [isSetter]);
 
   useEffect(() => {
     if (!query.trim()) { setResults(null); return; }
@@ -68,7 +77,7 @@ export default function Header() {
       padding: '0 28px', height: 60, display: 'flex', alignItems: 'center', gap: 16,
     }}>
       {/* Search */}
-      <div className="header-search" ref={ref} style={{ flex: 1, maxWidth: 440, position: 'relative' }}>
+      {!isSetter && <div className="header-search" ref={ref} style={{ flex: 1, maxWidth: 440, position: 'relative' }}>
         <div style={{ position: 'relative' }}>
           <Search size={16} style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#94a3b8' }} />
           <input
@@ -125,11 +134,11 @@ export default function Header() {
             )}
           </div>
         )}
-      </div>
+      </div>}
 
       <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:12 }}>
         {/* Notifications */}
-        <div style={{ position:'relative' }} ref={notificationRef}>
+        {!isSetter && <div style={{ position:'relative' }} ref={notificationRef}>
           <button className="btn-icon" onClick={() => { setShowNotif(v => !v); setOpen(false); }} style={{ position:'relative' }}>
             <Bell size={18}/>
             {(upcoming.length + overdue.length) > 0 && (
@@ -170,18 +179,20 @@ export default function Header() {
               {!upcoming.length && !overdue.length && <p style={{ padding:16, fontSize:13, color:'#94a3b8', textAlign:'center' }}>Todo al día</p>}
             </div>
           )}
-        </div>
+        </div>}
 
         {/* User avatar */}
         <div className="header-user" style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 10px', borderRadius:10, background:'#f8fafc' }}>
           <div style={{ width:30, height:30, borderRadius:'50%', overflow:'hidden', background:'#e3e9f7', display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,color:'#173b60' }}>
-            {user?.avatar || user?.role === 'admin'
+            {user?.role === 'setter'
+              ? <span style={{fontSize:22,lineHeight:1}}>🇦🇷</span>
+              : user?.avatar || user?.role === 'admin'
               ? <img src={user?.avatar || '/brand/leonardo-profile.jpg'} alt={user?.name || 'Usuario'} style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'50% 22%'}}/>
               : (user?.name?.charAt(0).toUpperCase() || 'U')}
           </div>
           <div>
             <p style={{ fontWeight:600, fontSize:13, lineHeight:1.2 }}>{user?.name}</p>
-            <p style={{ fontSize:10, color:'#64748b' }}>{user?.role === 'admin' ? 'Asesor' : user?.role === 'vendedor' ? 'Vendedor' : user?.role}</p>
+            <p style={{ fontSize:10, color:'#64748b' }}>{user?.role === 'admin' ? 'Asesor' : user?.role === 'vendedor' ? 'Vendedor' : user?.role === 'setter' ? 'Setter' : user?.role}</p>
           </div>
         </div>
       </div>

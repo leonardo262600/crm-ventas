@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 
 const empty = { name:'', email:'', password:'', role:'vendedor', active:1 };
-const ROLE_BADGE = { admin:'badge-red', gerente:'badge-purple', vendedor:'badge-blue' };
+const ROLE_BADGE = { admin:'badge-red', gerente:'badge-purple', vendedor:'badge-blue', setter:'badge-green' };
 
 export default function Users() {
   const { user: me } = useAuth();
@@ -95,6 +95,7 @@ export default function Users() {
                   <div className="input-group"><label>Rol</label>
                     <select className="input" value={form.role} onChange={e=>setForm(f=>({...f,role:e.target.value}))}>
                       <option value="vendedor">Vendedor</option>
+                      <option value="setter">Setter</option>
                       <option value="gerente">Gerente</option>
                       <option value="admin">Administrador</option>
                     </select>

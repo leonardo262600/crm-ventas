@@ -23,7 +23,7 @@ CREATE TABLE users (
   name VARCHAR(150) NOT NULL,
   email VARCHAR(150) NOT NULL UNIQUE,
   password VARCHAR(255) NOT NULL,
-  role ENUM('admin','gerente','vendedor') NOT NULL DEFAULT 'vendedor',
+  role ENUM('admin','gerente','vendedor','setter') NOT NULL DEFAULT 'vendedor',
   avatar VARCHAR(255) DEFAULT NULL,
   active TINYINT(1) NOT NULL DEFAULT 1,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

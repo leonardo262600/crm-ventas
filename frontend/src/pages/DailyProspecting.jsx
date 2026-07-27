@@ -1,13 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Building2, CalendarClock, Check, ClipboardPaste, Link2, Mail, Pencil, Phone, RefreshCw, Search, Settings, UserPlus, X } from 'lucide-react';
+import { Building2, CalendarClock, CalendarPlus, Check, ClipboardPaste, Link2, Mail, Pencil, Phone, RefreshCw, Search, Settings, UserPlus, X } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 
 const STATUSES = [
   ['pendiente', 'Pendiente'],
   ['llamar', 'Llamar'],
   ['contactada', 'Contactada'],
   ['volver_contactar', 'Volver a contactar'],
+  ['agendada', 'Agendada'],
   ['ya_realadvisor', 'Ya está en RealAdvisor'],
   ['no_interesa', 'No interesa'],
   ['no_localizable', 'No localizable'],
@@ -34,10 +36,12 @@ const websiteUrl = value => /^https?:\/\//i.test(value) ? value : `https://${val
 const prospectPostalCode = item => item.postal_code || String(item.address || '').match(/\b\d{5}\b/)?.[0] || '';
 
 export default function DailyProspecting() {
+  const { user } = useAuth();
+  const isSetter = user?.role === 'setter';
   const [items, setItems] = useState([]);
   const [summary, setSummary] = useState(null);
   const [date, setDate] = useState('');
-  const [filter, setFilter] = useState('pendiente');
+  const [filter, setFilter] = useState(() => user?.role === 'setter' ? 'llamar' : 'pendiente');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState('');
@@ -45,6 +49,7 @@ export default function DailyProspecting() {
   const [workLine, setWorkLine] = useState(() => localStorage.getItem('crm_work_line') || '');
   const [showLineSettings, setShowLineSettings] = useState(false);
   const [followUp, setFollowUp] = useState(null);
+  const [booking, setBooking] = useState(null);
 
   const load = async (requestedDate = date) => {
     setLoading(true);
@@ -147,10 +152,34 @@ export default function DailyProspecting() {
     } catch (error) { toast.error(error.response?.data?.message || 'No se pudo convertir'); }
   };
 
+  const openBooking = item => {
+    const next = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    next.setMinutes(Math.ceil(next.getMinutes() / 15) * 15, 0, 0);
+    const localDefault = new Date(next.getTime() - next.getTimezoneOffset() * 60000).toISOString().slice(0,16);
+    setBooking({ item, demo_date: localDefault });
+  };
+
+  const saveBooking = async () => {
+    if (!booking?.demo_date) return toast.error('Selecciona fecha y hora');
+    try {
+      const { data } = await api.post(`/prospecting/${booking.item.id}/schedule-demo`, { demo_date: booking.demo_date });
+      setItems(current => current
+        .map(row => row.id === booking.item.id ? {...row,status:'agendada',follow_up_at:booking.demo_date,converted_contact_id:data.contact_id} : row)
+        .filter(row => filter === 'todos' || row.status === filter));
+      setBooking(null);
+      toast.success(`Demo agendada y asignada a ${data.assigned_to}`);
+      const stats = await api.get('/prospecting/summary');
+      setSummary(stats.data);
+    } catch (error) { toast.error(error.response?.data?.message || 'No se pudo agendar la demo'); }
+  };
+
+  const summaryCount = status => Number(summary?.statuses?.find(row => row.status === status)?.total || 0);
+  const visibleStatuses = isSetter ? STATUSES.filter(([value]) => value !== 'pendiente') : STATUSES;
+
   return (
     <div>
       <div className="page-header">
-        <div><h1>Prospección diaria</h1><p>40 agencias nuevas al día: 20 de cada una de dos zonas costeras, sin duplicados</p></div>
+        <div><h1>{isSetter ? 'Panel de llamadas' : 'Prospección diaria'}</h1><p>{isSetter ? 'Agencias verificadas para llamar y convertir en reuniones' : '40 agencias nuevas al día: 20 de cada una de dos zonas costeras, sin duplicados'}</p></div>
         <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
           <button className="btn btn-secondary" onClick={()=>setShowLineSettings(true)}><Settings size={15}/>{workLine ? `Línea: ${workLine}` : 'Configurar línea'}</button>
           <button className="btn btn-secondary" onClick={() => load()}><RefreshCw size={16}/>Actualizar</button>
@@ -158,10 +187,10 @@ export default function DailyProspecting() {
       </div>
 
       <div className="followup-summary prospect-summary">
-        <div className="followup-filter active"><span>Lista del día</span><strong>{items.length}</strong></div>
-        <div className="followup-filter"><span>Pendientes</span><strong>{items.filter(i=>i.status==='pendiente').length}</strong></div>
-        <div className="followup-filter"><span>Para llamar</span><strong>{items.filter(i=>i.status==='llamar').length}</strong></div>
-        <div className="followup-filter"><span>Contactadas</span><strong>{items.filter(i=>i.status==='contactada').length}</strong></div>
+        <div className="followup-filter active"><span>{isSetter ? 'Para llamar' : 'Lista del día'}</span><strong>{isSetter ? summaryCount('llamar') : Object.values(summary?.statuses || {}).length ? summary?.statuses?.reduce((sum,row)=>sum+Number(row.total),0) : items.length}</strong></div>
+        <div className="followup-filter"><span>{isSetter ? 'Agendadas' : 'Pendientes'}</span><strong>{summaryCount(isSetter ? 'agendada' : 'pendiente')}</strong></div>
+        <div className="followup-filter"><span>{isSetter ? 'Contactadas' : 'Para llamar'}</span><strong>{summaryCount(isSetter ? 'contactada' : 'llamar')}</strong></div>
+        <div className="followup-filter"><span>{isSetter ? 'Volver a llamar' : 'Contactadas'}</span><strong>{summaryCount(isSetter ? 'volver_contactar' : 'contactada')}</strong></div>
         <div className="followup-filter"><span>Histórico total</span><strong>{summary?.history || 0}</strong></div>
       </div>
 
@@ -172,7 +201,7 @@ export default function DailyProspecting() {
           <button className="btn btn-primary" onClick={()=>load()}>Buscar</button>
         </div>
         <div className="tabs" style={{marginTop:14,marginBottom:0,overflowX:'auto'}}>
-          {STATUSES.map(([value,label])=><button key={value} className={`tab ${filter===value?'active':''}`} onClick={()=>setFilter(value)}>{label}</button>)}
+          {visibleStatuses.map(([value,label])=><button key={value} className={`tab ${filter===value?'active':''}`} onClick={()=>setFilter(value)}>{label}</button>)}
           <button className={`tab ${filter==='todos'?'active':''}`} onClick={()=>setFilter('todos')}>Todos</button>
         </div>
       </div>
@@ -209,7 +238,7 @@ export default function DailyProspecting() {
                       {(item.secondary_phone || item.secondary_email) && <p style={{fontSize:11,color:'#64748b',marginTop:5}}>Hay datos adicionales</p>}
                       {!item.phone && !item.email && <span className="text-muted text-sm">Ver web</span>}
                     </td>
-                    <td><select className="input" value={item.status} onChange={e=>patch(item,{status:e.target.value})} style={{minWidth:165,padding:'7px 8px'}}>{STATUSES.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></td>
+                    <td><select className="input" value={item.status} onChange={e=>patch(item,{status:e.target.value})} style={{minWidth:165,padding:'7px 8px'}}>{visibleStatuses.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></td>
                     <td><textarea className="input" rows={2} value={item.notes || ''} onChange={e=>setItems(current=>current.map(row=>row.id===item.id?{...row,notes:e.target.value}:row))} onBlur={()=>patch(item,{notes:item.notes || ''},true)} aria-label={`Comentarios de ${item.agency_name}`} style={{minWidth:210,resize:'vertical',fontFamily:'inherit',fontSize:12,fontWeight:400}}/></td>
                     <td style={{textAlign:'center',minWidth:82}}>
                       <button className={`prospect-reminder ${item.follow_up_at?'scheduled':''}`} onClick={()=>openFollowUp(item)} title={item.follow_up_at ? `Tarea: ${new Date(item.follow_up_at).toLocaleString('es-ES')}` : 'Programar tarea de llamada'}><CalendarClock size={16}/></button>
@@ -217,8 +246,10 @@ export default function DailyProspecting() {
                     <td style={{minWidth:285}}>
                       <div style={{display:'flex',gap:6,flexWrap:'nowrap',alignItems:'center'}}>
                         {item.phone && <button className="btn btn-sm btn-call-ready" onClick={()=>call(item)}><Phone size={13}/>Llamar</button>}
+                        {isSetter && item.status !== 'agendada' && <button className="btn btn-primary btn-sm" onClick={()=>openBooking(item)}><CalendarPlus size={13}/>Agendar</button>}
                         <button className="btn btn-secondary btn-sm" onClick={()=>setEditing({...item})}><Pencil size={13}/>Más info</button>
-                        {!item.converted_contact_id ? <button className="btn btn-primary btn-sm" onClick={()=>convert(item)}><UserPlus size={13}/>Convertir</button> : <span className="badge badge-green">Convertida</span>}
+                        {!isSetter && (!item.converted_contact_id ? <button className="btn btn-primary btn-sm" onClick={()=>convert(item)}><UserPlus size={13}/>Convertir</button> : <span className="badge badge-green">Convertida</span>)}
+                        {item.status === 'agendada' && <span className="badge badge-green">Agendada</span>}
                       </div>
                     </td>
                   </tr>
@@ -272,6 +303,18 @@ export default function DailyProspecting() {
               <p className="text-muted text-sm">Se creará una tarea pendiente de llamada. Si ya existe una para esta agencia, se actualizará su fecha para evitar duplicados.</p>
             </div>
             <div className="modal-footer"><button className="btn btn-secondary" onClick={()=>setFollowUp(null)}>Cancelar</button><button className="btn btn-primary" onClick={saveFollowUp}>Crear tarea</button></div>
+          </div>
+        </div>
+      )}
+      {booking && (
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setBooking(null)}>
+          <div className="modal" style={{maxWidth:440}}>
+            <div className="modal-header"><div><h3>Agendar reunión</h3><p className="text-muted text-sm">{booking.item.agency_name}</p></div><button className="btn-icon" onClick={()=>setBooking(null)}><X size={18}/></button></div>
+            <div className="modal-body">
+              <div className="input-group"><label>Fecha y hora de la demo</label><input className="input" type="datetime-local" value={booking.demo_date} onChange={e=>setBooking({...booking,demo_date:e.target.value})}/></div>
+              <p className="text-muted text-sm">Al guardar, la agencia quedará como Agendada, se crearán el contacto y la oportunidad, y Leonardo recibirá un aviso en su CRM.</p>
+            </div>
+            <div className="modal-footer"><button className="btn btn-secondary" onClick={()=>setBooking(null)}>Cancelar</button><button className="btn btn-primary" onClick={saveBooking}><CalendarPlus size={15}/>Guardar reunión</button></div>
           </div>
         </div>
       )}

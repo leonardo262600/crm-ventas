@@ -155,8 +155,8 @@ export default function Profile() {
     finally { setTfaLoading(false); }
   };
 
-  const ROLE_LABEL = { admin:'Administrador', gerente:'Gerente', vendedor:'Vendedor' };
-  const ROLE_COLOR = { admin:'#ef4444', gerente:'#8B5CF6', vendedor:'#3B82F6' };
+  const ROLE_LABEL = { admin:'Administrador', gerente:'Gerente', vendedor:'Vendedor', setter:'Setter' };
+  const ROLE_COLOR = { admin:'#ef4444', gerente:'#8B5CF6', vendedor:'#3B82F6', setter:'#10b981' };
   const roleColor  = ROLE_COLOR[profile.role] || '#64748b';
 
   const PwInput = ({ field, label, placeholder }) => (
