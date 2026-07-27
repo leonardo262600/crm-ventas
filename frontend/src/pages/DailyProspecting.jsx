@@ -201,7 +201,7 @@ export default function DailyProspecting() {
                       {!item.phone && !item.email && <span className="text-muted text-sm">Ver web</span>}
                     </td>
                     <td><select className="input" value={item.status} onChange={e=>patch(item,{status:e.target.value})} style={{minWidth:165,padding:'7px 8px'}}>{STATUSES.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></td>
-                    <td><textarea className="input" rows={2} value={item.notes || ''} onChange={e=>setItems(current=>current.map(row=>row.id===item.id?{...row,notes:e.target.value}:row))} onBlur={()=>patch(item,{notes:item.notes || ''},true)} placeholder="Resultado, persona, objeción…" style={{minWidth:210,resize:'vertical',fontFamily:'inherit',fontSize:13,fontWeight:500}}/></td>
+                    <td><textarea className="input" rows={2} value={item.notes || ''} onChange={e=>setItems(current=>current.map(row=>row.id===item.id?{...row,notes:e.target.value}:row))} onBlur={()=>patch(item,{notes:item.notes || ''},true)} aria-label={`Comentarios de ${item.agency_name}`} style={{minWidth:210,resize:'vertical',fontFamily:'inherit',fontSize:12,fontWeight:400}}/></td>
                     <td style={{textAlign:'center',minWidth:82}}>
                       <button className={`prospect-reminder ${item.follow_up_at?'scheduled':''}`} onClick={()=>openFollowUp(item)} title={item.follow_up_at ? `Tarea: ${new Date(item.follow_up_at).toLocaleString('es-ES')}` : 'Programar tarea de llamada'}><CalendarClock size={16}/></button>
                     </td>
