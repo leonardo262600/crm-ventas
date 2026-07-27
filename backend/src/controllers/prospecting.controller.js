@@ -33,7 +33,7 @@ const list = async (req, res) => {
       sql += ' AND (agency_name LIKE ? OR city LIKE ? OR province LIKE ? OR email LIKE ? OR phone LIKE ?)';
       params.push(...Array(5).fill(`%${search}%`));
     }
-    sql += ` ORDER BY FIELD(status,'pendiente','volver_contactar','contactada','ya_realadvisor','no_interesa','no_localizable'), agency_name LIMIT ${safeLimit} OFFSET ${offset}`;
+    sql += ` ORDER BY FIELD(status,'llamar','pendiente','volver_contactar','contactada','ya_realadvisor','no_interesa','no_localizable'), agency_name LIMIT ${safeLimit} OFFSET ${offset}`;
     const [rows] = await db.query(sql, params);
     res.json({ date: selectedDate, items: rows });
   } catch (err) { res.status(500).json({ message: err.message }); }
@@ -76,17 +76,29 @@ const bulkCreate = async (req, res) => {
 };
 
 const update = async (req, res) => {
-  const allowedStatuses = ['pendiente','contactada','ya_realadvisor','no_interesa','volver_contactar','no_localizable'];
-  const { status, notes, follow_up_at } = req.body;
+  const allowedStatuses = ['pendiente','llamar','contactada','ya_realadvisor','no_interesa','volver_contactar','no_localizable'];
+  const { status } = req.body;
   if (status && !allowedStatuses.includes(status)) return res.status(400).json({ message: 'Estado no válido' });
   try {
-    await db.query(
-      `UPDATE daily_prospects SET
-       status=COALESCE(?,status), notes=COALESCE(?,notes), follow_up_at=?,
-       contacted_at=CASE WHEN ?='contactada' AND contacted_at IS NULL THEN NOW() ELSE contacted_at END
-       WHERE id=? AND tenant_id=?`,
-      [status || null, notes === undefined ? null : notes, follow_up_at || null, status || null, req.params.id, req.user.tenant_id]
-    );
+    const allowedFields = [
+      'status', 'notes', 'follow_up_at', 'agency_name', 'phone', 'secondary_phone',
+      'email', 'secondary_email', 'website', 'address', 'google_maps_url',
+      'contact_person', 'extra_info',
+    ];
+    const updates = [];
+    const params = [];
+    allowedFields.forEach(field => {
+      if (!Object.prototype.hasOwnProperty.call(req.body, field)) return;
+      updates.push(`${field}=?`);
+      let value = req.body[field];
+      if (field === 'phone' || field === 'secondary_phone') value = normalizeSpanishPhone(value);
+      if (value === '') value = null;
+      params.push(value);
+    });
+    if (!updates.length) return res.status(400).json({ message: 'No hay cambios para guardar' });
+    if (status === 'contactada') updates.push('contacted_at=COALESCE(contacted_at,NOW())');
+    params.push(req.params.id, req.user.tenant_id);
+    await db.query(`UPDATE daily_prospects SET ${updates.join(', ')} WHERE id=? AND tenant_id=?`, params);
     res.json({ message: 'Prospecto actualizado' });
   } catch (err) { res.status(500).json({ message: err.message }); }
 };

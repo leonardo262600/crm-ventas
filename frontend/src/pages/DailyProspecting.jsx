@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Building2, Check, Copy, ExternalLink, Mail, Phone, RefreshCw, Search, UserPlus } from 'lucide-react';
+import { Building2, Check, ClipboardPaste, ExternalLink, Mail, Pencil, Phone, RefreshCw, Search, Settings, UserPlus, X } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 
 const STATUSES = [
   ['pendiente', 'Pendiente'],
+  ['llamar', 'Llamar'],
   ['contactada', 'Contactada'],
   ['volver_contactar', 'Volver a contactar'],
   ['ya_realadvisor', 'Ya está en RealAdvisor'],
@@ -30,6 +31,9 @@ export default function DailyProspecting() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState('');
+  const [editing, setEditing] = useState(null);
+  const [workLine, setWorkLine] = useState(() => localStorage.getItem('crm_work_line') || '');
+  const [showLineSettings, setShowLineSettings] = useState(false);
 
   const load = async (requestedDate = date) => {
     setLoading(true);
@@ -65,17 +69,44 @@ export default function DailyProspecting() {
     const previous = items;
     setItems(current => current.map(row => row.id === item.id ? { ...row, ...changes } : row));
     try {
-      await api.patch(`/prospecting/${item.id}`, {
-        status: changes.status ?? item.status,
-        notes: changes.notes ?? item.notes,
-        follow_up_at: changes.follow_up_at ?? item.follow_up_at,
-      });
+      await api.patch(`/prospecting/${item.id}`, changes);
       if (!silent) toast.success('Actualizado');
     } catch (error) {
       setItems(previous);
       toast.error(error.response?.data?.message || 'No se pudo guardar');
     }
   };
+
+  const saveDetails = async () => {
+    try {
+      await api.patch(`/prospecting/${editing.id}`, editing);
+      setItems(current => current.map(row => row.id === editing.id ? editing : row));
+      setEditing(null);
+      toast.success('Información guardada');
+    } catch (error) { toast.error(error.response?.data?.message || 'No se pudo guardar'); }
+  };
+
+  const saveWorkLine = () => {
+    const normalized = spanishPhone(workLine);
+    setWorkLine(normalized);
+    localStorage.setItem('crm_work_line', normalized);
+    setShowLineSettings(false);
+    toast.success('Línea de trabajo guardada');
+  };
+
+  const call = item => {
+    if (workLine) {
+      const ok = window.confirm(`Vas a llamar a ${spanishPhone(item.phone)}.\n\nComprueba que el iPhone use tu línea de trabajo: ${workLine}`);
+      if (!ok) return;
+    }
+    window.location.href = `tel:${spanishPhone(item.phone).replace(/\s/g,'')}`;
+  };
+
+  const CopyButton = ({value, copyKey, title}) => (
+    <button className="prospect-copy" title={title || 'Copiar'} onClick={()=>copy(value,copyKey)}>
+      {copied===copyKey?<Check size={12}/>:<ClipboardPaste size={12}/>}
+    </button>
+  );
 
   const convert = async item => {
     try {
@@ -89,12 +120,16 @@ export default function DailyProspecting() {
     <div>
       <div className="page-header">
         <div><h1>Prospección diaria</h1><p>20 agencias nuevas al día, organizadas para contactar sin duplicados</p></div>
-        <button className="btn btn-secondary" onClick={() => load()}><RefreshCw size={16}/>Actualizar</button>
+        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+          <button className="btn btn-secondary" onClick={()=>setShowLineSettings(true)}><Settings size={15}/>{workLine ? `Línea: ${workLine}` : 'Configurar línea'}</button>
+          <button className="btn btn-secondary" onClick={() => load()}><RefreshCw size={16}/>Actualizar</button>
+        </div>
       </div>
 
       <div className="followup-summary">
         <div className="followup-filter active"><span>Lista del día</span><strong>{items.length}</strong></div>
         <div className="followup-filter"><span>Pendientes</span><strong>{items.filter(i=>i.status==='pendiente').length}</strong></div>
+        <div className="followup-filter" style={{borderColor:'#86efac',background:'#f0fdf4'}}><span>Para llamar</span><strong style={{color:'#16a34a'}}>{items.filter(i=>i.status==='llamar').length}</strong></div>
         <div className="followup-filter"><span>Contactadas</span><strong>{items.filter(i=>i.status==='contactada').length}</strong></div>
         <div className="followup-filter"><span>Histórico total</span><strong>{summary?.history || 0}</strong></div>
       </div>
@@ -122,21 +157,26 @@ export default function DailyProspecting() {
                 {items.map(item => (
                   <tr key={item.id}>
                     <td style={{minWidth:190}}>
-                      <p style={{fontWeight:700,color:'#173b60'}}>{item.agency_name}</p>
+                      <div style={{display:'flex',alignItems:'center',gap:6}}>
+                        <p style={{fontWeight:700,color:'#173b60'}}>{item.agency_name}</p>
+                        <CopyButton value={item.agency_name} copyKey={`n${item.id}`} title="Copiar nombre"/>
+                      </div>
                       <p style={{fontSize:11,color:'#64748b',marginTop:3}}>{[item.city,item.province].filter(Boolean).join(' · ') || item.zone || 'España'}</p>
                       {item.website && <a href={item.website} target="_blank" rel="noreferrer" style={{fontSize:11,display:'inline-flex',gap:4,alignItems:'center',marginTop:5}}>Abrir web <ExternalLink size={11}/></a>}
                     </td>
                     <td style={{minWidth:190}}>
-                      {item.phone && <div style={{display:'flex',alignItems:'center',gap:5,marginBottom:6}}><Phone size={13}/><span>{spanishPhone(item.phone)}</span><button className="btn-icon" onClick={()=>copy(spanishPhone(item.phone),`p${item.id}`)}>{copied===`p${item.id}`?<Check size={13}/>:<Copy size={13}/>}</button></div>}
-                      {item.email && <div style={{display:'flex',alignItems:'center',gap:5}}><Mail size={13}/><span style={{maxWidth:170,overflow:'hidden',textOverflow:'ellipsis'}}>{item.email}</span><button className="btn-icon" onClick={()=>copy(item.email,`e${item.id}`)}>{copied===`e${item.id}`?<Check size={13}/>:<Copy size={13}/>}</button></div>}
+                      {item.phone && <div style={{display:'flex',alignItems:'center',gap:5,marginBottom:6}}><Phone size={13}/><span>{spanishPhone(item.phone)}</span><CopyButton value={spanishPhone(item.phone)} copyKey={`p${item.id}`}/></div>}
+                      {item.email && <div style={{display:'flex',alignItems:'center',gap:5}}><Mail size={13}/><span style={{maxWidth:170,overflow:'hidden',textOverflow:'ellipsis'}}>{item.email}</span><CopyButton value={item.email} copyKey={`e${item.id}`}/></div>}
+                      {(item.secondary_phone || item.secondary_email) && <p style={{fontSize:11,color:'#64748b',marginTop:5}}>Hay datos adicionales</p>}
                       {!item.phone && !item.email && <span className="text-muted text-sm">Ver web</span>}
                     </td>
                     <td><select className="input" value={item.status} onChange={e=>patch(item,{status:e.target.value})} style={{minWidth:165,padding:'7px 8px'}}>{STATUSES.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></td>
-                    <td><textarea className="input" rows={2} value={item.notes || ''} onChange={e=>setItems(current=>current.map(row=>row.id===item.id?{...row,notes:e.target.value}:row))} onBlur={()=>patch(item,{notes:item.notes || ''},true)} placeholder="Resultado, persona, objeción…" style={{minWidth:210,resize:'vertical'}}/></td>
+                    <td><textarea className="input" rows={2} value={item.notes || ''} onChange={e=>setItems(current=>current.map(row=>row.id===item.id?{...row,notes:e.target.value}:row))} onBlur={()=>patch(item,{notes:item.notes || ''},true)} placeholder="Resultado, persona, objeción…" style={{minWidth:210,resize:'vertical',fontFamily:'inherit',fontSize:13,fontWeight:500}}/></td>
                     <td><input className="input" type="datetime-local" value={item.follow_up_at?.slice(0,16) || ''} onChange={e=>patch(item,{follow_up_at:e.target.value,status:e.target.value?'volver_contactar':item.status})} style={{minWidth:175,padding:'7px 8px'}}/></td>
                     <td>
                       <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-                        {item.phone && <a className="btn btn-secondary btn-sm" href={`tel:${spanishPhone(item.phone).replace(/\s/g,'')}`}><Phone size={13}/>Llamar</a>}
+                        {item.phone && <button className={`btn btn-sm ${item.status==='llamar'?'btn-call-ready':'btn-secondary'}`} onClick={()=>call(item)}><Phone size={13}/>Llamar</button>}
+                        <button className="btn btn-secondary btn-sm" onClick={()=>setEditing({...item})}><Pencil size={13}/>Más info</button>
                         {!item.converted_contact_id ? <button className="btn btn-primary btn-sm" onClick={()=>convert(item)}><UserPlus size={13}/>Convertir</button> : <span className="badge badge-green">Convertida</span>}
                       </div>
                     </td>
@@ -147,6 +187,40 @@ export default function DailyProspecting() {
           </div>
         )}
       </div>
+      {editing && (
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setEditing(null)}>
+          <div className="modal" style={{maxWidth:680}}>
+            <div className="modal-header"><div><h3>Información de la agencia</h3><p className="text-muted text-sm">Completa aquí los datos públicos que encuentres en Google.</p></div><button className="btn-icon" onClick={()=>setEditing(null)}><X size={18}/></button></div>
+            <div className="modal-body">
+              <div className="form-grid">
+                <div className="input-group full"><label>Nombre</label><input className="input" value={editing.agency_name||''} onChange={e=>setEditing({...editing,agency_name:e.target.value})}/></div>
+                <div className="input-group"><label>Persona de contacto</label><input className="input" value={editing.contact_person||''} onChange={e=>setEditing({...editing,contact_person:e.target.value})}/></div>
+                <div className="input-group"><label>Teléfono principal</label><input className="input" value={editing.phone||''} onChange={e=>setEditing({...editing,phone:e.target.value})}/></div>
+                <div className="input-group"><label>Teléfono adicional</label><input className="input" value={editing.secondary_phone||''} onChange={e=>setEditing({...editing,secondary_phone:e.target.value})}/></div>
+                <div className="input-group"><label>Correo principal</label><input className="input" value={editing.email||''} onChange={e=>setEditing({...editing,email:e.target.value})}/></div>
+                <div className="input-group"><label>Correo adicional</label><input className="input" value={editing.secondary_email||''} onChange={e=>setEditing({...editing,secondary_email:e.target.value})}/></div>
+                <div className="input-group"><label>Web</label><input className="input" value={editing.website||''} onChange={e=>setEditing({...editing,website:e.target.value})}/></div>
+                <div className="input-group"><label>Enlace de Google Maps</label><input className="input" value={editing.google_maps_url||''} onChange={e=>setEditing({...editing,google_maps_url:e.target.value})}/></div>
+                <div className="input-group full"><label>Dirección</label><input className="input" value={editing.address||''} onChange={e=>setEditing({...editing,address:e.target.value})}/></div>
+                <div className="input-group full"><label>Información adicional</label><textarea className="input" rows={3} value={editing.extra_info||''} onChange={e=>setEditing({...editing,extra_info:e.target.value})} style={{fontFamily:'inherit'}} placeholder="Horario, especialidad, datos encontrados, observaciones…"/></div>
+              </div>
+            </div>
+            <div className="modal-footer"><button className="btn btn-secondary" onClick={()=>setEditing(null)}>Cancelar</button><button className="btn btn-primary" onClick={saveDetails}>Guardar</button></div>
+          </div>
+        </div>
+      )}
+      {showLineSettings && (
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowLineSettings(false)}>
+          <div className="modal" style={{maxWidth:460}}>
+            <div className="modal-header"><h3>Mi línea de trabajo</h3><button className="btn-icon" onClick={()=>setShowLineSettings(false)}><X size={18}/></button></div>
+            <div className="modal-body">
+              <p className="text-muted text-sm" style={{marginBottom:14}}>Se mostrará antes de cada llamada como recordatorio. Por seguridad, iPhone decide qué SIM utiliza y una web no puede forzarla.</p>
+              <div className="input-group"><label>Número de trabajo</label><input className="input" type="tel" value={workLine} onChange={e=>setWorkLine(e.target.value)} placeholder="+34 600 000 000"/></div>
+            </div>
+            <div className="modal-footer"><button className="btn btn-secondary" onClick={()=>setShowLineSettings(false)}>Cancelar</button><button className="btn btn-primary" onClick={saveWorkLine}>Guardar</button></div>
+          </div>
+        </div>
+      )}
       {summary?.date && <p style={{fontSize:11,color:'#94a3b8',marginTop:10}}>Última lista cargada: {String(summary.date).slice(0,10)} · Los datos proceden de fuentes comerciales públicas y conviene verificarlos antes de contactar.</p>}
     </div>
   );
