@@ -36,6 +36,7 @@ const websiteUrl = value => /^https?:\/\//i.test(value) ? value : `https://${val
 
 const prospectPostalCode = item => item.postal_code || String(item.address || '').match(/\b\d{5}\b/)?.[0] || '';
 const hasExtraDetails = item => Boolean(String(item.extra_info || '').trim());
+const qualificationClass = level => `prospect-priority prospect-priority-${String(level || 'c').toLowerCase()}`;
 
 export default function DailyProspecting() {
   const { user } = useAuth();
@@ -181,7 +182,7 @@ export default function DailyProspecting() {
   return (
     <div>
       <div className="page-header">
-        <div><h1>{isSetter ? 'Panel de llamadas' : 'Prospección diaria'}</h1><p>{isSetter ? 'Agencias verificadas para llamar y convertir en reuniones' : '40 agencias nuevas al día: 20 de cada una de dos zonas costeras, sin duplicados'}</p></div>
+        <div><h1>{isSetter ? 'Panel de llamadas' : 'Prospección diaria'}</h1><p>{isSetter ? 'Agencias verificadas y priorizadas para convertir en reuniones' : '100 agencias cualificadas al día, ordenadas por potencial comercial y sin duplicados'}</p></div>
         <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
           <button className="btn btn-secondary" onClick={()=>setShowLineSettings(true)}><Settings size={15}/>{workLine ? `Línea: ${workLine}` : 'Configurar línea'}</button>
           <button className="btn btn-secondary" onClick={() => load()}><RefreshCw size={16}/>Actualizar</button>
@@ -225,6 +226,16 @@ export default function DailyProspecting() {
                         <p style={{fontWeight:700,color:'#173b60'}}>{item.agency_name}</p>
                         <CopyButton value={item.agency_name} copyKey={`n${item.id}`} title="Copiar nombre"/>
                       </div>
+                      {item.qualification_score != null && (
+                        <div className="prospect-qualification">
+                          <span className={qualificationClass(item.qualification_level)}>
+                            Prioridad {item.qualification_level || 'C'}
+                          </span>
+                          <strong>{item.qualification_score}/100</strong>
+                        </div>
+                      )}
+                      {item.qualification_reason && <p className="prospect-qualification-reason" title={item.qualification_reason}>{item.qualification_reason}</p>}
+                      {item.call_angle && <p className="prospect-call-angle" title={item.call_angle}><strong>Enfoque:</strong> {item.call_angle}</p>}
                       <p style={{fontSize:11,color:'#64748b',marginTop:3}}>{[item.city,item.province].filter(Boolean).join(' · ') || item.zone || 'España'}</p>
                       {item.address && <p style={{fontSize:11,color:'#64748b',marginTop:5,maxWidth:220,lineHeight:1.35}}>{item.address}</p>}
                       {prospectPostalCode(item) && <div style={{display:'flex',alignItems:'center',gap:5,marginTop:4}}>
@@ -288,6 +299,10 @@ export default function DailyProspecting() {
                 <div className="input-group full"><label>Dirección</label><input className="input" value={editing.address||''} onChange={e=>setEditing({...editing,address:e.target.value})}/></div>
                 <div className="input-group"><label>Código postal</label><input className="input" inputMode="numeric" maxLength={5} value={editing.postal_code||''} onChange={e=>setEditing({...editing,postal_code:e.target.value.replace(/\D/g,'').slice(0,5)})} placeholder="00000"/></div>
                 <div className="input-group full"><label>Información adicional</label><textarea className="input" rows={3} value={editing.extra_info||''} onChange={e=>setEditing({...editing,extra_info:e.target.value})} style={{fontFamily:'inherit'}} placeholder="Horario, especialidad, datos encontrados, observaciones…"/></div>
+                <div className="input-group"><label>Puntuación comercial</label><input className="input" type="number" min="0" max="100" value={editing.qualification_score??''} onChange={e=>setEditing({...editing,qualification_score:e.target.value})} placeholder="0–100"/></div>
+                <div className="input-group"><label>Prioridad</label><select className="input" value={editing.qualification_level||''} onChange={e=>setEditing({...editing,qualification_level:e.target.value})}><option value="">Sin clasificar</option><option value="A">A · Alta</option><option value="B">B · Media</option><option value="C">C · Baja</option></select></div>
+                <div className="input-group full"><label>Motivo de cualificación</label><textarea className="input" rows={2} value={editing.qualification_reason||''} onChange={e=>setEditing({...editing,qualification_reason:e.target.value})} style={{fontFamily:'inherit'}} placeholder="Señales públicas que justifican la prioridad…"/></div>
+                <div className="input-group full"><label>Enfoque recomendado para la llamada</label><textarea className="input" rows={2} value={editing.call_angle||''} onChange={e=>setEditing({...editing,call_angle:e.target.value})} style={{fontFamily:'inherit'}} placeholder="Argumento principal para iniciar la conversación…"/></div>
               </div>
             </div>
             <div className="modal-footer"><button className="btn btn-secondary" onClick={()=>setEditing(null)}>Cancelar</button><button className="btn btn-primary" onClick={saveDetails}>Guardar</button></div>

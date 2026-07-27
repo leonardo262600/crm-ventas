@@ -1,6 +1,43 @@
 const db = require('../config/db');
 const { syncDemoTasks } = require('../services/demoAutomation.service');
 
+let qualificationSchemaPromise;
+const ensureQualificationSchema = () => {
+  if (qualificationSchemaPromise) return qualificationSchemaPromise;
+  qualificationSchemaPromise = (async () => {
+    const [columns] = await db.query(
+      `SELECT COLUMN_NAME FROM information_schema.COLUMNS
+       WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='daily_prospects'`
+    );
+    const existing = new Set(columns.map(row => row.COLUMN_NAME));
+    const definitions = {
+      qualification_score: 'TINYINT UNSIGNED NULL',
+      qualification_level: 'VARCHAR(1) NULL',
+      qualification_reason: 'VARCHAR(700) NULL',
+      call_angle: 'VARCHAR(500) NULL',
+    };
+    for (const [column, definition] of Object.entries(definitions)) {
+      if (!existing.has(column)) {
+        await db.query(`ALTER TABLE daily_prospects ADD COLUMN ${column} ${definition}`);
+      }
+    }
+    const [[index]] = await db.query(
+      `SELECT INDEX_NAME FROM information_schema.STATISTICS
+       WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='daily_prospects'
+         AND INDEX_NAME='idx_prospect_qualification' LIMIT 1`
+    );
+    if (!index) {
+      await db.query(
+        'CREATE INDEX idx_prospect_qualification ON daily_prospects (tenant_id,status,qualification_score)'
+      );
+    }
+  })().catch(error => {
+    qualificationSchemaPromise = null;
+    throw error;
+  });
+  return qualificationSchemaPromise;
+};
+
 const normalize = value => (value || '')
   .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
   .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
@@ -28,6 +65,7 @@ const list = async (req, res) => {
   const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
   const offset = (Math.max(Number(page) || 1, 1) - 1) * safeLimit;
   try {
+    await ensureQualificationSchema();
     const selectedDate = date || null;
     let sql = 'SELECT * FROM daily_prospects WHERE tenant_id=?';
     const params = [req.user.tenant_id];
@@ -40,7 +78,9 @@ const list = async (req, res) => {
       sql += ' AND (agency_name LIKE ? OR city LIKE ? OR province LIKE ? OR email LIKE ? OR phone LIKE ?)';
       params.push(...Array(5).fill(`%${search}%`));
     }
-    sql += ` ORDER BY FIELD(status,'llamar','pendiente','volver_contactar','agendada','contactada','ya_realadvisor','no_interesa','no_localizable'), agency_name LIMIT ${safeLimit} OFFSET ${offset}`;
+    sql += ` ORDER BY FIELD(status,'llamar','pendiente','volver_contactar','agendada','contactada','ya_realadvisor','no_interesa','no_localizable'),
+             qualification_score IS NULL, qualification_score DESC, agency_name
+             LIMIT ${safeLimit} OFFSET ${offset}`;
     const [rows] = await db.query(sql, params);
     res.json({ date: selectedDate, items: rows });
   } catch (err) { res.status(500).json({ message: err.message }); }
@@ -79,15 +119,22 @@ const bulkCreate = async (req, res) => {
   let inserted = 0;
   let duplicates = 0;
   try {
+    await ensureQualificationSchema();
     for (const item of prospects) {
       if (!item.agency_name) continue;
       const [result] = await db.query(
         `INSERT IGNORE INTO daily_prospects
-         (tenant_id,batch_date,zone,city,province,agency_name,phone,email,website,address,postal_code,source_url,normalized_key,created_by)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+         (tenant_id,batch_date,zone,city,province,agency_name,phone,email,website,address,postal_code,source_url,
+          qualification_score,qualification_level,qualification_reason,call_angle,normalized_key,created_by)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         [req.user.tenant_id, batchDate, item.zone || item.city || null, item.city || null, item.province || null,
          item.agency_name, normalizeSpanishPhone(item.phone), item.email || null, item.website || null, item.address || null,
-         postalCodeFrom(item.postal_code, item.address), item.source_url || item.website || null, makeKey(item), req.user.id]
+         postalCodeFrom(item.postal_code, item.address), item.source_url || item.website || null,
+         Number.isFinite(Number(item.qualification_score)) ? Math.min(100, Math.max(0, Math.round(Number(item.qualification_score)))) : null,
+         ['A','B','C'].includes(String(item.qualification_level || '').toUpperCase())
+           ? String(item.qualification_level).toUpperCase()
+           : null,
+         item.qualification_reason || null, item.call_angle || null, makeKey(item), req.user.id]
       );
       if (result.affectedRows) inserted += 1; else duplicates += 1;
     }
@@ -100,10 +147,12 @@ const update = async (req, res) => {
   const { status } = req.body;
   if (status && !allowedStatuses.includes(status)) return res.status(400).json({ message: 'Estado no válido' });
   try {
+    await ensureQualificationSchema();
     const allowedFields = [
       'status', 'notes', 'follow_up_at', 'agency_name', 'phone', 'secondary_phone',
       'email', 'secondary_email', 'website', 'address', 'postal_code', 'google_maps_url',
-      'contact_person', 'extra_info',
+      'contact_person', 'extra_info', 'qualification_score', 'qualification_level',
+      'qualification_reason', 'call_angle',
     ];
     const updates = [];
     const params = [];
@@ -112,6 +161,13 @@ const update = async (req, res) => {
       updates.push(`${field}=?`);
       let value = req.body[field];
       if (field === 'phone' || field === 'secondary_phone') value = normalizeSpanishPhone(value);
+      if (field === 'qualification_score' && value !== '' && value != null) {
+        value = Math.min(100, Math.max(0, Math.round(Number(value) || 0)));
+      }
+      if (field === 'qualification_level' && value) {
+        value = String(value).toUpperCase();
+        if (!['A','B','C'].includes(value)) return;
+      }
       if (value === '') value = null;
       params.push(value);
     });

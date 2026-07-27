@@ -67,6 +67,15 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 .prospect-web-link:hover { background: #dbeafe; color: #1d4ed8; }
 .prospect-more-info { position: relative; }
 .prospect-info-alert { position: absolute; top: -5px; right: -5px; width: 10px; height: 10px; border-radius: 50%; background: #ef4444; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(239,68,68,.18); }
+.prospect-qualification { display:flex; align-items:center; gap:7px; margin-top:7px; }
+.prospect-qualification strong { font-size:11px; color:#334155; }
+.prospect-priority { display:inline-flex; align-items:center; border-radius:999px; padding:2px 7px; font-size:10px; font-weight:700; }
+.prospect-priority-a { background:#dcfce7; color:#166534; }
+.prospect-priority-b { background:#fef3c7; color:#92400e; }
+.prospect-priority-c { background:#f1f5f9; color:#475569; }
+.prospect-qualification-reason,
+.prospect-call-angle { max-width:260px; margin-top:5px; color:#64748b; font-size:11px; line-height:1.35; }
+.prospect-call-angle { color:#334155; }
 .sidebar-chat-badge { margin-left:auto; min-width:19px; height:19px; padding:0 5px; border-radius:10px; background:#ef4444; color:#fff; font-size:10px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; }
 .chat-connection { display:flex; align-items:center; gap:7px; color:#64748b; font-size:12px; }
 .chat-header-actions { display:flex; align-items:center; justify-content:flex-end; gap:8px; flex-wrap:wrap; }
@@ -451,6 +460,12 @@ html[data-theme="dark"] td { border-color:var(--border); }
 html[data-theme="dark"] tr:hover td { background:#18263a; }
 html[data-theme="dark"] .followup-row.vencido { background:#2a1820; }
 html[data-theme="dark"] .prospect-web-link { background:#20385a; color:#8db8ff; }
+html[data-theme="dark"] .prospect-qualification strong,
+html[data-theme="dark"] .prospect-call-angle { color:#dbeafe; }
+html[data-theme="dark"] .prospect-qualification-reason { color:#94a3b8; }
+html[data-theme="dark"] .prospect-priority-a { background:#14532d; color:#bbf7d0; }
+html[data-theme="dark"] .prospect-priority-b { background:#713f12; color:#fde68a; }
+html[data-theme="dark"] .prospect-priority-c { background:#334155; color:#e2e8f0; }
 html[data-theme="dark"] .spinner { border-color:#33465f; border-top-color:var(--primary); }
 html[data-theme="dark"] ::-webkit-scrollbar-thumb { background:#44566e; }
 html[data-theme="dark"] .recharts-cartesian-grid line { stroke:#29394e; }
