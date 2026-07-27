@@ -152,9 +152,11 @@ router.post('/communications/templates',      auth, commCtrl.createTemplate);
 router.put('/communications/templates/:id',   auth, commCtrl.updateTemplate);
 router.delete('/communications/templates/:id',auth, commCtrl.deleteTemplate);
 
-// ── Chat (REST history) ───────────────────────────────────
-router.get('/chat/rooms',   auth, chatCtrl.getRooms);
-router.get('/chat/history', auth, chatCtrl.getHistory);
+// ── Chat privado ──────────────────────────────────────────
+router.get('/chat/peers',        auth, chatCtrl.getPeers);
+router.get('/chat/history',      auth, chatCtrl.getHistory);
+router.get('/chat/unread-count', auth, chatCtrl.unreadCount);
+router.post('/chat/read',        auth, chatCtrl.markRead);
 
 // ── Automations ───────────────────────────────────────────
 router.get('/automations',            auth, automCtrl.list);

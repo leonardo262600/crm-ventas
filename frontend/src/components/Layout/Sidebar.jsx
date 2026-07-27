@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -6,6 +6,7 @@ import {
   BarChart2, Users, LogOut,
   MessageSquare, Settings, UserCircle, SlidersHorizontal, DatabaseBackup, Building2
 } from 'lucide-react';
+import api from '../../services/api';
 
 const navStyle = isActive => ({
   display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px',
@@ -24,6 +25,7 @@ const nav = [
   { to: '/followups',      icon: CalendarCheck,   label: 'Seguimientos',       mobileLabel: 'Seguim.' },
   { to: '/activities',     icon: CalendarCheck,   label: 'Tareas diarias',     mobileLabel: 'T. diarias' },
   { to: '/prospecting',    icon: Building2,       label: 'Prospección diaria', mobileLabel: 'P. diaria' },
+  { to: '/chat',           icon: MessageSquare,   label: 'Chat',               mobileLabel: 'Chat' },
   { to: '/communications', icon: MessageSquare,   label: 'Plantillas',         mobileLabel: 'Plantillas' },
   { to: '/reports',        icon: BarChart2,       label: 'Informes',           mobileLabel: 'Informes' },
 ];
@@ -31,7 +33,14 @@ const nav = [
 export default function Sidebar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [chatUnread, setChatUnread] = useState(0);
   const handleLogout = () => { logout(); navigate('/login'); };
+  useEffect(() => {
+    const refresh = () => api.get('/chat/unread-count').then(({data})=>setChatUnread(data.unread || 0)).catch(()=>{});
+    refresh();
+    const timer = setInterval(refresh, 15000);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <aside className="app-sidebar" style={{
@@ -79,12 +88,13 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="sidebar-nav" style={{ flex: 1, padding: '10px 10px', overflowY: 'auto' }}>
-        {(user?.role === 'setter' ? nav.filter(item => ['/prospecting','/contacts'].includes(item.to)) : nav).map(({ to, icon: Icon, label, mobileLabel, exact }) => (
+        {(user?.role === 'setter' ? nav.filter(item => ['/prospecting','/contacts','/chat'].includes(item.to)) : nav).map(({ to, icon: Icon, label, mobileLabel, exact }) => (
           <NavLink key={to} to={to} end={exact}
             style={({ isActive }) => navStyle(isActive)}>
             <Icon size={17}/>
             <span className="nav-label-desktop">{label}</span>
             <span className="nav-label-mobile">{mobileLabel}</span>
+            {to==='/chat' && chatUnread>0 && <span className="sidebar-chat-badge">{chatUnread>99?'99+':chatUnread}</span>}
           </NavLink>
         ))}
 

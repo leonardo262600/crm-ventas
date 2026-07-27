@@ -9,7 +9,7 @@ import { es } from 'date-fns/locale';
 import { useSearchParams } from 'react-router-dom';
 import { FOLLOWUP_PHASES, NO_SHOW_PHASES } from '../utils/followupPhases';
 
-const TABS = ['emails','llamadas','plantillas','chat'];
+const TABS = ['emails','llamadas','plantillas'];
 const TAB_LABELS = { emails:'Emails', llamadas:'Llamadas', plantillas:'Plantillas', chat:'Chat' };
 
 const DEFAULT_ROOMS = ['general','ventas','soporte'];

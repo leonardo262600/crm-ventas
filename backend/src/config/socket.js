@@ -1,6 +1,7 @@
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const db = require('./db');
+const { canAccessRoom, roomParticipants } = require('../controllers/chat.controller');
 
 let io;
 
@@ -30,11 +31,12 @@ const initSocket = (httpServer, allowedOrigins = []) => {
 
     // Join tenant room
     socket.join(`tenant_${user.tenant_id}`);
+    socket.join(`user_${user.tenant_id}_${user.id}`);
 
     // Join a specific chat room
     socket.on('join_room', async (payload) => {
       const room = typeof payload === 'string' ? payload : payload?.room;
-      if (!room) return;
+      if (!room || !canAccessRoom(room, user.id)) return;
       socket.join(`chat_${user.tenant_id}_${room}`);
 
       // Load last 50 messages
@@ -52,7 +54,7 @@ const initSocket = (httpServer, allowedOrigins = []) => {
 
     // Send message
     socket.on('send_message', async ({ room, message }) => {
-      if (!message?.trim()) return;
+      if (!message?.trim() || !canAccessRoom(room, user.id)) return;
       try {
         const [result] = await db.query(
           'INSERT INTO chat_messages (tenant_id, user_id, room, message) VALUES (?,?,?,?)',
@@ -67,12 +69,15 @@ const initSocket = (httpServer, allowedOrigins = []) => {
           created_at: new Date().toISOString()
         };
         io.to(`chat_${user.tenant_id}_${room}`).emit('new_message', payload);
+        roomParticipants(room).forEach(participantId => {
+          io.to(`user_${user.tenant_id}_${participantId}`).emit('chat_notification', payload);
+        });
       } catch {}
     });
 
     // Typing indicator
     socket.on('typing', ({ room, isTyping }) => {
-      if (!room) return;
+      if (!room || !canAccessRoom(room, user.id)) return;
       socket.to(`chat_${user.tenant_id}_${room}`).emit('user_typing', {
         user_name: user.name,
         isTyping: !!isTyping,

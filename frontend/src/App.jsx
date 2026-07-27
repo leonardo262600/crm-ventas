@@ -26,6 +26,7 @@ import Backup from './pages/Backup';
 import FollowUps from './pages/FollowUps';
 import DailyProspecting from './pages/DailyProspecting';
 import Demos from './pages/Demos';
+import Chat from './pages/Chat';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -62,6 +63,7 @@ const AppRoutes = () => {
         <Route path="activities"    element={<OperationalRoute><Activities /></OperationalRoute>} />
         <Route path="followups"     element={<OperationalRoute><FollowUps /></OperationalRoute>} />
         <Route path="prospecting"   element={<DailyProspecting />} />
+        <Route path="chat"          element={<Chat />} />
         <Route path="quotes"        element={<OperationalRoute><Quotes /></OperationalRoute>} />
         <Route path="invoices"      element={<OperationalRoute><Invoices /></OperationalRoute>} />
         <Route path="products"      element={<OperationalRoute><Products /></OperationalRoute>} />
