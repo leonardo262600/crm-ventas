@@ -14,6 +14,19 @@
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="icon" type="image/svg+xml" href="/icons/crm-sales.svg?v=1" />
     <title>CRM Leonardo</title>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.setTimeout(function() { sessionStorage.removeItem('crm_sw_reloaded'); }, 10000);
+        navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(function(registration) {
+          registration.update();
+        }).catch(function() {});
+        navigator.serviceWorker.addEventListener('controllerchange', function() {
+          if (sessionStorage.getItem('crm_sw_reloaded') === '1') return;
+          sessionStorage.setItem('crm_sw_reloaded', '1');
+          window.location.reload();
+        });
+      }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   </head>
