@@ -80,6 +80,7 @@ router.get('/prospecting', auth, prospectingCtrl.list);
 router.get('/prospecting/summary', auth, prospectingCtrl.summary);
 router.post('/prospecting/bulk', auth, prospectingCtrl.bulkCreate);
 router.patch('/prospecting/:id', auth, prospectingCtrl.update);
+router.post('/prospecting/:id/follow-up', auth, prospectingCtrl.scheduleFollowUp);
 router.post('/prospecting/:id/convert', auth, prospectingCtrl.convert);
 
 // ── Opportunities ─────────────────────────────────────────

@@ -103,6 +103,57 @@ const update = async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
 
+const scheduleFollowUp = async (req, res) => {
+  const { scheduled_at } = req.body;
+  if (!scheduled_at) return res.status(400).json({ message: 'Selecciona fecha y hora' });
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [[prospect]] = await connection.query(
+      'SELECT * FROM daily_prospects WHERE id=? AND tenant_id=? FOR UPDATE',
+      [req.params.id, req.user.tenant_id]
+    );
+    if (!prospect) {
+      await connection.rollback();
+      return res.status(404).json({ message: 'Agencia no encontrada' });
+    }
+    const marker = `[PROSPECT:${prospect.id}]`;
+    const [[existing]] = await connection.query(
+      `SELECT id FROM activities
+       WHERE tenant_id=? AND status='pendiente' AND description LIKE ?
+       ORDER BY id DESC LIMIT 1`,
+      [req.user.tenant_id, `%${marker}%`]
+    );
+    const title = `Llamar · ${prospect.agency_name}`;
+    const description = `${marker} Seguimiento de prospección diaria${prospect.phone ? ` · ${prospect.phone}` : ''}`;
+    if (existing) {
+      await connection.query(
+        `UPDATE activities SET title=?, type='llamada', description=?, scheduled_at=?, due_at=?,
+         contact_id=?, assigned_to=? WHERE id=? AND tenant_id=?`,
+        [title, description, scheduled_at, scheduled_at, prospect.converted_contact_id || null,
+         req.user.id, existing.id, req.user.tenant_id]
+      );
+    } else {
+      await connection.query(
+        `INSERT INTO activities
+         (tenant_id,title,type,description,scheduled_at,due_at,status,contact_id,assigned_to,created_by)
+         VALUES (?,?, 'llamada', ?, ?, ?, 'pendiente', ?, ?, ?)`,
+        [req.user.tenant_id, title, description, scheduled_at, scheduled_at,
+         prospect.converted_contact_id || null, req.user.id, req.user.id]
+      );
+    }
+    await connection.query(
+      "UPDATE daily_prospects SET status='volver_contactar', follow_up_at=? WHERE id=? AND tenant_id=?",
+      [scheduled_at, prospect.id, req.user.tenant_id]
+    );
+    await connection.commit();
+    res.json({ message: existing ? 'Tarea de llamada actualizada' : 'Tarea de llamada creada' });
+  } catch (err) {
+    await connection.rollback();
+    res.status(500).json({ message: err.message });
+  } finally { connection.release(); }
+};
+
 const convert = async (req, res) => {
   const connection = await db.getConnection();
   try {
@@ -135,4 +186,4 @@ const convert = async (req, res) => {
   } finally { connection.release(); }
 };
 
-module.exports = { list, summary, bulkCreate, update, convert };
+module.exports = { list, summary, bulkCreate, update, scheduleFollowUp, convert };

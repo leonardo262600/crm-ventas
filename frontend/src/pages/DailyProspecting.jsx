@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Building2, Check, ClipboardPaste, Link2, Mail, Pencil, Phone, RefreshCw, Search, Settings, UserPlus, X } from 'lucide-react';
+import { Building2, CalendarClock, Check, ClipboardPaste, Link2, Mail, Pencil, Phone, RefreshCw, Search, Settings, UserPlus, X } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -42,6 +42,7 @@ export default function DailyProspecting() {
   const [editing, setEditing] = useState(null);
   const [workLine, setWorkLine] = useState(() => localStorage.getItem('crm_work_line') || '');
   const [showLineSettings, setShowLineSettings] = useState(false);
+  const [followUp, setFollowUp] = useState(null);
 
   const load = async (requestedDate = date) => {
     setLoading(true);
@@ -110,6 +111,24 @@ export default function DailyProspecting() {
     window.location.href = `tel:${spanishPhone(item.phone).replace(/\s/g,'')}`;
   };
 
+  const openFollowUp = item => {
+    const next = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    next.setHours(10, 0, 0, 0);
+    const localDefault = new Date(next.getTime() - next.getTimezoneOffset() * 60000).toISOString().slice(0,16);
+    setFollowUp({ item, scheduled_at: item.follow_up_at?.slice(0,16) || localDefault });
+  };
+
+  const saveFollowUp = async () => {
+    try {
+      await api.post(`/prospecting/${followUp.item.id}/follow-up`, { scheduled_at: followUp.scheduled_at });
+      setItems(current => current.map(row => row.id === followUp.item.id
+        ? {...row,status:'volver_contactar',follow_up_at:followUp.scheduled_at}
+        : row));
+      setFollowUp(null);
+      toast.success('Tarea de llamada creada');
+    } catch (error) { toast.error(error.response?.data?.message || 'No se pudo crear la tarea'); }
+  };
+
   const CopyButton = ({value, copyKey, title}) => (
     <button className="prospect-copy" title={title || 'Copiar'} onClick={()=>copy(value,copyKey)}>
       {copied===copyKey?<Check size={11}/>:<ClipboardPaste size={11}/>}
@@ -160,7 +179,7 @@ export default function DailyProspecting() {
         ) : (
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Agencia</th><th>Contacto público</th><th>Estado</th><th>Comentarios</th><th>Volver a contactar</th><th>Acciones</th></tr></thead>
+              <thead><tr><th>Agencia</th><th>Contacto público</th><th>Estado</th><th>Comentarios</th><th style={{textAlign:'center'}}>Recordatorio</th><th>Acciones</th></tr></thead>
               <tbody>
                 {items.map(item => (
                   <tr key={item.id}>
@@ -183,10 +202,12 @@ export default function DailyProspecting() {
                     </td>
                     <td><select className="input" value={item.status} onChange={e=>patch(item,{status:e.target.value})} style={{minWidth:165,padding:'7px 8px'}}>{STATUSES.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></td>
                     <td><textarea className="input" rows={2} value={item.notes || ''} onChange={e=>setItems(current=>current.map(row=>row.id===item.id?{...row,notes:e.target.value}:row))} onBlur={()=>patch(item,{notes:item.notes || ''},true)} placeholder="Resultado, persona, objeción…" style={{minWidth:210,resize:'vertical',fontFamily:'inherit',fontSize:13,fontWeight:500}}/></td>
-                    <td><input className="input" type="datetime-local" value={item.follow_up_at?.slice(0,16) || ''} onChange={e=>patch(item,{follow_up_at:e.target.value,status:e.target.value?'volver_contactar':item.status})} style={{minWidth:175,padding:'7px 8px'}}/></td>
-                    <td>
-                      <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-                        {item.phone && <button className={`btn btn-sm ${item.status==='llamar'?'btn-call-ready':'btn-secondary'}`} onClick={()=>call(item)}><Phone size={13}/>Llamar</button>}
+                    <td style={{textAlign:'center',minWidth:82}}>
+                      <button className={`prospect-reminder ${item.follow_up_at?'scheduled':''}`} onClick={()=>openFollowUp(item)} title={item.follow_up_at ? `Tarea: ${new Date(item.follow_up_at).toLocaleString('es-ES')}` : 'Programar tarea de llamada'}><CalendarClock size={16}/></button>
+                    </td>
+                    <td style={{minWidth:285}}>
+                      <div style={{display:'flex',gap:6,flexWrap:'nowrap',alignItems:'center'}}>
+                        {item.phone && <button className="btn btn-sm btn-call-ready" onClick={()=>call(item)}><Phone size={13}/>Llamar</button>}
                         <button className="btn btn-secondary btn-sm" onClick={()=>setEditing({...item})}><Pencil size={13}/>Más info</button>
                         {!item.converted_contact_id ? <button className="btn btn-primary btn-sm" onClick={()=>convert(item)}><UserPlus size={13}/>Convertir</button> : <span className="badge badge-green">Convertida</span>}
                       </div>
@@ -229,6 +250,18 @@ export default function DailyProspecting() {
               <div className="input-group"><label>Número de trabajo</label><input className="input" type="tel" value={workLine} onChange={e=>setWorkLine(e.target.value)} placeholder="+34 600 000 000"/></div>
             </div>
             <div className="modal-footer"><button className="btn btn-secondary" onClick={()=>setShowLineSettings(false)}>Cancelar</button><button className="btn btn-primary" onClick={saveWorkLine}>Guardar</button></div>
+          </div>
+        </div>
+      )}
+      {followUp && (
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setFollowUp(null)}>
+          <div className="modal" style={{maxWidth:430}}>
+            <div className="modal-header"><div><h3>Programar llamada</h3><p className="text-muted text-sm">{followUp.item.agency_name}</p></div><button className="btn-icon" onClick={()=>setFollowUp(null)}><X size={18}/></button></div>
+            <div className="modal-body">
+              <div className="input-group"><label>Fecha y hora</label><input className="input" type="datetime-local" value={followUp.scheduled_at} onChange={e=>setFollowUp({...followUp,scheduled_at:e.target.value})}/></div>
+              <p className="text-muted text-sm">Se creará una tarea pendiente de llamada. Si ya existe una para esta agencia, se actualizará su fecha para evitar duplicados.</p>
+            </div>
+            <div className="modal-footer"><button className="btn btn-secondary" onClick={()=>setFollowUp(null)}>Cancelar</button><button className="btn btn-primary" onClick={saveFollowUp}>Crear tarea</button></div>
           </div>
         </div>
       )}
