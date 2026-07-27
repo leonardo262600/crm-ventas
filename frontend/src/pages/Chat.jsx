@@ -68,7 +68,9 @@ export default function Chat() {
     api.post('/chat/read', { room:selected.room }).catch(() => {});
   }, [selected]);
 
-  useEffect(() => bottomRef.current?.scrollIntoView({ behavior:'smooth' }), [messages, typing]);
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior:'smooth' });
+  }, [messages, typing]);
 
   const handleText = event => {
     const value = event.target.value;
