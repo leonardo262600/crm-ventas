@@ -195,8 +195,8 @@ export default function DailyProspecting() {
                       </div>}
                     </td>
                     <td style={{minWidth:190}}>
-                      {item.phone && <div style={{display:'flex',alignItems:'center',gap:5,marginBottom:6}}><Phone size={13}/><span>{spanishPhone(item.phone)}</span><CopyButton value={spanishPhone(item.phone)} copyKey={`p${item.id}`}/></div>}
-                      {item.email && <div style={{display:'flex',alignItems:'center',gap:5}}><Mail size={13}/><span style={{maxWidth:170,overflow:'hidden',textOverflow:'ellipsis'}}>{item.email}</span><CopyButton value={item.email} copyKey={`e${item.id}`}/></div>}
+                      {item.phone && <div style={{display:'flex',alignItems:'center',gap:4,marginBottom:4,fontSize:12,color:'#475569'}}><Phone size={12}/><span>{spanishPhone(item.phone)}</span><CopyButton value={spanishPhone(item.phone)} copyKey={`p${item.id}`}/></div>}
+                      {item.email && <div style={{display:'flex',alignItems:'center',gap:4,fontSize:12,color:'#475569'}}><Mail size={12}/><span style={{maxWidth:155,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.email}</span><CopyButton value={item.email} copyKey={`e${item.id}`}/></div>}
                       {(item.secondary_phone || item.secondary_email) && <p style={{fontSize:11,color:'#64748b',marginTop:5}}>Hay datos adicionales</p>}
                       {!item.phone && !item.email && <span className="text-muted text-sm">Ver web</span>}
                     </td>
