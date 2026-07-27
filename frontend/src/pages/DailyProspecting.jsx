@@ -35,6 +35,13 @@ const websiteName = value => {
 const websiteUrl = value => /^https?:\/\//i.test(value) ? value : `https://${value}`;
 
 const prospectPostalCode = item => item.postal_code || String(item.address || '').match(/\b\d{5}\b/)?.[0] || '';
+const hasExtraDetails = item => [
+  item.contact_person,
+  item.secondary_phone,
+  item.secondary_email,
+  item.google_maps_url,
+  item.extra_info,
+].some(value => String(value || '').trim());
 
 export default function DailyProspecting() {
   const { user } = useAuth();
@@ -251,7 +258,14 @@ export default function DailyProspecting() {
                       <div style={{display:'flex',gap:6,flexWrap:'nowrap',alignItems:'center'}}>
                         {item.phone && <button className="btn btn-sm btn-call-ready" onClick={()=>call(item)}><Phone size={13}/>Llamar</button>}
                         {isSetter && item.status !== 'agendada' && <button className="btn btn-primary btn-sm" onClick={()=>openBooking(item)}><CalendarPlus size={13}/>Agendar</button>}
-                        <button className="btn btn-secondary btn-sm" onClick={()=>setEditing({...item})}><Pencil size={13}/>Más info</button>
+                        <button
+                          className={`btn btn-secondary btn-sm prospect-more-info ${hasExtraDetails(item)?'has-details':''}`}
+                          onClick={()=>setEditing({...item})}
+                          title={hasExtraDetails(item) ? 'Hay información adicional: revísala antes de llamar' : 'Añadir más información'}
+                        >
+                          <Pencil size={13}/>Más info
+                          {hasExtraDetails(item) && <span className="prospect-info-alert" aria-label="Hay información adicional"/>}
+                        </button>
                         {!isSetter && (!item.converted_contact_id ? <button className="btn btn-primary btn-sm" onClick={()=>convert(item)}><UserPlus size={13}/>Convertir</button> : <span className="badge badge-green">Convertida</span>)}
                         {item.status === 'agendada' && <span className="badge badge-green">Agendada</span>}
                       </div>

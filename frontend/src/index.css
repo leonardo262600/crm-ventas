@@ -61,6 +61,8 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 .prospect-copy:hover { background: #e2e8f0; color: #173b60; }
 .prospect-web-link { width: 21px; height: 21px; flex: 0 0 21px; border-radius: 6px; background: #eff6ff; color: #2563eb; display: inline-flex; align-items: center; justify-content: center; }
 .prospect-web-link:hover { background: #dbeafe; color: #1d4ed8; }
+.prospect-more-info { position: relative; }
+.prospect-info-alert { position: absolute; top: -5px; right: -5px; width: 10px; height: 10px; border-radius: 50%; background: #ef4444; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(239,68,68,.18); }
 .btn-call-ready { color: #15803d; border: 1px solid #86efac; background: #dcfce7; }
 .btn-call-ready:hover { color: #166534; background: #bbf7d0; }
 .prospect-reminder { width: 34px; height: 34px; padding: 0; border-radius: 9px; border: 1px solid #cbd5e1; background: #f8fafc; color: #475569; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
