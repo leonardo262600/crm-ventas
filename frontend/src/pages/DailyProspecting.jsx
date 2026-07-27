@@ -150,7 +150,7 @@ export default function DailyProspecting() {
   return (
     <div>
       <div className="page-header">
-        <div><h1>Prospección diaria</h1><p>20 agencias nuevas al día, organizadas para contactar sin duplicados</p></div>
+        <div><h1>Prospección diaria</h1><p>40 agencias nuevas al día: 20 de cada una de dos zonas costeras, sin duplicados</p></div>
         <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
           <button className="btn btn-secondary" onClick={()=>setShowLineSettings(true)}><Settings size={15}/>{workLine ? `Línea: ${workLine}` : 'Configurar línea'}</button>
           <button className="btn btn-secondary" onClick={() => load()}><RefreshCw size={16}/>Actualizar</button>
