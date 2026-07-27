@@ -181,11 +181,11 @@ export default function Dashboard() {
           {pipeline.length ? (
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={pipeline} dataKey="count" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={4} stroke="none">
+                <Pie data={pipeline} dataKey="count" nameKey="name" cx="50%" cy="41%" innerRadius={54} outerRadius={76} paddingAngle={4} stroke="none">
                   {pipeline.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
                 <Tooltip formatter={(v) => [v, 'Oportunidades']} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }} />
-                <Legend iconType="circle" iconSize={10} wrapperStyle={{ fontSize: 12 }} />
+                <Legend iconType="circle" iconSize={9} wrapperStyle={{ fontSize: 12, lineHeight:1.65, paddingTop:12 }} />
               </PieChart>
             </ResponsiveContainer>
           ) : <div className="empty-state"><p>Sin datos</p></div>}
