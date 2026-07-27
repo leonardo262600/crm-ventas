@@ -174,12 +174,14 @@ export default function Header() {
 
         {/* User avatar */}
         <div className="header-user" style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 10px', borderRadius:10, background:'#f8fafc' }}>
-          <div style={{ width:30, height:30, borderRadius:'50%', overflow:'hidden', background:'#e3e9f7' }}>
-            <img src={user?.avatar || '/brand/leonardo-profile.jpg'} alt={user?.name || 'Leonardo'} style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'50% 22%'}}/>
+          <div style={{ width:30, height:30, borderRadius:'50%', overflow:'hidden', background:'#e3e9f7', display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,color:'#173b60' }}>
+            {user?.avatar || user?.role === 'admin'
+              ? <img src={user?.avatar || '/brand/leonardo-profile.jpg'} alt={user?.name || 'Usuario'} style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'50% 22%'}}/>
+              : (user?.name?.charAt(0).toUpperCase() || 'U')}
           </div>
           <div>
             <p style={{ fontWeight:600, fontSize:13, lineHeight:1.2 }}>{user?.name}</p>
-            <p style={{ fontSize:10, color:'#64748b' }}>{user?.role === 'admin' ? 'Asesor' : user?.role}</p>
+            <p style={{ fontSize:10, color:'#64748b' }}>{user?.role === 'admin' ? 'Asesor' : user?.role === 'vendedor' ? 'Vendedor' : user?.role}</p>
           </div>
         </div>
       </div>

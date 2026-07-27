@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Lock, Mail, ShieldCheck } from 'lucide-react';
+import { Lock, ShieldCheck, User } from 'lucide-react';
 
 export default function Login() {
   const { login } = useAuth();
@@ -51,10 +51,10 @@ export default function Login() {
             {!requires2FA ? (
               <>
                 <div className="input-group">
-                  <label>Correo electrónico</label>
+                  <label>Usuario o correo</label>
                   <div style={{ position: 'relative' }}>
-                    <Mail size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                    <input className="input" style={{ paddingLeft: 38 }} type="email" value={form.email}
+                    <User size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                    <input className="input" style={{ paddingLeft: 38 }} type="text" value={form.email} autoCapitalize="none"
                       onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
                   </div>
                 </div>

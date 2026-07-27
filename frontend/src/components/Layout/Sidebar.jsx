@@ -62,11 +62,13 @@ export default function Sidebar() {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: '#173b60', fontWeight: 700, fontSize: 14, flexShrink: 0,
             }}>
-              <img src={user?.avatar || '/brand/leonardo-profile.jpg'} alt={user?.name || 'Leonardo'} style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'50% 22%'}}/>
+              {user?.avatar || user?.role === 'admin'
+                ? <img src={user?.avatar || '/brand/leonardo-profile.jpg'} alt={user?.name || 'Usuario'} style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'50% 22%'}}/>
+                : (user?.name?.charAt(0).toUpperCase() || 'U')}
             </div>
             <div style={{ overflow: 'hidden', flex:1 }}>
               <p style={{ color: '#173b60', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name}</p>
-              <p style={{ color: '#52708d', fontSize: 11 }}>{user?.role === 'admin' ? 'Asesor' : user?.role}</p>
+              <p style={{ color: '#52708d', fontSize: 11 }}>{user?.role === 'admin' ? 'Asesor' : user?.role === 'vendedor' ? 'Vendedor' : user?.role}</p>
             </div>
             <UserCircle size={14} color="#6d89a3"/>
           </div>

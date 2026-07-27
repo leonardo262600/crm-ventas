@@ -33,6 +33,11 @@ const PrivateRoute = ({ children }) => {
   return user ? children : <Navigate to="/login" replace />;
 };
 
+const RoleRoute = ({ roles, children }) => {
+  const { user } = useAuth();
+  return roles.includes(user?.role) ? children : <Navigate to="/" replace />;
+};
+
 const AppRoutes = () => {
   const { user } = useAuth();
   return (
@@ -51,16 +56,16 @@ const AppRoutes = () => {
         <Route path="invoices"      element={<Invoices />} />
         <Route path="products"      element={<Products />} />
         <Route path="reports"       element={<Reports />} />
-        <Route path="users"         element={<Users />} />
+        <Route path="users"         element={<RoleRoute roles={['admin','gerente']}><Users /></RoleRoute>} />
         <Route path="communications" element={<Communications />} />
         <Route path="automations"   element={<Automations />} />
         <Route path="workflows"     element={<Workflows />} />
         <Route path="workflows/:id" element={<WorkflowBuilder />} />
-        <Route path="admin"         element={<Admin />} />
+        <Route path="admin"         element={<RoleRoute roles={['admin','gerente']}><Admin /></RoleRoute>} />
         <Route path="forecast"      element={<Forecast />} />
         <Route path="profile"      element={<Profile />} />
-        <Route path="settings"     element={<Settings />} />
-        <Route path="backups"      element={<Backup />} />
+        <Route path="settings"     element={<RoleRoute roles={['admin','gerente']}><Settings /></RoleRoute>} />
+        <Route path="backups"      element={<RoleRoute roles={['admin','gerente']}><Backup /></RoleRoute>} />
       </Route>
     </Routes>
   );

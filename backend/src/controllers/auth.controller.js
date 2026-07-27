@@ -7,11 +7,15 @@ const qrcode = require('qrcode');
 const login = async (req, res) => {
   const { email, password, tfa_token } = req.body;
   if (!email || !password)
-    return res.status(400).json({ message: 'Email y contraseña requeridos' });
+    return res.status(400).json({ message: 'Usuario y contraseña requeridos' });
 
   try {
     const [rows] = await db.query(
-      'SELECT * FROM users WHERE email = ? AND active = 1', [email]
+      `SELECT * FROM users
+       WHERE active=1 AND (LOWER(email)=LOWER(?) OR LOWER(name)=LOWER(?))
+       ORDER BY CASE WHEN LOWER(email)=LOWER(?) THEN 0 ELSE 1 END
+       LIMIT 1`,
+      [email.trim(), email.trim(), email.trim()]
     );
     if (!rows.length)
       return res.status(401).json({ message: 'Credenciales inválidas' });
