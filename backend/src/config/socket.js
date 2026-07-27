@@ -9,7 +9,11 @@ let io;
 const initSocket = (httpServer, allowedOrigins = []) => {
   io = new Server(httpServer, {
     cors: {
-      origin: allowedOrigins.length ? allowedOrigins : '*',
+      origin(origin, callback) {
+        if (!origin) return callback(null, true);
+        if (origin.endsWith('.vercel.app') || allowedOrigins.includes(origin)) return callback(null, true);
+        return callback(new Error('Origen no permitido'));
+      },
       methods: ['GET', 'POST'],
       credentials: true,
     }
