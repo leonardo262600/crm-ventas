@@ -52,9 +52,8 @@ const dashboard = async (req, res) => {
     );
     const [[prospectingStats]] = await db.query(
       `SELECT COUNT(*) AS prospecting_pending FROM daily_prospects
-       WHERE tenant_id=? AND status='pendiente'
-         AND batch_date=(SELECT MAX(batch_date) FROM daily_prospects WHERE tenant_id=?)`,
-      [tid, tid]
+       WHERE tenant_id=? AND status='pendiente'`,
+      [tid]
     );
 
     // Oportunidades por mes (últimos 12 meses o dentro del rango)
