@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Building2, Check, ClipboardPaste, ExternalLink, Mail, Pencil, Phone, RefreshCw, Search, Settings, UserPlus, X } from 'lucide-react';
+import { Building2, Check, ClipboardPaste, Link2, Mail, Pencil, Phone, RefreshCw, Search, Settings, UserPlus, X } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -22,6 +22,14 @@ const spanishPhone = value => {
   if (digits.startsWith('34') && digits.length === 11) digits = digits.slice(2);
   return digits.length === 9 ? `+34 ${digits.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3')}` : value;
 };
+
+const websiteName = value => {
+  try {
+    return new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`).hostname.replace(/^www\./, '');
+  } catch { return value; }
+};
+
+const websiteUrl = value => /^https?:\/\//i.test(value) ? value : `https://${value}`;
 
 export default function DailyProspecting() {
   const [items, setItems] = useState([]);
@@ -104,7 +112,7 @@ export default function DailyProspecting() {
 
   const CopyButton = ({value, copyKey, title}) => (
     <button className="prospect-copy" title={title || 'Copiar'} onClick={()=>copy(value,copyKey)}>
-      {copied===copyKey?<Check size={12}/>:<ClipboardPaste size={12}/>}
+      {copied===copyKey?<Check size={11}/>:<ClipboardPaste size={11}/>}
     </button>
   );
 
@@ -162,7 +170,10 @@ export default function DailyProspecting() {
                         <CopyButton value={item.agency_name} copyKey={`n${item.id}`} title="Copiar nombre"/>
                       </div>
                       <p style={{fontSize:11,color:'#64748b',marginTop:3}}>{[item.city,item.province].filter(Boolean).join(' · ') || item.zone || 'España'}</p>
-                      {item.website && <a href={item.website} target="_blank" rel="noreferrer" style={{fontSize:11,display:'inline-flex',gap:4,alignItems:'center',marginTop:5}}>Abrir web <ExternalLink size={11}/></a>}
+                      {item.website && <div style={{display:'flex',gap:5,alignItems:'center',marginTop:5}}>
+                        <span style={{fontSize:11,color:'#64748b',maxWidth:150,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{websiteName(item.website)}</span>
+                        <a href={websiteUrl(item.website)} target="_blank" rel="noreferrer" title={`Abrir ${websiteName(item.website)} en una pestaña nueva`} className="prospect-web-link"><Link2 size={11}/></a>
+                      </div>}
                     </td>
                     <td style={{minWidth:190}}>
                       {item.phone && <div style={{display:'flex',alignItems:'center',gap:5,marginBottom:6}}><Phone size={13}/><span>{spanishPhone(item.phone)}</span><CopyButton value={spanishPhone(item.phone)} copyKey={`p${item.id}`}/></div>}

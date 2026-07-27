@@ -114,7 +114,7 @@ export default function Dashboard() {
           <div key={item.id} style={{display:'flex',gap:12,alignItems:'center',padding:'11px 0',borderBottom:'1px solid #f1f5f9'}}>
             <div style={{width:10,height:10,borderRadius:'50%',background:item.next_action_at && new Date(item.next_action_at)<new Date()?'#ef4444':'#f59e0b'}}/>
             <div style={{flex:1}}>
-              <p style={{fontWeight:600,fontSize:13}}>{item.company || item.title}</p>
+              <p style={{fontWeight:600,fontSize:13}}>{item.contact_name || item.company || item.title}</p>
               <p className="text-muted text-sm">{item.next_action || 'Definir próxima acción'} · {item.stage_name || 'Sin etapa'}</p>
             </div>
             <span className={`badge ${item.temperature==='caliente'?'badge-red':item.temperature==='fria'?'badge-blue':'badge-yellow'}`}>{item.temperature || 'sin clasificar'}</span>
