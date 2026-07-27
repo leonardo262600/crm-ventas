@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, X, UserCog } from 'lucide-react';
+import { Plus, X, Trash2, AlertTriangle } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
@@ -13,6 +13,9 @@ export default function Users() {
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(empty);
   const [editId, setEditId] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   const load = () => api.get('/users').then(r=>setUsers(r.data));
   useEffect(()=>{ load(); }, []);
@@ -32,6 +35,29 @@ export default function Users() {
   const toggle = async u => {
     await api.put(`/users/${u.id}`, { ...u, active: u.active?0:1 });
     toast.success(u.active?'Usuario desactivado':'Usuario activado'); load();
+  };
+
+  const openDelete = u => {
+    setDeleteTarget(u);
+    setDeleteConfirmation('');
+  };
+
+  const permanentlyDelete = async () => {
+    if (!deleteTarget || deleteConfirmation !== deleteTarget.name) return;
+    setDeleting(true);
+    try {
+      const { data } = await api.delete(`/users/${deleteTarget.id}`, {
+        data: { confirmation: deleteConfirmation },
+      });
+      toast.success(data.message || 'Usuario eliminado');
+      setDeleteTarget(null);
+      setDeleteConfirmation('');
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'No se pudo eliminar el usuario');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -67,6 +93,16 @@ export default function Users() {
                         <button className="btn-icon" style={{ color:u.active?'#ef4444':'#10b981' }} onClick={()=>toggle(u)}>
                           {u.active?'🚫':'✓'}
                         </button>
+                        {!u.active && !['admin','gerente'].includes(u.role) && (
+                          <button
+                            className="btn-icon"
+                            style={{ color:'#dc2626' }}
+                            onClick={()=>openDelete(u)}
+                            title="Eliminar permanentemente"
+                          >
+                            <Trash2 size={16}/>
+                          </button>
+                        )}
                       </div>
                     )}
                   </td>
@@ -107,6 +143,49 @@ export default function Users() {
                 <button type="submit" className="btn btn-primary">Guardar</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setDeleteTarget(null)}>
+          <div className="modal" style={{ maxWidth:520 }}>
+            <div className="modal-header">
+              <h3 style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <AlertTriangle size={20} color="#dc2626"/>Eliminar usuario
+              </h3>
+              <button className="btn-icon" onClick={()=>setDeleteTarget(null)}><X size={18}/></button>
+            </div>
+            <div className="modal-body">
+              <p>
+                Vas a eliminar el acceso de <strong>{deleteTarget.name}</strong>. Sus contactos,
+                oportunidades y tareas se reasignarán a ti. El nombre se conservará únicamente
+                en el histórico de ventas.
+              </p>
+              <p style={{ marginTop:14, color:'#dc2626' }}>
+                Esta acción no se puede deshacer.
+              </p>
+              <div className="input-group" style={{ marginTop:16 }}>
+                <label>Escribe <strong>{deleteTarget.name}</strong> para confirmar</label>
+                <input
+                  className="input"
+                  value={deleteConfirmation}
+                  onChange={e=>setDeleteConfirmation(e.target.value)}
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={()=>setDeleteTarget(null)}>Cancelar</button>
+              <button
+                className="btn"
+                style={{ background:'#dc2626', color:'#fff' }}
+                disabled={deleting || deleteConfirmation !== deleteTarget.name}
+                onClick={permanentlyDelete}
+              >
+                <Trash2 size={16}/>{deleting?'Eliminando…':'Eliminar definitivamente'}
+              </button>
+            </div>
           </div>
         </div>
       )}

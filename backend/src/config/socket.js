@@ -20,11 +20,17 @@ const initSocket = (httpServer, allowedOrigins = []) => {
   });
 
   // Auth middleware
-  io.use((socket, next) => {
+  io.use(async (socket, next) => {
     const token = socket.handshake.auth?.token;
     if (!token) return next(new Error('No autorizado'));
     try {
-      socket.user = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const [rows] = await db.query(
+        'SELECT id, tenant_id, name, email, role FROM users WHERE id=? AND tenant_id=? AND active=1 LIMIT 1',
+        [decoded.id, decoded.tenant_id]
+      );
+      if (!rows.length) return next(new Error('Cuenta inactiva'));
+      socket.user = rows[0];
       next();
     } catch {
       next(new Error('Token inválido'));

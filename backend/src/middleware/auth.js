@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
+const db = require('../config/db');
 
-const auth = (req, res, next) => {
+const auth = async (req, res, next) => {
   const header = req.headers.authorization;
   if (!header || !header.startsWith('Bearer ')) {
     return res.status(401).json({ message: 'Token requerido' });
@@ -8,8 +9,15 @@ const auth = (req, res, next) => {
   const token = header.split(' ')[1];
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
-    if (decoded.role === 'setter') {
+    const [rows] = await db.query(
+      'SELECT id, tenant_id, name, email, role, active FROM users WHERE id=? AND tenant_id=? AND active=1 LIMIT 1',
+      [decoded.id, decoded.tenant_id]
+    );
+    if (!rows.length) {
+      return res.status(401).json({ message: 'La cuenta está inactiva o ya no existe' });
+    }
+    req.user = rows[0];
+    if (req.user.role === 'setter') {
       const url = req.originalUrl || '';
       const basicAllowed = [
         '/api/prospecting',
