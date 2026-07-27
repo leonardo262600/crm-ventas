@@ -1,6 +1,6 @@
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open('crm-leonardo-shell-v1').then(cache => cache.addAll([
+    caches.open('crm-leonardo-shell-v2').then(cache => cache.addAll([
       '/',
       '/manifest.webmanifest',
       '/icons/icon-192.png',
@@ -14,7 +14,7 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys => Promise.all(
-      keys.filter(key => key.startsWith('crm-leonardo-shell-') && key !== 'crm-leonardo-shell-v1')
+      keys.filter(key => key.startsWith('crm-leonardo-shell-') && key !== 'crm-leonardo-shell-v2')
         .map(key => caches.delete(key))
     ))
   );
@@ -30,7 +30,7 @@ self.addEventListener('fetch', event => {
       fetch(event.request)
         .then(response => {
           const copy = response.clone();
-          caches.open('crm-leonardo-shell-v1').then(cache => cache.put('/', copy));
+          caches.open('crm-leonardo-shell-v2').then(cache => cache.put('/', copy));
           return response;
         })
         .catch(() => caches.match('/'))
@@ -46,7 +46,7 @@ self.addEventListener('fetch', event => {
     event.respondWith(
       caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
         const copy = response.clone();
-        caches.open('crm-leonardo-shell-v1').then(cache => cache.put(event.request, copy));
+        caches.open('crm-leonardo-shell-v2').then(cache => cache.put(event.request, copy));
         return response;
       }))
     );

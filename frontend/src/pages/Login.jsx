@@ -54,7 +54,8 @@ export default function Login() {
                   <label>Usuario o correo</label>
                   <div style={{ position: 'relative' }}>
                     <User size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                    <input className="input" style={{ paddingLeft: 38 }} type="text" value={form.email} autoCapitalize="none"
+                    <input className="input" style={{ paddingLeft: 38 }} type="text" name="username"
+                      inputMode="text" autoComplete="username" autoCapitalize="none" spellCheck="false"
                       onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
                   </div>
                 </div>
