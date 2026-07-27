@@ -153,10 +153,10 @@ export default function DailyProspecting() {
         </div>
       </div>
 
-      <div className="followup-summary">
+      <div className="followup-summary prospect-summary">
         <div className="followup-filter active"><span>Lista del día</span><strong>{items.length}</strong></div>
         <div className="followup-filter"><span>Pendientes</span><strong>{items.filter(i=>i.status==='pendiente').length}</strong></div>
-        <div className="followup-filter" style={{borderColor:'#86efac',background:'#f0fdf4'}}><span>Para llamar</span><strong style={{color:'#16a34a'}}>{items.filter(i=>i.status==='llamar').length}</strong></div>
+        <div className="followup-filter"><span>Para llamar</span><strong>{items.filter(i=>i.status==='llamar').length}</strong></div>
         <div className="followup-filter"><span>Contactadas</span><strong>{items.filter(i=>i.status==='contactada').length}</strong></div>
         <div className="followup-filter"><span>Histórico total</span><strong>{summary?.history || 0}</strong></div>
       </div>
