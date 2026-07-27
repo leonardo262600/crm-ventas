@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Circle, MessageSquare, Send } from 'lucide-react';
+import { Bell, Circle, MessageSquare, Send, Volume2, VolumeX } from 'lucide-react';
 import { io } from 'socket.io-client';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import { enablePushNotifications } from '../utils/pushNotifications';
 
 const SOCKET_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5080/api').replace(/\/api\/?$/, '');
 const timeLabel = value => value ? new Date(value).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' }) : '';
@@ -16,6 +17,8 @@ export default function Chat() {
   const [text, setText] = useState('');
   const [connected, setConnected] = useState(false);
   const [typing, setTyping] = useState('');
+  const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('crm_chat_sound') !== 'off');
+  const [pushPermission, setPushPermission] = useState(() => 'Notification' in window ? Notification.permission : 'unsupported');
   const socketRef = useRef(null);
   const bottomRef = useRef(null);
   const typingTimer = useRef(null);
@@ -84,11 +87,30 @@ export default function Chat() {
     setText('');
   };
 
+  const toggleSound = () => {
+    const next = !soundEnabled;
+    setSoundEnabled(next);
+    localStorage.setItem('crm_chat_sound', next ? 'on' : 'off');
+    toast.success(next ? 'Sonido activado' : 'Sonido desactivado');
+  };
+
+  const enablePush = async () => {
+    try {
+      const permission = await enablePushNotifications();
+      setPushPermission(permission);
+      toast.success('Notificaciones del chat activadas');
+    } catch (error) { toast.error(error.message); }
+  };
+
   return (
     <div>
       <div className="page-header">
         <div><h1>Chat interno</h1><p>Comunicación privada entre el asesor y sus setters</p></div>
-        <div className="chat-connection"><Circle size={9} fill={connected?'#10b981':'#ef4444'} color={connected?'#10b981':'#ef4444'}/>{connected?'En tiempo real':'Reconectando…'}</div>
+        <div className="chat-header-actions">
+          <button className="btn btn-secondary btn-sm" onClick={toggleSound}>{soundEnabled?<Volume2 size={15}/>:<VolumeX size={15}/>}Sonido {soundEnabled?'activo':'inactivo'}</button>
+          {pushPermission !== 'granted' && pushPermission !== 'unsupported' && <button className="btn btn-primary btn-sm" onClick={enablePush}><Bell size={15}/>Activar avisos</button>}
+          <div className="chat-connection"><Circle size={9} fill={connected?'#10b981':'#ef4444'} color={connected?'#10b981':'#ef4444'}/>{connected?'En tiempo real':'Reconectando…'}</div>
+        </div>
       </div>
 
       <div className="card chat-shell">

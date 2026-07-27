@@ -71,8 +71,10 @@ self.addEventListener('push', function(event) {
     vibrate: [100, 50, 100],
     data: {
       dateOfArrival: Date.now(),
-      primaryKey: '1'
-    }
+      primaryKey: '1',
+      url: payload.url || '/'
+    },
+    tag: payload.tag || undefined,
   };
 
   event.waitUntil(
@@ -89,12 +91,15 @@ self.addEventListener('notificationclick', function(event) {
       for (var i = 0; i < windowClients.length; i++) {
         var client = windowClients[i];
         if (client.url.includes(self.registration.scope) && 'focus' in client) {
-          return client.focus();
+          return client.focus().then(function(focusedClient) {
+            if (focusedClient && 'navigate' in focusedClient) return focusedClient.navigate(event.notification.data.url || '/');
+            return focusedClient;
+          });
         }
       }
       // Si no, abrimos una nueva
       if (clients.openWindow) {
-        return clients.openWindow('/');
+        return clients.openWindow(event.notification.data.url || '/');
       }
     })
   );

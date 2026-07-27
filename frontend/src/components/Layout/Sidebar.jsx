@@ -7,6 +7,11 @@ import {
   MessageSquare, Settings, UserCircle, SlidersHorizontal, DatabaseBackup, Building2
 } from 'lucide-react';
 import api from '../../services/api';
+import { io } from 'socket.io-client';
+import toast from 'react-hot-toast';
+import { playChatSound } from '../../utils/pushNotifications';
+
+const SOCKET_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5080/api').replace(/\/api\/?$/, '');
 
 const navStyle = isActive => ({
   display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px',
@@ -41,6 +46,21 @@ export default function Sidebar() {
     const timer = setInterval(refresh, 15000);
     return () => clearInterval(timer);
   }, []);
+  useEffect(() => {
+    const socket = io(SOCKET_URL, {
+      auth:{ token:localStorage.getItem('crm_token') },
+      transports:['websocket','polling'],
+    });
+    socket.on('chat_notification', message => {
+      if (Number(message.user_id) === Number(user?.id)) return;
+      setChatUnread(current => current + 1);
+      if (window.location.pathname !== '/chat' && document.visibilityState === 'visible') {
+        playChatSound();
+        toast(`${message.user_name}: ${message.message}`, { icon:'💬', duration:5000 });
+      }
+    });
+    return () => socket.disconnect();
+  }, [user?.id]);
 
   return (
     <aside className="app-sidebar" style={{

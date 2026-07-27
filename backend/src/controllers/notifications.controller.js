@@ -65,10 +65,10 @@ const sendTestNotification = async (req, res) => {
 };
 
 // Función auxiliar para usar internamente en otros controladores (ej. cuando se gana una op, se asigna tarea)
-const sendPushToUser = async (userId, title, body) => {
+const sendPushToUser = async (userId, title, body, data = {}) => {
   try {
     const [subs] = await db.query('SELECT * FROM push_subscriptions WHERE user_id = ?', [userId]);
-    const payload = JSON.stringify({ title, body, icon: '/vite.svg' });
+    const payload = JSON.stringify({ title, body, icon: '/icons/icon-192.png', ...data });
 
     for (const sub of subs) {
       const pushSubscription = { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } };

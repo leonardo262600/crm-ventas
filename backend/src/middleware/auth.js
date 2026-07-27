@@ -17,6 +17,7 @@ const auth = (req, res, next) => {
         '/api/auth/me',
         '/api/auth/password',
         '/api/chat',
+        '/api/notifications',
       ].some(prefix => url.startsWith(prefix));
       const contactsAllowed = url.startsWith('/api/contacts')
         && ['GET','POST','PUT'].includes(req.method);

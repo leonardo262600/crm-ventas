@@ -2,6 +2,7 @@ const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const db = require('./db');
 const { canAccessRoom, roomParticipants } = require('../controllers/chat.controller');
+const { sendPushToUser } = require('../controllers/notifications.controller');
 
 let io;
 
@@ -37,6 +38,7 @@ const initSocket = (httpServer, allowedOrigins = []) => {
     socket.on('join_room', async (payload) => {
       const room = typeof payload === 'string' ? payload : payload?.room;
       if (!room || !canAccessRoom(room, user.id)) return;
+      socket.activeChatRoom = room;
       socket.join(`chat_${user.tenant_id}_${room}`);
 
       // Load last 50 messages
@@ -69,8 +71,14 @@ const initSocket = (httpServer, allowedOrigins = []) => {
           created_at: new Date().toISOString()
         };
         io.to(`chat_${user.tenant_id}_${room}`).emit('new_message', payload);
-        roomParticipants(room).forEach(participantId => {
+        const recipients = roomParticipants(room).filter(participantId => participantId !== Number(user.id));
+        recipients.forEach(async participantId => {
           io.to(`user_${user.tenant_id}_${participantId}`).emit('chat_notification', payload);
+          const recipientSockets = await io.in(`user_${user.tenant_id}_${participantId}`).fetchSockets();
+          const hasConversationOpen = recipientSockets.some(recipient => recipient.activeChatRoom === room);
+          if (!hasConversationOpen) {
+            sendPushToUser(participantId, `Mensaje de ${user.name}`, message.trim(), { url:'/chat', tag:`chat-${room}` });
+          }
         });
       } catch {}
     });
