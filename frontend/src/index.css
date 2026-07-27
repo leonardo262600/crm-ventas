@@ -300,7 +300,8 @@ tr:hover td { background: #f8fafc; }
   .table-wrap { -webkit-overflow-scrolling: touch; }
   .dashboard-charts-row,
   .dashboard-bottom-row { grid-template-columns: 1fr !important; gap: 14px !important; }
-  .pipeline-chart .recharts-responsive-container { height: 290px !important; }
+  .monthly-chart .recharts-responsive-container,
+  .pipeline-chart .recharts-responsive-container { height: 300px !important; }
   .pipeline-chart .recharts-legend-wrapper { line-height: 1.55; padding: 0 8px; }
   .kanban-board {
     gap: 12px;
