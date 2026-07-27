@@ -31,6 +31,8 @@ const websiteName = value => {
 
 const websiteUrl = value => /^https?:\/\//i.test(value) ? value : `https://${value}`;
 
+const prospectPostalCode = item => item.postal_code || String(item.address || '').match(/\b\d{5}\b/)?.[0] || '';
+
 export default function DailyProspecting() {
   const [items, setItems] = useState([]);
   const [summary, setSummary] = useState(null);
@@ -189,6 +191,11 @@ export default function DailyProspecting() {
                         <CopyButton value={item.agency_name} copyKey={`n${item.id}`} title="Copiar nombre"/>
                       </div>
                       <p style={{fontSize:11,color:'#64748b',marginTop:3}}>{[item.city,item.province].filter(Boolean).join(' · ') || item.zone || 'España'}</p>
+                      {item.address && <p style={{fontSize:11,color:'#64748b',marginTop:5,maxWidth:220,lineHeight:1.35}}>{item.address}</p>}
+                      {prospectPostalCode(item) && <div style={{display:'flex',alignItems:'center',gap:5,marginTop:4}}>
+                        <span style={{fontSize:11,color:'#475569'}}>CP {prospectPostalCode(item)}</span>
+                        <CopyButton value={prospectPostalCode(item)} copyKey={`cp${item.id}`} title="Copiar código postal"/>
+                      </div>}
                       {item.website && <div style={{display:'flex',gap:5,alignItems:'center',marginTop:5}}>
                         <span style={{fontSize:11,color:'#64748b',maxWidth:150,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{websiteName(item.website)}</span>
                         <a href={websiteUrl(item.website)} target="_blank" rel="noreferrer" title={`Abrir ${websiteName(item.website)} en una pestaña nueva`} className="prospect-web-link"><Link2 size={11}/></a>
@@ -234,6 +241,7 @@ export default function DailyProspecting() {
                 <div className="input-group"><label>Web</label><input className="input" value={editing.website||''} onChange={e=>setEditing({...editing,website:e.target.value})}/></div>
                 <div className="input-group"><label>Enlace de Google Maps</label><input className="input" value={editing.google_maps_url||''} onChange={e=>setEditing({...editing,google_maps_url:e.target.value})}/></div>
                 <div className="input-group full"><label>Dirección</label><input className="input" value={editing.address||''} onChange={e=>setEditing({...editing,address:e.target.value})}/></div>
+                <div className="input-group"><label>Código postal</label><input className="input" inputMode="numeric" maxLength={5} value={editing.postal_code||''} onChange={e=>setEditing({...editing,postal_code:e.target.value.replace(/\D/g,'').slice(0,5)})} placeholder="00000"/></div>
                 <div className="input-group full"><label>Información adicional</label><textarea className="input" rows={3} value={editing.extra_info||''} onChange={e=>setEditing({...editing,extra_info:e.target.value})} style={{fontFamily:'inherit'}} placeholder="Horario, especialidad, datos encontrados, observaciones…"/></div>
               </div>
             </div>

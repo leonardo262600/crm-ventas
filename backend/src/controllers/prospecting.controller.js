@@ -15,6 +15,13 @@ const normalizeSpanishPhone = value => {
   return String(value).trim();
 };
 
+const postalCodeFrom = (postalCode, address) => {
+  const explicit = String(postalCode || '').match(/\b\d{5}\b/);
+  if (explicit) return explicit[0];
+  const fromAddress = String(address || '').match(/\b(?:0[1-9]|[1-4]\d|5[0-2])\d{3}\b/);
+  return fromAddress ? fromAddress[0] : null;
+};
+
 const list = async (req, res) => {
   const { date, status, search, page = 1, limit = 50 } = req.query;
   const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
@@ -63,11 +70,11 @@ const bulkCreate = async (req, res) => {
       if (!item.agency_name) continue;
       const [result] = await db.query(
         `INSERT IGNORE INTO daily_prospects
-         (tenant_id,batch_date,zone,city,province,agency_name,phone,email,website,address,source_url,normalized_key,created_by)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+         (tenant_id,batch_date,zone,city,province,agency_name,phone,email,website,address,postal_code,source_url,normalized_key,created_by)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         [req.user.tenant_id, batchDate, item.zone || item.city || null, item.city || null, item.province || null,
          item.agency_name, normalizeSpanishPhone(item.phone), item.email || null, item.website || null, item.address || null,
-         item.source_url || item.website || null, makeKey(item), req.user.id]
+         postalCodeFrom(item.postal_code, item.address), item.source_url || item.website || null, makeKey(item), req.user.id]
       );
       if (result.affectedRows) inserted += 1; else duplicates += 1;
     }
@@ -82,7 +89,7 @@ const update = async (req, res) => {
   try {
     const allowedFields = [
       'status', 'notes', 'follow_up_at', 'agency_name', 'phone', 'secondary_phone',
-      'email', 'secondary_email', 'website', 'address', 'google_maps_url',
+      'email', 'secondary_email', 'website', 'address', 'postal_code', 'google_maps_url',
       'contact_person', 'extra_info',
     ];
     const updates = [];
