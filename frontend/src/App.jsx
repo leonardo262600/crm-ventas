@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout/Layout';
 import Login from './pages/Login';
+import Chat from './pages/Chat';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Contacts = lazy(() => import('./pages/Contacts'));
@@ -27,7 +28,6 @@ const Backup = lazy(() => import('./pages/Backup'));
 const FollowUps = lazy(() => import('./pages/FollowUps'));
 const DailyProspecting = lazy(() => import('./pages/DailyProspecting'));
 const Demos = lazy(() => import('./pages/Demos'));
-const Chat = lazy(() => import('./pages/Chat'));
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
