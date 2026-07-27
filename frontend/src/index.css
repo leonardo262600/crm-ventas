@@ -302,7 +302,7 @@ tr:hover td { background: #f8fafc; }
 .quick-action-menu-item { width:100%; display:flex; align-items:center; gap:8px; padding:8px 9px; border:0; border-radius:7px; background:#fff; color:var(--text); cursor:pointer; text-align:left; font-size:12px; }
 .quick-action-menu-item:hover { background:#f1f5f9; }
 .nav-label-mobile { display: none; }
-.daily-plan-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
+.daily-plan-grid { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px; }
 .daily-plan-item { display:flex; flex-direction:column; gap:4px; padding:13px 12px; background:#f8fafc; border-radius:9px; text-decoration:none; color:var(--text); }
 .daily-plan-item strong { font-size:24px; line-height:1; }
 .daily-plan-item span { font-size:11px; color:var(--text-muted); }
