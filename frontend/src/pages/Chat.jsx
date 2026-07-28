@@ -16,6 +16,8 @@ export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const [connected, setConnected] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState(() => new Set());
+  const [lastSeen, setLastSeen] = useState({});
   const [typing, setTyping] = useState('');
   const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('crm_chat_sound') !== 'off');
   const [soundTone, setSoundTone] = useState(() => localStorage.getItem('crm_chat_tone') || 'clasico');
@@ -49,6 +51,20 @@ export default function Chat() {
     socketRef.current = socket;
     socket.on('connect', () => setConnected(true));
     socket.on('disconnect', () => setConnected(false));
+    socket.on('presence_state', ({ online_user_ids = [] }) => {
+      setOnlineUsers(new Set(online_user_ids.map(Number)));
+    });
+    socket.on('user_online', ({ user_id }) => {
+      setOnlineUsers(current => new Set([...current, Number(user_id)]));
+    });
+    socket.on('user_offline', ({ user_id, last_seen }) => {
+      setOnlineUsers(current => {
+        const next = new Set(current);
+        next.delete(Number(user_id));
+        return next;
+      });
+      if (last_seen) setLastSeen(current => ({ ...current, [user_id]:last_seen }));
+    });
     socket.on('room_history', setMessages);
     socket.on('conversation_cleared', ({ room }) => {
       if (room === selectedRef.current?.room) setMessages([]);
@@ -148,8 +164,14 @@ export default function Chat() {
           {!peers.length && <p className="text-muted text-sm" style={{padding:12}}>No hay otros usuarios disponibles.</p>}
           {peers.map(peer => (
             <button key={peer.id} className={`chat-person ${selected?.id===peer.id?'active':''}`} onClick={()=>setSelected(peer)}>
-              <span className="chat-avatar">{peer.role==='setter'?'🇦🇷':peer.name?.charAt(0).toUpperCase()}</span>
-              <span className="chat-person-copy"><strong>{peer.name}</strong><small>{peer.role==='setter'?'Setter':'Asesor'}</small></span>
+              <span className="chat-avatar-wrap">
+                <span className="chat-avatar">{peer.role==='setter'?'🇦🇷':peer.name?.charAt(0).toUpperCase()}</span>
+                <span className={`chat-presence-dot ${onlineUsers.has(Number(peer.id))?'online':'offline'}`}/>
+              </span>
+              <span className="chat-person-copy">
+                <strong>{peer.name}</strong>
+                <small>{onlineUsers.has(Number(peer.id)) ? 'En línea' : 'Desconectado'}</small>
+              </span>
               {peer.unread>0 && <span className="chat-unread">{peer.unread>99?'99+':peer.unread}</span>}
             </button>
           ))}
@@ -160,7 +182,17 @@ export default function Chat() {
             <div className="empty-state"><MessageSquare size={42}/><h3>Selecciona una conversación</h3></div>
           ) : <>
             <header className="chat-header">
-              <div><strong>{selected.name}</strong><span>{selected.role==='setter'?'Setter':'Asesor'}</span></div>
+              <div>
+                <strong>{selected.name}</strong>
+                <span className={`chat-presence-label ${onlineUsers.has(Number(selected.id))?'online':'offline'}`}>
+                  <i/>
+                  {onlineUsers.has(Number(selected.id))
+                    ? 'En línea'
+                    : lastSeen[selected.id]
+                      ? `Última conexión ${timeLabel(lastSeen[selected.id])}`
+                      : 'Desconectado'}
+                </span>
+              </div>
               {user?.role === 'admin' && (
                 <button className="btn btn-danger btn-sm" type="button" onClick={clearConversation}>
                   <Trash2 size={15}/>Vaciar conversación

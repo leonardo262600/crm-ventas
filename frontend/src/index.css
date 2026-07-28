@@ -99,6 +99,14 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 .chat-person:hover { background:#f1f5f9; }
 .chat-person.active { background:#e8f2ff; color:#173b60; }
 .chat-avatar { width:34px; height:34px; flex:0 0 34px; border-radius:50%; background:#dbeafe; display:flex; align-items:center; justify-content:center; font-weight:700; }
+.chat-avatar-wrap { position:relative; flex:0 0 34px; }
+.chat-presence-dot { position:absolute; right:-1px; bottom:-1px; width:10px; height:10px; border:2px solid #fff; border-radius:50%; }
+.chat-presence-dot.online { background:#10b981; }
+.chat-presence-dot.offline { background:#94a3b8; }
+.chat-presence-label { display:flex; flex-direction:row !important; align-items:center; gap:5px; }
+.chat-presence-label i { width:7px; height:7px; flex:0 0 7px; border-radius:50%; background:#94a3b8; }
+.chat-presence-label.online { color:#059669; }
+.chat-presence-label.online i { background:#10b981; }
 .chat-person-copy { min-width:0; display:flex; flex-direction:column; }
 .chat-person-copy strong { font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .chat-person-copy small { color:#64748b; font-size:11px; }

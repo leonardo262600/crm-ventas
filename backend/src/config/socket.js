@@ -5,6 +5,12 @@ const { canAccessRoom, roomParticipants } = require('../controllers/chat.control
 const { sendPushToUser } = require('../controllers/notifications.controller');
 
 let io;
+const onlineConnections = new Map();
+
+const presenceKey = (tenantId, userId) => `${tenantId}:${userId}`;
+const onlineUsersForTenant = tenantId => Array.from(onlineConnections.entries())
+  .filter(([key, count]) => key.startsWith(`${tenantId}:`) && count > 0)
+  .map(([key]) => Number(key.split(':')[1]));
 
 const initSocket = (httpServer, allowedOrigins = []) => {
   io = new Server(httpServer, {
@@ -39,10 +45,14 @@ const initSocket = (httpServer, allowedOrigins = []) => {
 
   io.on('connection', (socket) => {
     const user = socket.user;
+    const userPresenceKey = presenceKey(user.tenant_id, user.id);
+    onlineConnections.set(userPresenceKey, (onlineConnections.get(userPresenceKey) || 0) + 1);
 
     // Join tenant room
     socket.join(`tenant_${user.tenant_id}`);
     socket.join(`user_${user.tenant_id}_${user.id}`);
+    socket.emit('presence_state', { online_user_ids: onlineUsersForTenant(user.tenant_id) });
+    io.to(`tenant_${user.tenant_id}`).emit('user_online', { user_id: user.id });
 
     // Join a specific chat room
     socket.on('join_room', async (payload) => {
@@ -103,7 +113,16 @@ const initSocket = (httpServer, allowedOrigins = []) => {
     });
 
     socket.on('disconnect', () => {
-      io.to(`tenant_${user.tenant_id}`).emit('user_offline', { user_id: user.id });
+      const remaining = Math.max((onlineConnections.get(userPresenceKey) || 1) - 1, 0);
+      if (remaining) {
+        onlineConnections.set(userPresenceKey, remaining);
+        return;
+      }
+      onlineConnections.delete(userPresenceKey);
+      io.to(`tenant_${user.tenant_id}`).emit('user_offline', {
+        user_id: user.id,
+        last_seen: new Date().toISOString(),
+      });
     });
   });
 
