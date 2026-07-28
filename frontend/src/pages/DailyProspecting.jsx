@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { Building2, CalendarClock, CalendarPlus, Check, ClipboardPaste, Link2, Mail, Pencil, Phone, RefreshCw, Search, Settings, UserPlus, X } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
@@ -43,43 +42,6 @@ const websiteUrl = value => /^https?:\/\//i.test(value) ? value : `https://${val
 const prospectPostalCode = item => item.postal_code || String(item.address || '').match(/\b\d{5}\b/)?.[0] || '';
 const hasExtraDetails = item => Boolean(String(item.extra_info || '').trim());
 const qualificationClass = level => `prospect-priority prospect-priority-${String(level || 'c').toLowerCase()}`;
-
-function QualificationTooltip({ trigger, children, align = 'left' }) {
-  const [position, setPosition] = useState(null);
-
-  const open = event => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    const width = Math.min(320, window.innerWidth - 24);
-    const preferredLeft = align === 'right' ? rect.right - width : rect.left;
-    const left = Math.max(12, Math.min(preferredLeft, window.innerWidth - width - 12));
-    const below = rect.top < 190;
-    setPosition({
-      left,
-      top: below ? rect.bottom + 8 : rect.top - 8,
-      width,
-      transform: below ? 'none' : 'translateY(-100%)',
-    });
-  };
-
-  return (
-    <span
-      className="prospect-priority-tooltip"
-      onMouseEnter={open}
-      onMouseLeave={() => setPosition(null)}
-      onFocus={open}
-      onBlur={() => setPosition(null)}
-      onClick={event => position ? setPosition(null) : open(event)}
-    >
-      {trigger}
-      {position && createPortal(
-        <div className="prospect-priority-popover prospect-priority-popover-open" role="tooltip" style={position}>
-          {children}
-        </div>,
-        document.body
-      )}
-    </span>
-  );
-}
 
 export default function DailyProspecting() {
   const { user } = useAuth();
@@ -272,36 +234,21 @@ export default function DailyProspecting() {
                       </div>
                       {item.qualification_score != null && (
                         <div className="prospect-qualification">
-                          <QualificationTooltip
-                            trigger={<button
-                              type="button"
-                              className={`${qualificationClass(item.qualification_level)} prospect-priority-trigger`}
-                              aria-label={`Prioridad ${item.qualification_level || 'C'}. Ver criterios de cualificación`}
-                            >
-                              Prioridad {item.qualification_level || 'C'}
-                            </button>}
+                          <span
+                            className={qualificationClass(item.qualification_level)}
+                            title={'¿Cómo se cualifica?\nEl puntaje se basa en señales comerciales públicas y verificables: teléfono, correo, web propia, dirección, código postal y presencia digital disponible.\nA: 75–100 · B: 50–74 · C: 0–49.'}
                           >
-                            <div><strong>¿Cómo se cualifica?</strong></div>
-                            <div>El puntaje se basa en señales comerciales públicas y verificables: teléfono, correo, web propia, dirección, código postal y presencia digital disponible.</div>
-                            <div><strong>A:</strong> 75–100 · <strong>B:</strong> 50–74 · <strong>C:</strong> 0–49.</div>
-                          </QualificationTooltip>
-                          <QualificationTooltip
-                            align="right"
-                            trigger={<button
-                              type="button"
-                              className="prospect-score-trigger"
-                              aria-label={`${item.qualification_score} sobre 100. Ver información encontrada y enfoque recomendado`}
-                            >
-                              {item.qualification_score}/100
-                            </button>}
+                            Prioridad {item.qualification_level || 'C'}
+                          </span>
+                          <strong
+                            className="prospect-score"
+                            title={[
+                              item.qualification_reason,
+                              item.call_angle ? `Enfoque: ${item.call_angle}` : null,
+                            ].filter(Boolean).join('\n\n')}
                           >
-                            {(item.qualification_reason || item.call_angle) && (
-                              <>
-                                {item.qualification_reason && <div>{item.qualification_reason}</div>}
-                                {item.call_angle && <div><strong>Enfoque:</strong> {item.call_angle}</div>}
-                              </>
-                            )}
-                          </QualificationTooltip>
+                            {item.qualification_score}/100
+                          </strong>
                         </div>
                       )}
                       <p style={{fontSize:11,color:'#64748b',marginTop:3}}>{[item.city,item.province].filter(Boolean).join(' · ') || item.zone || 'España'}</p>
