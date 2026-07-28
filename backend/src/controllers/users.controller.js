@@ -116,7 +116,7 @@ const remove = async (req, res) => {
     const disabledPassword = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
     await connection.query(
       `UPDATE users
-       SET active=0, email=?, password=?, tfa_secret=NULL, tfa_enabled=0, deleted_at=NOW()
+       SET active=0, email=?, password=?, deleted_at=NOW()
        WHERE id=? AND tenant_id=?`,
       [archivedEmail, disabledPassword, targetId, req.user.tenant_id]
     );
