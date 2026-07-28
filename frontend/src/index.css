@@ -70,13 +70,13 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 .prospect-qualification { display:flex; align-items:center; gap:7px; margin-top:7px; }
 .prospect-qualification strong { font-size:11px; color:#334155; }
 .prospect-priority-tooltip { position:relative; display:inline-flex; }
-.prospect-priority-trigger { border:0; cursor:help; font:inherit; }
+.prospect-priority-trigger { border:0; cursor:default; font:inherit; }
 .prospect-score-trigger {
   padding:0;
   border:0;
   background:transparent;
   color:#334155;
-  cursor:help;
+  cursor:default;
   font:700 11px/1.2 'Inter',sans-serif;
 }
 .prospect-priority-popover {
