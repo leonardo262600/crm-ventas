@@ -72,9 +72,9 @@ function QualificationTooltip({ trigger, children, align = 'left' }) {
     >
       {trigger}
       {position && createPortal(
-        <span className="prospect-priority-popover prospect-priority-popover-open" role="tooltip" style={position}>
+        <div className="prospect-priority-popover prospect-priority-popover-open" role="tooltip" style={position}>
           {children}
-        </span>,
+        </div>,
         document.body
       )}
     </span>
@@ -281,9 +281,9 @@ export default function DailyProspecting() {
                               Prioridad {item.qualification_level || 'C'}
                             </button>}
                           >
-                            <span><strong>¿Cómo se cualifica?</strong></span>
-                            <span>El puntaje se basa en señales comerciales públicas y verificables: teléfono, correo, web propia, dirección, código postal y presencia digital disponible.</span>
-                            <span><strong>A:</strong> 75–100 · <strong>B:</strong> 50–74 · <strong>C:</strong> 0–49.</span>
+                            <div><strong>¿Cómo se cualifica?</strong></div>
+                            <div>El puntaje se basa en señales comerciales públicas y verificables: teléfono, correo, web propia, dirección, código postal y presencia digital disponible.</div>
+                            <div><strong>A:</strong> 75–100 · <strong>B:</strong> 50–74 · <strong>C:</strong> 0–49.</div>
                           </QualificationTooltip>
                           <QualificationTooltip
                             align="right"
@@ -297,8 +297,8 @@ export default function DailyProspecting() {
                           >
                             {(item.qualification_reason || item.call_angle) && (
                               <>
-                                {item.qualification_reason && <span>{item.qualification_reason}</span>}
-                                {item.call_angle && <span><strong>Enfoque:</strong> {item.call_angle}</span>}
+                                {item.qualification_reason && <div>{item.qualification_reason}</div>}
+                                {item.call_angle && <div><strong>Enfoque:</strong> {item.call_angle}</div>}
                               </>
                             )}
                           </QualificationTooltip>
