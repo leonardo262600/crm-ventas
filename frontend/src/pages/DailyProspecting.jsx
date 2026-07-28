@@ -234,14 +234,24 @@ export default function DailyProspecting() {
                       </div>
                       {item.qualification_score != null && (
                         <div className="prospect-qualification">
-                          <span className={qualificationClass(item.qualification_level)}>
-                            Prioridad {item.qualification_level || 'C'}
+                          <span className="prospect-priority-tooltip">
+                            <button
+                              type="button"
+                              className={`${qualificationClass(item.qualification_level)} prospect-priority-trigger`}
+                              aria-label={`Prioridad ${item.qualification_level || 'C'}. Ver detalles de cualificación`}
+                            >
+                              Prioridad {item.qualification_level || 'C'}
+                            </button>
+                            {(item.qualification_reason || item.call_angle) && (
+                              <span className="prospect-priority-popover" role="tooltip">
+                                {item.qualification_reason && <span>{item.qualification_reason}</span>}
+                                {item.call_angle && <span><strong>Enfoque:</strong> {item.call_angle}</span>}
+                              </span>
+                            )}
                           </span>
                           <strong>{item.qualification_score}/100</strong>
                         </div>
                       )}
-                      {item.qualification_reason && <p className="prospect-qualification-reason" title={item.qualification_reason}>{item.qualification_reason}</p>}
-                      {item.call_angle && <p className="prospect-call-angle" title={item.call_angle}><strong>Enfoque:</strong> {item.call_angle}</p>}
                       <p style={{fontSize:11,color:'#64748b',marginTop:3}}>{[item.city,item.province].filter(Boolean).join(' · ') || item.zone || 'España'}</p>
                       {item.address && <div style={{display:'flex',alignItems:'center',gap:5,marginTop:5,maxWidth:250}}>
                         <p style={{fontSize:11,color:'#64748b',maxWidth:220,lineHeight:1.35}}>{item.address}</p>
