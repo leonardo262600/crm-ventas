@@ -238,18 +238,31 @@ export default function DailyProspecting() {
                             <button
                               type="button"
                               className={`${qualificationClass(item.qualification_level)} prospect-priority-trigger`}
-                              aria-label={`Prioridad ${item.qualification_level || 'C'}. Ver detalles de cualificación`}
+                              aria-label={`Prioridad ${item.qualification_level || 'C'}. Ver criterios de cualificación`}
                             >
                               Prioridad {item.qualification_level || 'C'}
                             </button>
+                            <span className="prospect-priority-popover" role="tooltip">
+                              <span><strong>¿Cómo se cualifica?</strong></span>
+                              <span>El puntaje se basa en señales comerciales públicas y verificables: teléfono, correo, web propia, dirección, código postal y presencia digital disponible.</span>
+                              <span><strong>A:</strong> 75–100 · <strong>B:</strong> 50–74 · <strong>C:</strong> 0–49.</span>
+                            </span>
+                          </span>
+                          <span className="prospect-priority-tooltip">
+                            <button
+                              type="button"
+                              className="prospect-score-trigger"
+                              aria-label={`${item.qualification_score} sobre 100. Ver información encontrada y enfoque recomendado`}
+                            >
+                              {item.qualification_score}/100
+                            </button>
                             {(item.qualification_reason || item.call_angle) && (
-                              <span className="prospect-priority-popover" role="tooltip">
+                              <span className="prospect-priority-popover prospect-score-popover" role="tooltip">
                                 {item.qualification_reason && <span>{item.qualification_reason}</span>}
                                 {item.call_angle && <span><strong>Enfoque:</strong> {item.call_angle}</span>}
                               </span>
                             )}
                           </span>
-                          <strong>{item.qualification_score}/100</strong>
                         </div>
                       )}
                       <p style={{fontSize:11,color:'#64748b',marginTop:3}}>{[item.city,item.province].filter(Boolean).join(' · ') || item.zone || 'España'}</p>
