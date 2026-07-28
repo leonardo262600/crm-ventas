@@ -99,7 +99,7 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 }
 .prospect-priority-popover span { display:block; }
 .prospect-priority-popover span + span { margin-top:7px; }
-.prospect-score-popover { left:auto; right:0; }
+.prospect-priority-popover-open { position:fixed; display:block; }
 .prospect-priority-tooltip:hover .prospect-priority-popover,
 .prospect-priority-tooltip:focus-within .prospect-priority-popover { display:block; }
 .prospect-priority { display:inline-flex; align-items:center; border-radius:999px; padding:2px 7px; font-size:10px; font-weight:700; }
