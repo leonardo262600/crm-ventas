@@ -16,6 +16,7 @@ const ensureQualificationSchema = () => {
       qualification_reason: 'VARCHAR(700) NULL',
       call_angle: 'VARCHAR(500) NULL',
       realadvisor_crm_check: "VARCHAR(12) NOT NULL DEFAULT 'pendiente'",
+      assigned_to: 'INT NULL',
     };
     for (const [column, definition] of Object.entries(definitions)) {
       if (!existing.has(column)) {
@@ -40,6 +41,16 @@ const ensureQualificationSchema = () => {
     if (!raIndex) {
       await db.query(
         'CREATE INDEX idx_prospect_ra_check ON daily_prospects (tenant_id,realadvisor_crm_check)'
+      );
+    }
+    const [[assignmentIndex]] = await db.query(
+      `SELECT INDEX_NAME FROM information_schema.STATISTICS
+       WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='daily_prospects'
+         AND INDEX_NAME='idx_prospect_assignment' LIMIT 1`
+    );
+    if (!assignmentIndex) {
+      await db.query(
+        'CREATE INDEX idx_prospect_assignment ON daily_prospects (tenant_id,assigned_to,status)'
       );
     }
   })().catch(error => {
@@ -78,19 +89,23 @@ const list = async (req, res) => {
   try {
     await ensureQualificationSchema();
     const selectedDate = date || null;
-    let sql = 'SELECT * FROM daily_prospects WHERE tenant_id=?';
+    let sql = `SELECT dp.*, u.name AS assigned_name
+               FROM daily_prospects dp
+               LEFT JOIN users u ON u.id=dp.assigned_to AND u.tenant_id=dp.tenant_id
+               WHERE dp.tenant_id=?`;
     const params = [req.user.tenant_id];
-    if (selectedDate) { sql += ' AND batch_date=DATE(?)'; params.push(selectedDate); }
+    if (selectedDate) { sql += ' AND dp.batch_date=DATE(?)'; params.push(selectedDate); }
     if (req.user.role === 'setter') {
-      sql += " AND status IN ('llamar','volver_contactar','contactada','agendada','ya_realadvisor','no_interesa','no_localizable')";
+      sql += " AND dp.assigned_to=? AND dp.status IN ('llamar','volver_contactar','contactada','agendada','ya_realadvisor','no_interesa','no_localizable')";
+      params.push(req.user.id);
     }
-    if (status && status !== 'todos') { sql += ' AND status=?'; params.push(status); }
+    if (status && status !== 'todos') { sql += ' AND dp.status=?'; params.push(status); }
     if (search) {
-      sql += ' AND (agency_name LIKE ? OR city LIKE ? OR province LIKE ? OR email LIKE ? OR phone LIKE ?)';
+      sql += ' AND (dp.agency_name LIKE ? OR dp.city LIKE ? OR dp.province LIKE ? OR dp.email LIKE ? OR dp.phone LIKE ?)';
       params.push(...Array(5).fill(`%${search}%`));
     }
-    sql += ` ORDER BY FIELD(status,'llamar','pendiente','volver_contactar','agendada','contactada','ya_realadvisor','no_interesa','no_localizable'),
-             qualification_score IS NULL, qualification_score DESC, agency_name
+    sql += ` ORDER BY FIELD(dp.status,'llamar','pendiente','volver_contactar','agendada','contactada','ya_realadvisor','no_interesa','no_localizable'),
+             dp.qualification_score IS NULL, dp.qualification_score DESC, dp.agency_name
              LIMIT ${safeLimit} OFFSET ${offset}`;
     const [rows] = await db.query(sql, params);
     res.json({ date: selectedDate, items: rows });
@@ -99,11 +114,15 @@ const list = async (req, res) => {
 
 const summary = async (req, res) => {
   try {
-    const [rows] = await db.query(
-      `SELECT status, COUNT(*) AS total FROM daily_prospects
-       WHERE tenant_id=? GROUP BY status`,
-      [req.user.tenant_id]
-    );
+    await ensureQualificationSchema();
+    let statusSql = `SELECT status, COUNT(*) AS total FROM daily_prospects WHERE tenant_id=?`;
+    const statusParams = [req.user.tenant_id];
+    if (req.user.role === 'setter') {
+      statusSql += ' AND assigned_to=?';
+      statusParams.push(req.user.id);
+    }
+    statusSql += ' GROUP BY status';
+    const [rows] = await db.query(statusSql, statusParams);
     const [[latest]] = await db.query('SELECT MAX(batch_date) AS batch_date FROM daily_prospects WHERE tenant_id=?', [req.user.tenant_id]);
     const [[history]] = await db.query('SELECT COUNT(*) AS total FROM daily_prospects WHERE tenant_id=?', [req.user.tenant_id]);
     let performance = null;
@@ -119,7 +138,22 @@ const summary = async (req, res) => {
         [req.user.tenant_id, req.user.id]
       );
     }
-    res.json({ date: latest?.batch_date || null, statuses: rows, history: history.total, performance });
+    let assignments = [];
+    if (req.user.role === 'admin' || req.user.role === 'gerente') {
+      [assignments] = await db.query(
+        `SELECT u.id, u.name, u.role,
+                SUM(CASE WHEN dp.status IN ('llamar','volver_contactar') THEN 1 ELSE 0 END) AS pending_calls
+         FROM users u
+         LEFT JOIN daily_prospects dp
+           ON dp.tenant_id=u.tenant_id AND dp.assigned_to=u.id
+         WHERE u.tenant_id=? AND u.active=1 AND u.deleted_at IS NULL
+           AND u.role IN ('admin','setter')
+         GROUP BY u.id,u.name,u.role
+         ORDER BY FIELD(u.role,'admin','setter'),u.name`,
+        [req.user.tenant_id]
+      );
+    }
+    res.json({ date: latest?.batch_date || null, statuses: rows, history: history.total, performance, assignments });
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
 
@@ -163,13 +197,25 @@ const update = async (req, res) => {
       return res.status(400).json({ message: 'Verificación de CRM no válida' });
     }
   }
+  if (Object.prototype.hasOwnProperty.call(req.body, 'assigned_to') && req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Solo el administrador puede asignar prospectos' });
+  }
   try {
     await ensureQualificationSchema();
+    if (Object.prototype.hasOwnProperty.call(req.body, 'assigned_to') && req.body.assigned_to) {
+      const [[assignee]] = await db.query(
+        `SELECT id FROM users
+         WHERE id=? AND tenant_id=? AND active=1 AND deleted_at IS NULL
+           AND role IN ('admin','setter')`,
+        [req.body.assigned_to, req.user.tenant_id]
+      );
+      if (!assignee) return res.status(400).json({ message: 'El responsable seleccionado no está disponible' });
+    }
     const allowedFields = [
       'status', 'notes', 'follow_up_at', 'agency_name', 'phone', 'secondary_phone',
       'email', 'secondary_email', 'website', 'address', 'postal_code', 'google_maps_url',
       'contact_person', 'extra_info', 'qualification_score', 'qualification_level',
-      'qualification_reason', 'call_angle', 'realadvisor_crm_check',
+      'qualification_reason', 'call_angle', 'realadvisor_crm_check', 'assigned_to',
     ];
     const updates = [];
     const params = [];
@@ -191,7 +237,13 @@ const update = async (req, res) => {
     if (!updates.length) return res.status(400).json({ message: 'No hay cambios para guardar' });
     if (status === 'contactada') updates.push('contacted_at=COALESCE(contacted_at,NOW())');
     params.push(req.params.id, req.user.tenant_id);
-    await db.query(`UPDATE daily_prospects SET ${updates.join(', ')} WHERE id=? AND tenant_id=?`, params);
+    let scope = 'id=? AND tenant_id=?';
+    if (req.user.role === 'setter') {
+      scope += ' AND assigned_to=?';
+      params.push(req.user.id);
+    }
+    const [result] = await db.query(`UPDATE daily_prospects SET ${updates.join(', ')} WHERE ${scope}`, params);
+    if (!result.affectedRows) return res.status(404).json({ message: 'Prospecto no disponible para este usuario' });
     res.json({ message: 'Prospecto actualizado' });
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
@@ -209,6 +261,10 @@ const scheduleFollowUp = async (req, res) => {
     if (!prospect) {
       await connection.rollback();
       return res.status(404).json({ message: 'Agencia no encontrada' });
+    }
+    if (req.user.role === 'setter' && Number(prospect.assigned_to) !== Number(req.user.id)) {
+      await connection.rollback();
+      return res.status(403).json({ message: 'Esta agencia está asignada a otro responsable' });
     }
     const marker = `[PROSPECT:${prospect.id}]`;
     const [[existing]] = await connection.query(
@@ -253,6 +309,10 @@ const convert = async (req, res) => {
     await connection.beginTransaction();
     const [[prospect]] = await connection.query('SELECT * FROM daily_prospects WHERE id=? AND tenant_id=? FOR UPDATE', [req.params.id, req.user.tenant_id]);
     if (!prospect) { await connection.rollback(); return res.status(404).json({ message: 'Prospecto no encontrado' }); }
+    if (req.user.role === 'setter' && Number(prospect.assigned_to) !== Number(req.user.id)) {
+      await connection.rollback();
+      return res.status(403).json({ message: 'Esta agencia está asignada a otro responsable' });
+    }
     if (prospect.converted_contact_id) { await connection.rollback(); return res.status(409).json({ message: 'Este prospecto ya fue convertido' }); }
     const [contact] = await connection.query(
       `INSERT INTO contacts (tenant_id,name,email,phone,company,address,tags,notes,assigned_to,created_by)
@@ -294,6 +354,10 @@ const scheduleDemo = async (req, res) => {
     if (!prospect) {
       await connection.rollback();
       return res.status(404).json({ message: 'Agencia no encontrada' });
+    }
+    if (req.user.role === 'setter' && Number(prospect.assigned_to) !== Number(req.user.id)) {
+      await connection.rollback();
+      return res.status(403).json({ message: 'Esta agencia está asignada a otro responsable' });
     }
 
     const [[owner]] = await connection.query(

@@ -104,6 +104,15 @@ export default function DailyProspecting() {
     }
   };
 
+  const assignProspect = (item, value) => {
+    const assignedTo = value ? Number(value) : null;
+    patch(item, {
+      assigned_to: assignedTo,
+      assigned_name: summary?.assignments?.find(person => Number(person.id) === assignedTo)?.name || null,
+      ...(assignedTo && item.status === 'pendiente' ? { status:'llamar' } : {}),
+    });
+  };
+
   const saveDetails = async () => {
     try {
       await api.patch(`/prospecting/${editing.id}`, editing);
@@ -205,6 +214,18 @@ export default function DailyProspecting() {
         {!isSetter && <div className="followup-filter"><span>Histórico total</span><strong>{summary?.history || 0}</strong></div>}
       </div>
 
+      {isAdmin && summary?.assignments?.length > 0 && (
+        <div className="prospect-assignment-summary">
+          <span className="prospect-assignment-title">Llamadas pendientes por responsable</span>
+          {summary.assignments.map(person => (
+            <div key={person.id} className="prospect-assignment-counter">
+              <span>{Number(person.id) === Number(user?.id) ? 'Yo' : person.name}</span>
+              <strong>{Number(person.pending_calls || 0)}</strong>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="card" style={{marginBottom:16}}>
         <div style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'end'}}>
           <div className="input-group" style={{margin:0,minWidth:170}}><label>Filtrar por fecha (opcional)</label><input className="input" type="date" value={date} onChange={e=>{setDate(e.target.value);load(e.target.value);}}/></div>
@@ -274,16 +295,34 @@ export default function DailyProspecting() {
                     </td>
                     <td>
                       {isAdmin && (
-                        <div className="prospect-ra-check prospect-ra-check-status">
-                          <span>CRM RealAdvisor</span>
-                          <select
-                            value={item.realadvisor_crm_check || 'pendiente'}
-                            onChange={event => patch(item, { realadvisor_crm_check: event.target.value })}
-                            className={`prospect-ra-select ra-${item.realadvisor_crm_check || 'pendiente'}`}
-                            aria-label={`Existe en CRM RealAdvisor: ${item.agency_name}`}
-                          >
-                            {CRM_CHECKS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                          </select>
+                        <div className="prospect-admin-controls">
+                          <div className="prospect-ra-check prospect-ra-check-status">
+                            <span>CRM RealAdvisor</span>
+                            <select
+                              value={item.realadvisor_crm_check || 'pendiente'}
+                              onChange={event => patch(item, { realadvisor_crm_check: event.target.value })}
+                              className={`prospect-ra-select ra-${item.realadvisor_crm_check || 'pendiente'}`}
+                              aria-label={`Existe en CRM RealAdvisor: ${item.agency_name}`}
+                            >
+                              {CRM_CHECKS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                            </select>
+                          </div>
+                          <div className="prospect-assignee-control">
+                            <span>Setter</span>
+                            <select
+                              className="prospect-assignee-select"
+                              value={item.assigned_to || ''}
+                              onChange={event => assignProspect(item, event.target.value)}
+                              aria-label={`Responsable de ${item.agency_name}`}
+                            >
+                              <option value="">Sin asignar</option>
+                              {(summary?.assignments || []).map(person => (
+                                <option key={person.id} value={person.id}>
+                                  {Number(person.id) === Number(user?.id) ? `Yo · ${person.name}` : person.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
                         </div>
                       )}
                       <select className="input" value={item.status} onChange={e=>patch(item,{status:e.target.value})} style={{minWidth:165,padding:'7px 8px'}}>{visibleStatuses.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select>
