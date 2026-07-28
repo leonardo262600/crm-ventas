@@ -11,6 +11,7 @@ import api from '../../services/api';
 import { io } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import { playChatSound } from '../../utils/pushNotifications';
+import { getUserSymbol } from '../../utils/userAvatar';
 
 const SOCKET_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5080/api').replace(/\/api\/?$/, '');
 
@@ -93,7 +94,7 @@ export default function Sidebar() {
               color: '#173b60', fontWeight: 700, fontSize: 14, flexShrink: 0,
             }}>
               {user?.role === 'setter'
-                ? <span style={{fontSize:26,lineHeight:1}}>🇦🇷</span>
+                ? <span style={{fontSize:26,lineHeight:1}}>{getUserSymbol(user)}</span>
                 : user?.avatar || user?.role === 'admin'
                 ? <img src={user?.avatar || '/brand/leonardo-profile.jpg'} alt={user?.name || 'Usuario'} style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'50% 22%'}}/>
                 : (user?.name?.charAt(0).toUpperCase() || 'U')}

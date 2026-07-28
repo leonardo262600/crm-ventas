@@ -5,6 +5,7 @@ import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import { enablePushNotifications, playChatSound } from '../utils/pushNotifications';
+import { getUserSymbol } from '../utils/userAvatar';
 
 const SOCKET_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5080/api').replace(/\/api\/?$/, '');
 const timeLabel = value => value ? new Date(value).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' }) : '';
@@ -165,7 +166,7 @@ export default function Chat() {
           {peers.map(peer => (
             <button key={peer.id} className={`chat-person ${selected?.id===peer.id?'active':''}`} onClick={()=>setSelected(peer)}>
               <span className="chat-avatar-wrap">
-                <span className="chat-avatar">{peer.role==='setter'?'🇦🇷':peer.name?.charAt(0).toUpperCase()}</span>
+                <span className="chat-avatar">{getUserSymbol(peer)}</span>
                 <span className={`chat-presence-dot ${onlineUsers.has(Number(peer.id))?'online':'offline'}`}/>
               </span>
               <span className="chat-person-copy">

@@ -3,6 +3,7 @@ import { Plus, X, Trash2, AlertTriangle } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+import { getUserSymbol } from '../utils/userAvatar';
 
 const empty = { name:'', email:'', password:'', role:'vendedor', active:1 };
 const ROLE_BADGE = { admin:'badge-red', gerente:'badge-purple', vendedor:'badge-blue', setter:'badge-green' };
@@ -77,7 +78,7 @@ export default function Users() {
                   <td>
                     <div style={{ display:'flex', alignItems:'center', gap:10 }}>
                       <div style={{ width:34,height:34,borderRadius:'50%',background:'linear-gradient(135deg,#0f766e,#134e4a)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,flexShrink:0 }}>
-                        {u.name?.charAt(0).toUpperCase()}
+                        {getUserSymbol(u)}
                       </div>
                       <span style={{ fontWeight:500 }}>{u.name}</span>
                     </div>

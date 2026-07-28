@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
+import { getUserSymbol } from '../../utils/userAvatar';
 
 export default function Header() {
   const { user } = useAuth();
@@ -201,7 +202,7 @@ export default function Header() {
         <div className="header-user" style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 10px', borderRadius:10, background:'#f8fafc' }}>
           <div style={{ width:30, height:30, borderRadius:'50%', overflow:'hidden', background:'#e3e9f7', display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,color:'#173b60' }}>
             {user?.role === 'setter'
-              ? <span style={{fontSize:22,lineHeight:1}}>🇦🇷</span>
+              ? <span style={{fontSize:22,lineHeight:1}}>{getUserSymbol(user)}</span>
               : user?.avatar || user?.role === 'admin'
               ? <img src={user?.avatar || '/brand/leonardo-profile.jpg'} alt={user?.name || 'Usuario'} style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'50% 22%'}}/>
               : (user?.name?.charAt(0).toUpperCase() || 'U')}
