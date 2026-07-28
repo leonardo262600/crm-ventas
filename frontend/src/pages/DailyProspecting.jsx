@@ -237,7 +237,10 @@ export default function DailyProspecting() {
                       {item.qualification_reason && <p className="prospect-qualification-reason" title={item.qualification_reason}>{item.qualification_reason}</p>}
                       {item.call_angle && <p className="prospect-call-angle" title={item.call_angle}><strong>Enfoque:</strong> {item.call_angle}</p>}
                       <p style={{fontSize:11,color:'#64748b',marginTop:3}}>{[item.city,item.province].filter(Boolean).join(' · ') || item.zone || 'España'}</p>
-                      {item.address && <p style={{fontSize:11,color:'#64748b',marginTop:5,maxWidth:220,lineHeight:1.35}}>{item.address}</p>}
+                      {item.address && <div style={{display:'flex',alignItems:'center',gap:5,marginTop:5,maxWidth:250}}>
+                        <p style={{fontSize:11,color:'#64748b',maxWidth:220,lineHeight:1.35}}>{item.address}</p>
+                        <CopyButton value={item.address} copyKey={`a${item.id}`} title="Copiar dirección"/>
+                      </div>}
                       {prospectPostalCode(item) && <div style={{display:'flex',alignItems:'center',gap:5,marginTop:4}}>
                         <span style={{fontSize:11,color:'#475569'}}>CP {prospectPostalCode(item)}</span>
                         <CopyButton value={prospectPostalCode(item)} copyKey={`cp${item.id}`} title="Copiar código postal"/>
