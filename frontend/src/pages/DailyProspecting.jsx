@@ -242,19 +242,6 @@ export default function DailyProspecting() {
                       )}
                       {item.qualification_reason && <p className="prospect-qualification-reason" title={item.qualification_reason}>{item.qualification_reason}</p>}
                       {item.call_angle && <p className="prospect-call-angle" title={item.call_angle}><strong>Enfoque:</strong> {item.call_angle}</p>}
-                      {isAdmin && (
-                        <div className="prospect-ra-check">
-                          <span>CRM RealAdvisor</span>
-                          <select
-                            value={item.realadvisor_crm_check || 'pendiente'}
-                            onChange={event => patch(item, { realadvisor_crm_check: event.target.value })}
-                            className={`prospect-ra-select ra-${item.realadvisor_crm_check || 'pendiente'}`}
-                            aria-label={`Existe en CRM RealAdvisor: ${item.agency_name}`}
-                          >
-                            {CRM_CHECKS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                          </select>
-                        </div>
-                      )}
                       <p style={{fontSize:11,color:'#64748b',marginTop:3}}>{[item.city,item.province].filter(Boolean).join(' · ') || item.zone || 'España'}</p>
                       {item.address && <div style={{display:'flex',alignItems:'center',gap:5,marginTop:5,maxWidth:250}}>
                         <p style={{fontSize:11,color:'#64748b',maxWidth:220,lineHeight:1.35}}>{item.address}</p>
@@ -276,7 +263,22 @@ export default function DailyProspecting() {
                       {item.secondary_email && <div style={{display:'flex',alignItems:'center',gap:4,fontSize:12,color:'#475569'}}><Mail size={12}/><span style={{maxWidth:155,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.secondary_email}</span><CopyButton value={item.secondary_email} copyKey={`e2${item.id}`}/></div>}
                       {!item.phone && !item.secondary_phone && !item.email && !item.secondary_email && <span className="text-muted text-sm">Ver web</span>}
                     </td>
-                    <td><select className="input" value={item.status} onChange={e=>patch(item,{status:e.target.value})} style={{minWidth:165,padding:'7px 8px'}}>{visibleStatuses.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></td>
+                    <td>
+                      {isAdmin && (
+                        <div className="prospect-ra-check prospect-ra-check-status">
+                          <span>CRM RealAdvisor</span>
+                          <select
+                            value={item.realadvisor_crm_check || 'pendiente'}
+                            onChange={event => patch(item, { realadvisor_crm_check: event.target.value })}
+                            className={`prospect-ra-select ra-${item.realadvisor_crm_check || 'pendiente'}`}
+                            aria-label={`Existe en CRM RealAdvisor: ${item.agency_name}`}
+                          >
+                            {CRM_CHECKS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                          </select>
+                        </div>
+                      )}
+                      <select className="input" value={item.status} onChange={e=>patch(item,{status:e.target.value})} style={{minWidth:165,padding:'7px 8px'}}>{visibleStatuses.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select>
+                    </td>
                     <td><textarea className="input" rows={3} value={item.notes || ''} onChange={e=>setItems(current=>current.map(row=>row.id===item.id?{...row,notes:e.target.value}:row))} onBlur={()=>patch(item,{notes:item.notes || ''},true)} aria-label={`Comentarios de ${item.agency_name}`} style={{minWidth:210,minHeight:76,resize:'vertical',fontFamily:'inherit',fontSize:12,fontWeight:400,lineHeight:1.45}}/></td>
                     <td style={{textAlign:'center',minWidth:82}}>
                       <button className={`prospect-reminder ${item.follow_up_at?'scheduled':''}`} onClick={()=>openFollowUp(item)} title={item.follow_up_at ? `Tarea: ${new Date(item.follow_up_at).toLocaleString('es-ES')}` : 'Programar tarea de llamada'}><CalendarClock size={16}/></button>
