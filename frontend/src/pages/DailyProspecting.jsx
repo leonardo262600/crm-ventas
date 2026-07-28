@@ -17,6 +17,11 @@ const STATUSES = [
 ];
 
 const statusLabel = Object.fromEntries(STATUSES);
+const CRM_CHECKS = [
+  ['pendiente', 'Sin revisar'],
+  ['si', 'Sí'],
+  ['no', 'No'],
+];
 
 const spanishPhone = value => {
   if (!value) return '';
@@ -41,6 +46,7 @@ const qualificationClass = level => `prospect-priority prospect-priority-${Strin
 export default function DailyProspecting() {
   const { user } = useAuth();
   const isSetter = user?.role === 'setter';
+  const isAdmin = user?.role === 'admin';
   const [items, setItems] = useState([]);
   const [summary, setSummary] = useState(null);
   const [date, setDate] = useState('');
@@ -236,6 +242,19 @@ export default function DailyProspecting() {
                       )}
                       {item.qualification_reason && <p className="prospect-qualification-reason" title={item.qualification_reason}>{item.qualification_reason}</p>}
                       {item.call_angle && <p className="prospect-call-angle" title={item.call_angle}><strong>Enfoque:</strong> {item.call_angle}</p>}
+                      {isAdmin && (
+                        <div className="prospect-ra-check">
+                          <span>CRM RealAdvisor</span>
+                          <select
+                            value={item.realadvisor_crm_check || 'pendiente'}
+                            onChange={event => patch(item, { realadvisor_crm_check: event.target.value })}
+                            className={`prospect-ra-select ra-${item.realadvisor_crm_check || 'pendiente'}`}
+                            aria-label={`Existe en CRM RealAdvisor: ${item.agency_name}`}
+                          >
+                            {CRM_CHECKS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                          </select>
+                        </div>
+                      )}
                       <p style={{fontSize:11,color:'#64748b',marginTop:3}}>{[item.city,item.province].filter(Boolean).join(' · ') || item.zone || 'España'}</p>
                       {item.address && <div style={{display:'flex',alignItems:'center',gap:5,marginTop:5,maxWidth:250}}>
                         <p style={{fontSize:11,color:'#64748b',maxWidth:220,lineHeight:1.35}}>{item.address}</p>

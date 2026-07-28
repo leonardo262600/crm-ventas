@@ -15,6 +15,7 @@ const ensureQualificationSchema = () => {
       qualification_level: 'VARCHAR(1) NULL',
       qualification_reason: 'VARCHAR(700) NULL',
       call_angle: 'VARCHAR(500) NULL',
+      realadvisor_crm_check: "VARCHAR(12) NOT NULL DEFAULT 'pendiente'",
     };
     for (const [column, definition] of Object.entries(definitions)) {
       if (!existing.has(column)) {
@@ -29,6 +30,16 @@ const ensureQualificationSchema = () => {
     if (!index) {
       await db.query(
         'CREATE INDEX idx_prospect_qualification ON daily_prospects (tenant_id,status,qualification_score)'
+      );
+    }
+    const [[raIndex]] = await db.query(
+      `SELECT INDEX_NAME FROM information_schema.STATISTICS
+       WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='daily_prospects'
+         AND INDEX_NAME='idx_prospect_ra_check' LIMIT 1`
+    );
+    if (!raIndex) {
+      await db.query(
+        'CREATE INDEX idx_prospect_ra_check ON daily_prospects (tenant_id,realadvisor_crm_check)'
       );
     }
   })().catch(error => {
@@ -146,13 +157,19 @@ const update = async (req, res) => {
   const allowedStatuses = ['pendiente','llamar','contactada','agendada','ya_realadvisor','no_interesa','volver_contactar','no_localizable'];
   const { status } = req.body;
   if (status && !allowedStatuses.includes(status)) return res.status(400).json({ message: 'Estado no válido' });
+  if (Object.prototype.hasOwnProperty.call(req.body, 'realadvisor_crm_check')) {
+    if (req.user.role !== 'admin') return res.status(403).json({ message: 'Solo el administrador puede verificar el CRM de RealAdvisor' });
+    if (!['pendiente','si','no'].includes(req.body.realadvisor_crm_check)) {
+      return res.status(400).json({ message: 'Verificación de CRM no válida' });
+    }
+  }
   try {
     await ensureQualificationSchema();
     const allowedFields = [
       'status', 'notes', 'follow_up_at', 'agency_name', 'phone', 'secondary_phone',
       'email', 'secondary_email', 'website', 'address', 'postal_code', 'google_maps_url',
       'contact_person', 'extra_info', 'qualification_score', 'qualification_level',
-      'qualification_reason', 'call_angle',
+      'qualification_reason', 'call_angle', 'realadvisor_crm_check',
     ];
     const updates = [];
     const params = [];
