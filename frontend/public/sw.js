@@ -1,4 +1,4 @@
-self.CRM_BUILD_VERSION = '2026-07-30-original-stat-colors';
+self.CRM_BUILD_VERSION = '2026-07-31-prospecting-stat-colors';
 
 self.addEventListener('install', event => {
   self.skipWaiting();

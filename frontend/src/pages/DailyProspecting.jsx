@@ -226,13 +226,13 @@ export default function DailyProspecting({ personalMode = false }) {
       </div>
 
       <div className="followup-summary prospect-summary" style={operatorView ? {gridTemplateColumns:'repeat(auto-fit,minmax(130px,1fr))',gap:12} : undefined}>
-        <div className="followup-filter active" style={operatorView ? {borderTop:'4px solid #3b5bdb',padding:'12px 16px'} : undefined}><span>{operatorView ? 'Para llamar' : 'Lista del día'}</span><strong>{operatorView ? summaryCount('llamar') : Number(summary?.day_total || 0)}</strong></div>
-        <div className="followup-filter" style={operatorView ? {borderTop:'4px solid #7c3aed',padding:'12px 16px'} : undefined}><span>{operatorView ? 'Agendadas' : 'Pendientes'}</span><strong>{summaryCount(operatorView ? 'agendada' : 'pendiente')}</strong></div>
-        <div className="followup-filter" style={operatorView ? {borderTop:'4px solid #0f766e',padding:'12px 16px'} : undefined}><span>{operatorView ? 'Contactadas' : 'Para llamar'}</span><strong>{summaryCount(operatorView ? 'contactada' : 'llamar')}</strong></div>
-        <div className="followup-filter" style={operatorView ? {borderTop:'4px solid #d97706',padding:'12px 16px'} : undefined}><span>{operatorView ? 'Volver a llamar' : 'Contactadas'}</span><strong>{summaryCount(operatorView ? 'volver_contactar' : 'contactada')}</strong></div>
+        <div className="followup-filter prospect-stat prospect-stat-day active"><span>{operatorView ? 'Para llamar' : 'Lista del día'}</span><strong>{operatorView ? summaryCount('llamar') : Number(summary?.day_total || 0)}</strong></div>
+        <div className="followup-filter prospect-stat prospect-stat-pending"><span>{operatorView ? 'Agendadas' : 'Pendientes'}</span><strong>{summaryCount(operatorView ? 'agendada' : 'pendiente')}</strong></div>
+        <div className="followup-filter prospect-stat prospect-stat-call"><span>{operatorView ? 'Contactadas' : 'Para llamar'}</span><strong>{summaryCount(operatorView ? 'contactada' : 'llamar')}</strong></div>
+        <div className="followup-filter prospect-stat prospect-stat-contacted"><span>{operatorView ? 'Volver a llamar' : 'Contactadas'}</span><strong>{summaryCount(operatorView ? 'volver_contactar' : 'contactada')}</strong></div>
         {operatorView && <div className="followup-filter" style={{borderTop:'4px solid #16a34a',padding:'12px 16px'}}><span>Ventas del mes</span><strong>{summary?.performance?.sales || 0}</strong></div>}
         {operatorView && <div className="followup-filter" style={{borderTop:'4px solid #db2777',padding:'12px 16px'}}><span>Mi comisión</span><strong style={{fontSize:20}}>{fmt(summary?.performance?.commission || 0)}</strong></div>}
-        {!operatorView && <div className="followup-filter"><span>Histórico total</span><strong>{summary?.history || 0}</strong></div>}
+        {!operatorView && <div className="followup-filter prospect-stat prospect-stat-history"><span>Histórico total</span><strong>{summary?.history || 0}</strong></div>}
       </div>
 
       {isAdmin && !isPersonalCalls && summary?.assignments?.length > 0 && (

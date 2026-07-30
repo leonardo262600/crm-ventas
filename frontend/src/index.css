@@ -247,6 +247,12 @@ tr:hover td { background: #f8fafc; }
 .prospect-summary { grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; }
 .prospect-summary .followup-filter { padding:13px 15px; }
 .prospect-summary .followup-filter strong { margin-top:4px; font-size:23px; }
+.prospect-summary .prospect-stat { border-top-width:4px; }
+.prospect-stat-day { border-top-color:#3b5bdb; }
+.prospect-stat-pending { border-top-color:#b45309; }
+.prospect-stat-call { border-top-color:#dc2626; }
+.prospect-stat-contacted { border-top-color:#d97706; }
+.prospect-stat-history { border-top-color:#0f766e; }
 .followup-list { display:flex; flex-direction:column; }
 .followup-row { display:flex; gap:14px; align-items:center; padding:17px 20px; border-bottom:1px solid var(--border); border-left:4px solid transparent; }
 .followup-row:last-child { border-bottom:0; }
