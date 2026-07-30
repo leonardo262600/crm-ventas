@@ -64,6 +64,7 @@ const AppRoutes = () => {
         <Route path="activities"    element={<OperationalRoute><Activities /></OperationalRoute>} />
         <Route path="followups"     element={<OperationalRoute><FollowUps /></OperationalRoute>} />
         <Route path="prospecting"   element={<DailyProspecting />} />
+        <Route path="my-calls"      element={<RoleRoute roles={['admin']}><DailyProspecting personalMode /></RoleRoute>} />
         <Route path="chat"          element={<Chat />} />
         <Route path="quotes"        element={<OperationalRoute><Quotes /></OperationalRoute>} />
         <Route path="invoices"      element={<OperationalRoute><Invoices /></OperationalRoute>} />

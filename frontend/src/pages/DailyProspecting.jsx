@@ -43,14 +43,16 @@ const prospectPostalCode = item => item.postal_code || String(item.address || ''
 const hasExtraDetails = item => Boolean(String(item.extra_info || '').trim());
 const qualificationClass = level => `prospect-priority prospect-priority-${String(level || 'c').toLowerCase()}`;
 
-export default function DailyProspecting() {
+export default function DailyProspecting({ personalMode = false }) {
   const { user } = useAuth();
   const isSetter = user?.role === 'setter';
   const isAdmin = user?.role === 'admin';
+  const isPersonalCalls = personalMode && isAdmin;
+  const operatorView = isSetter || isPersonalCalls;
   const [items, setItems] = useState([]);
   const [summary, setSummary] = useState(null);
   const [date, setDate] = useState('');
-  const [filter, setFilter] = useState(() => user?.role === 'setter' ? 'llamar' : 'pendiente');
+  const [filter, setFilter] = useState(() => operatorView ? 'llamar' : 'pendiente');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState('');
@@ -64,8 +66,8 @@ export default function DailyProspecting() {
     setLoading(true);
     try {
       const [list, stats] = await Promise.all([
-        api.get('/prospecting', { params: { date: requestedDate || undefined, status: filter, search, limit:100 } }),
-        api.get('/prospecting/summary'),
+        api.get('/prospecting', { params: { date: requestedDate || undefined, status: filter, search, limit:100, mine: isPersonalCalls ? 1 : undefined } }),
+        api.get('/prospecting/summary', { params: { mine: isPersonalCalls ? 1 : undefined } }),
       ]);
       setItems(list.data.items);
       setDate(list.data.date ? String(list.data.date).slice(0, 10) : '');
@@ -186,35 +188,38 @@ export default function DailyProspecting() {
         .filter(row => filter === 'todos' || row.status === filter));
       setBooking(null);
       toast.success(`Demo agendada y asignada a ${data.assigned_to}`);
-      const stats = await api.get('/prospecting/summary');
+      const stats = await api.get('/prospecting/summary', { params: { mine: isPersonalCalls ? 1 : undefined } });
       setSummary(stats.data);
     } catch (error) { toast.error(error.response?.data?.message || 'No se pudo agendar la demo'); }
   };
 
   const summaryCount = status => Number(summary?.statuses?.find(row => row.status === status)?.total || 0);
-  const visibleStatuses = isSetter ? STATUSES.filter(([value]) => value !== 'pendiente') : STATUSES;
+  const visibleStatuses = operatorView ? STATUSES.filter(([value]) => value !== 'pendiente') : STATUSES;
 
   return (
     <div>
       <div className="page-header">
-        <div><h1>{isSetter ? 'Panel de llamadas' : 'Prospección diaria'}</h1><p>{isSetter ? 'Agencias verificadas y priorizadas para convertir en reuniones' : '100 agencias cualificadas al día, ordenadas por potencial comercial y sin duplicados'}</p></div>
+        <div>
+          <h1>{isPersonalCalls ? 'Mis llamadas' : isSetter ? 'Panel de llamadas' : 'Prospección diaria'}</h1>
+          <p>{operatorView ? 'Agencias asignadas exclusivamente a ti para llamar y convertir en reuniones' : '100 agencias cualificadas al día, ordenadas por potencial comercial y sin duplicados'}</p>
+        </div>
         <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
           <button className="btn btn-secondary" onClick={()=>setShowLineSettings(true)}><Settings size={15}/>{workLine ? `Línea: ${workLine}` : 'Configurar línea'}</button>
           <button className="btn btn-secondary" onClick={() => load()}><RefreshCw size={16}/>Actualizar</button>
         </div>
       </div>
 
-      <div className="followup-summary prospect-summary" style={isSetter ? {gridTemplateColumns:'repeat(auto-fit,minmax(130px,1fr))',gap:12} : undefined}>
-        <div className="followup-filter active" style={isSetter ? {borderTop:'4px solid #3b5bdb',padding:'12px 16px'} : undefined}><span>{isSetter ? 'Para llamar' : 'Lista del día'}</span><strong>{isSetter ? summaryCount('llamar') : Object.values(summary?.statuses || {}).length ? summary?.statuses?.reduce((sum,row)=>sum+Number(row.total),0) : items.length}</strong></div>
-        <div className="followup-filter" style={isSetter ? {borderTop:'4px solid #7c3aed',padding:'12px 16px'} : undefined}><span>{isSetter ? 'Agendadas' : 'Pendientes'}</span><strong>{summaryCount(isSetter ? 'agendada' : 'pendiente')}</strong></div>
-        <div className="followup-filter" style={isSetter ? {borderTop:'4px solid #0f766e',padding:'12px 16px'} : undefined}><span>{isSetter ? 'Contactadas' : 'Para llamar'}</span><strong>{summaryCount(isSetter ? 'contactada' : 'llamar')}</strong></div>
-        <div className="followup-filter" style={isSetter ? {borderTop:'4px solid #d97706',padding:'12px 16px'} : undefined}><span>{isSetter ? 'Volver a llamar' : 'Contactadas'}</span><strong>{summaryCount(isSetter ? 'volver_contactar' : 'contactada')}</strong></div>
-        {isSetter && <div className="followup-filter" style={{borderTop:'4px solid #16a34a',padding:'12px 16px'}}><span>Ventas del mes</span><strong>{summary?.performance?.sales || 0}</strong></div>}
-        {isSetter && <div className="followup-filter" style={{borderTop:'4px solid #db2777',padding:'12px 16px'}}><span>Mi comisión</span><strong style={{fontSize:20}}>{fmt(summary?.performance?.commission || 0)}</strong></div>}
-        {!isSetter && <div className="followup-filter"><span>Histórico total</span><strong>{summary?.history || 0}</strong></div>}
+      <div className="followup-summary prospect-summary" style={operatorView ? {gridTemplateColumns:'repeat(auto-fit,minmax(130px,1fr))',gap:12} : undefined}>
+        <div className="followup-filter active" style={operatorView ? {borderTop:'4px solid #3b5bdb',padding:'12px 16px'} : undefined}><span>{operatorView ? 'Para llamar' : 'Lista del día'}</span><strong>{operatorView ? summaryCount('llamar') : Object.values(summary?.statuses || {}).length ? summary?.statuses?.reduce((sum,row)=>sum+Number(row.total),0) : items.length}</strong></div>
+        <div className="followup-filter" style={operatorView ? {borderTop:'4px solid #7c3aed',padding:'12px 16px'} : undefined}><span>{operatorView ? 'Agendadas' : 'Pendientes'}</span><strong>{summaryCount(operatorView ? 'agendada' : 'pendiente')}</strong></div>
+        <div className="followup-filter" style={operatorView ? {borderTop:'4px solid #0f766e',padding:'12px 16px'} : undefined}><span>{operatorView ? 'Contactadas' : 'Para llamar'}</span><strong>{summaryCount(operatorView ? 'contactada' : 'llamar')}</strong></div>
+        <div className="followup-filter" style={operatorView ? {borderTop:'4px solid #d97706',padding:'12px 16px'} : undefined}><span>{operatorView ? 'Volver a llamar' : 'Contactadas'}</span><strong>{summaryCount(operatorView ? 'volver_contactar' : 'contactada')}</strong></div>
+        {operatorView && <div className="followup-filter" style={{borderTop:'4px solid #16a34a',padding:'12px 16px'}}><span>Ventas del mes</span><strong>{summary?.performance?.sales || 0}</strong></div>}
+        {operatorView && <div className="followup-filter" style={{borderTop:'4px solid #db2777',padding:'12px 16px'}}><span>Mi comisión</span><strong style={{fontSize:20}}>{fmt(summary?.performance?.commission || 0)}</strong></div>}
+        {!operatorView && <div className="followup-filter"><span>Histórico total</span><strong>{summary?.history || 0}</strong></div>}
       </div>
 
-      {isAdmin && summary?.assignments?.length > 0 && (
+      {isAdmin && !isPersonalCalls && summary?.assignments?.length > 0 && (
         <div className="prospect-assignment-summary">
           <span className="prospect-assignment-title">Llamadas pendientes por responsable</span>
           {summary.assignments.map(person => (
@@ -294,7 +299,7 @@ export default function DailyProspecting() {
                       {!item.phone && !item.secondary_phone && !item.email && !item.secondary_email && <span className="text-muted text-sm">Ver web</span>}
                     </td>
                     <td>
-                      {isAdmin && (
+                      {isAdmin && !isPersonalCalls && (
                         <div className="prospect-admin-controls">
                           <div className="prospect-ra-check prospect-ra-check-status">
                             <span>CRM RealAdvisor</span>
@@ -334,7 +339,7 @@ export default function DailyProspecting() {
                     <td style={{minWidth:285}}>
                       <div style={{display:'flex',gap:6,flexWrap:'nowrap',alignItems:'center'}}>
                         {item.phone && <button className="btn btn-sm btn-call-ready" onClick={()=>call(item)}><Phone size={13}/>Llamar</button>}
-                        {isSetter && item.status !== 'agendada' && <button className="btn btn-primary btn-sm" onClick={()=>openBooking(item)}><CalendarPlus size={13}/>Agendar</button>}
+                        {operatorView && item.status !== 'agendada' && <button className="btn btn-primary btn-sm" onClick={()=>openBooking(item)}><CalendarPlus size={13}/>Agendar</button>}
                         <button
                           className={`btn btn-secondary btn-sm prospect-more-info ${hasExtraDetails(item)?'has-details':''}`}
                           onClick={()=>setEditing({...item})}
@@ -343,7 +348,7 @@ export default function DailyProspecting() {
                           <Pencil size={13}/>Más info
                           {hasExtraDetails(item) && <span className="prospect-info-alert" aria-label="Hay información adicional"/>}
                         </button>
-                        {!isSetter && (!item.converted_contact_id ? <button className="btn btn-primary btn-sm" onClick={()=>convert(item)}><UserPlus size={13}/>Convertir</button> : <span className="badge badge-green">Convertida</span>)}
+                        {!operatorView && (!item.converted_contact_id ? <button className="btn btn-primary btn-sm" onClick={()=>convert(item)}><UserPlus size={13}/>Convertir</button> : <span className="badge badge-green">Convertida</span>)}
                         {item.status === 'agendada' && <span className="badge badge-green">Agendada</span>}
                       </div>
                     </td>

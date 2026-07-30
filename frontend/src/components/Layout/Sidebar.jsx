@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users2, Target, CalendarCheck, CalendarClock,
   BarChart2, Users, LogOut,
   MessageSquare, Settings, UserCircle, SlidersHorizontal, DatabaseBackup, Building2,
-  Milestone, FileText
+  Milestone, FileText, PhoneCall
 } from 'lucide-react';
 import api from '../../services/api';
 import { io } from 'socket.io-client';
@@ -32,6 +32,7 @@ const nav = [
   { to: '/followups',      icon: Milestone,       label: 'Seguimientos',       mobileLabel: 'Seguim.' },
   { to: '/activities',     icon: CalendarCheck,   label: 'Tareas diarias',     mobileLabel: 'T. diarias' },
   { to: '/prospecting',    icon: Building2,       label: 'Prospección diaria', mobileLabel: 'P. diaria' },
+  { to: '/my-calls',       icon: PhoneCall,       label: 'Mis llamadas',       mobileLabel: 'Mis llamadas', adminOnly: true },
   { to: '/chat',           icon: MessageSquare,   label: 'Chat',               mobileLabel: 'Chat' },
   { to: '/communications', icon: FileText,        label: 'Plantillas',         mobileLabel: 'Plantillas' },
   { to: '/reports',        icon: BarChart2,       label: 'Informes',           mobileLabel: 'Informes' },
@@ -110,7 +111,10 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="sidebar-nav" style={{ flex: 1, padding: '10px 10px', overflowY: 'auto' }}>
-        {(user?.role === 'setter' ? nav.filter(item => ['/prospecting','/contacts','/chat'].includes(item.to)) : nav).map(({ to, icon: Icon, label, mobileLabel, exact }) => (
+        {(user?.role === 'setter'
+          ? nav.filter(item => ['/prospecting','/contacts','/chat'].includes(item.to))
+          : nav.filter(item => !item.adminOnly || user?.role === 'admin')
+        ).map(({ to, icon: Icon, label, mobileLabel, exact }) => (
           <NavLink key={to} to={to} end={exact}
             style={({ isActive }) => navStyle(isActive)}>
             <Icon size={17}/>

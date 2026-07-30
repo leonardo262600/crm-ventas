@@ -83,7 +83,8 @@ const postalCodeFrom = (postalCode, address) => {
 };
 
 const list = async (req, res) => {
-  const { date, status, search, page = 1, limit = 50 } = req.query;
+  const { date, status, search, mine, page = 1, limit = 50 } = req.query;
+  const personalView = String(mine || '') === '1';
   const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
   const offset = (Math.max(Number(page) || 1, 1) - 1) * safeLimit;
   try {
@@ -95,7 +96,7 @@ const list = async (req, res) => {
                WHERE dp.tenant_id=?`;
     const params = [req.user.tenant_id];
     if (selectedDate) { sql += ' AND dp.batch_date=DATE(?)'; params.push(selectedDate); }
-    if (req.user.role === 'setter') {
+    if (req.user.role === 'setter' || personalView) {
       sql += " AND dp.assigned_to=? AND dp.status IN ('llamar','volver_contactar','contactada','agendada','ya_realadvisor','no_interesa','no_localizable')";
       params.push(req.user.id);
     }
@@ -115,16 +116,19 @@ const list = async (req, res) => {
 const summary = async (req, res) => {
   try {
     await ensureQualificationSchema();
+    const personalView = String(req.query.mine || '') === '1';
     let statusSql = `SELECT status, COUNT(*) AS total FROM daily_prospects WHERE tenant_id=?`;
     const statusParams = [req.user.tenant_id];
-    if (req.user.role === 'setter') {
+    if (req.user.role === 'setter' || personalView) {
       statusSql += ' AND assigned_to=?';
       statusParams.push(req.user.id);
     }
     statusSql += ' GROUP BY status';
     const [rows] = await db.query(statusSql, statusParams);
     const [[latest]] = await db.query('SELECT MAX(batch_date) AS batch_date FROM daily_prospects WHERE tenant_id=?', [req.user.tenant_id]);
-    const [[history]] = await db.query('SELECT COUNT(*) AS total FROM daily_prospects WHERE tenant_id=?', [req.user.tenant_id]);
+    const [[history]] = personalView || req.user.role === 'setter'
+      ? await db.query('SELECT COUNT(*) AS total FROM daily_prospects WHERE tenant_id=? AND assigned_to=?', [req.user.tenant_id, req.user.id])
+      : await db.query('SELECT COUNT(*) AS total FROM daily_prospects WHERE tenant_id=?', [req.user.tenant_id]);
     let performance = null;
     if (req.user.role === 'setter') {
       [[performance]] = await db.query(
@@ -133,6 +137,17 @@ const summary = async (req, res) => {
                 COALESCE(SUM(setter_commission_amount),0) AS commission
          FROM opportunities
          WHERE tenant_id=? AND setter_id=? AND status='won'
+           AND close_date>=DATE_FORMAT(CURDATE(),'%Y-%m-01')
+           AND close_date<DATE_ADD(DATE_FORMAT(CURDATE(),'%Y-%m-01'),INTERVAL 1 MONTH)`,
+        [req.user.tenant_id, req.user.id]
+      );
+    } else if (personalView) {
+      [[performance]] = await db.query(
+        `SELECT COUNT(*) AS sales,
+                COALESCE(SUM(cash_collected),0) AS cash_collected,
+                COALESCE(SUM(commission_amount),0) AS commission
+         FROM opportunities
+         WHERE tenant_id=? AND assigned_to=? AND status='won'
            AND close_date>=DATE_FORMAT(CURDATE(),'%Y-%m-01')
            AND close_date<DATE_ADD(DATE_FORMAT(CURDATE(),'%Y-%m-01'),INTERVAL 1 MONTH)`,
         [req.user.tenant_id, req.user.id]
