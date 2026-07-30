@@ -383,7 +383,7 @@ tr:hover td { background: #f8fafc; }
 .quick-action-menu-item:hover { background:#f1f5f9; }
 .nav-label-mobile { display: none; }
 .daily-plan-grid { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px; }
-.daily-plan-item { display:flex; flex-direction:column; gap:4px; padding:13px 12px; background:#f8fafc; border-radius:9px; text-decoration:none; color:var(--text); }
+.daily-plan-item { display:flex; flex-direction:column; gap:4px; padding:13px 12px; background:var(--card); border:1px solid var(--border); border-radius:9px; text-decoration:none; color:var(--text); }
 .daily-plan-item strong { font-size:24px; line-height:1; }
 .daily-plan-item span { font-size:11px; color:var(--text-muted); }
 
