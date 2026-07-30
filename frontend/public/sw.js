@@ -1,3 +1,5 @@
+self.CRM_BUILD_VERSION = '2026-07-30-assignee-filter';
+
 self.addEventListener('install', event => {
   self.skipWaiting();
 });
