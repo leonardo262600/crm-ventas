@@ -84,12 +84,12 @@ export default function Dashboard() {
       {/* Stats */}
       <div className="stats-grid">
         {[
-          { label: 'Seguimientos vencidos', value: stats.overdue_followups || 0, icon: TriangleAlert, bg: 'linear-gradient(135deg, #EF4444, #B91C1C)' },
-          { label: 'Seguimientos para hoy', value: stats.today_followups || 0, icon: CalendarCheck, bg: 'linear-gradient(135deg, #F59E0B, #B45309)' },
-          { label: 'Sin próxima acción', value: stats.without_next_action || 0, icon: CalendarDays, bg: 'linear-gradient(135deg, #64748B, #334155)' },
-          { label: 'Demos últimos 7 días', value: stats.demos_week || 0, icon: Target, bg: 'linear-gradient(135deg, #3B82F6, #1D4ED8)' },
-          { label: 'Cash collected del mes', value: fmt(stats.cash_collected_month || 0), icon: DollarSign, currency: true, bg: 'linear-gradient(135deg, #8B5CF6, #6D28D9)' },
-          { label: 'Mi comisión del mes', value: fmt(stats.commission_month || 0), icon: TrendingUp, currency: true, bg: 'linear-gradient(135deg, #14B8A6, #0F766E)' },
+          { label: 'Seguimientos vencidos', value: stats.overdue_followups || 0, icon: TriangleAlert, bg: 'linear-gradient(135deg, rgba(239,68,68,.82), rgba(185,28,28,.82))' },
+          { label: 'Seguimientos para hoy', value: stats.today_followups || 0, icon: CalendarCheck, bg: 'linear-gradient(135deg, rgba(245,158,11,.82), rgba(180,83,9,.82))' },
+          { label: 'Sin próxima acción', value: stats.without_next_action || 0, icon: CalendarDays, bg: 'linear-gradient(135deg, rgba(100,116,139,.82), rgba(51,65,85,.82))' },
+          { label: 'Demos últimos 7 días', value: stats.demos_week || 0, icon: Target, bg: 'linear-gradient(135deg, rgba(59,130,246,.82), rgba(29,78,216,.82))' },
+          { label: 'Cash collected del mes', value: fmt(stats.cash_collected_month || 0), icon: DollarSign, currency: true, bg: 'linear-gradient(135deg, rgba(139,92,246,.82), rgba(109,40,217,.82))' },
+          { label: 'Mi comisión del mes', value: fmt(stats.commission_month || 0), icon: TrendingUp, currency: true, bg: 'linear-gradient(135deg, rgba(20,184,166,.82), rgba(15,118,110,.82))' },
         ].map(({ label, value, icon: Icon, bg, currency }) => (
           <div className="stat-card stat-card-colored" key={label} style={{ background: bg }}>
             {!currency && <div className="stat-icon">

@@ -1,4 +1,4 @@
-self.CRM_BUILD_VERSION = '2026-07-30-daily-plan-cards';
+self.CRM_BUILD_VERSION = '2026-07-30-soft-stat-cards';
 
 self.addEventListener('install', event => {
   self.skipWaiting();
