@@ -77,7 +77,10 @@ export default function DailyProspecting({ personalMode = false }) {
           limit:100,
           mine: isPersonalCalls ? 1 : undefined,
         } }),
-        api.get('/prospecting/summary', { params: { mine: isPersonalCalls ? 1 : undefined } }),
+        api.get('/prospecting/summary', { params: {
+          mine: isPersonalCalls ? 1 : undefined,
+          date: requestedDate || undefined,
+        } }),
       ]);
       setItems(list.data.items);
       setDate(list.data.date ? String(list.data.date).slice(0, 10) : '');
@@ -223,7 +226,7 @@ export default function DailyProspecting({ personalMode = false }) {
       </div>
 
       <div className="followup-summary prospect-summary" style={operatorView ? {gridTemplateColumns:'repeat(auto-fit,minmax(130px,1fr))',gap:12} : undefined}>
-        <div className="followup-filter active" style={operatorView ? {borderTop:'4px solid #3b5bdb',padding:'12px 16px'} : undefined}><span>{operatorView ? 'Para llamar' : 'Lista del día'}</span><strong>{operatorView ? summaryCount('llamar') : Object.values(summary?.statuses || {}).length ? summary?.statuses?.reduce((sum,row)=>sum+Number(row.total),0) : items.length}</strong></div>
+        <div className="followup-filter active" style={operatorView ? {borderTop:'4px solid #3b5bdb',padding:'12px 16px'} : undefined}><span>{operatorView ? 'Para llamar' : 'Lista del día'}</span><strong>{operatorView ? summaryCount('llamar') : Number(summary?.day_total || 0)}</strong></div>
         <div className="followup-filter" style={operatorView ? {borderTop:'4px solid #7c3aed',padding:'12px 16px'} : undefined}><span>{operatorView ? 'Agendadas' : 'Pendientes'}</span><strong>{summaryCount(operatorView ? 'agendada' : 'pendiente')}</strong></div>
         <div className="followup-filter" style={operatorView ? {borderTop:'4px solid #0f766e',padding:'12px 16px'} : undefined}><span>{operatorView ? 'Contactadas' : 'Para llamar'}</span><strong>{summaryCount(operatorView ? 'contactada' : 'llamar')}</strong></div>
         <div className="followup-filter" style={operatorView ? {borderTop:'4px solid #d97706',padding:'12px 16px'} : undefined}><span>{operatorView ? 'Volver a llamar' : 'Contactadas'}</span><strong>{summaryCount(operatorView ? 'volver_contactar' : 'contactada')}</strong></div>

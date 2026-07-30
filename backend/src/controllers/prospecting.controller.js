@@ -130,6 +130,7 @@ const summary = async (req, res) => {
   try {
     await ensureQualificationSchema();
     const personalView = String(req.query.mine || '') === '1';
+    const selectedDate = req.query.date || null;
     let statusSql = `SELECT status, COUNT(*) AS total FROM daily_prospects WHERE tenant_id=?`;
     const statusParams = [req.user.tenant_id];
     if (req.user.role === 'setter' || personalView) {
@@ -139,6 +140,13 @@ const summary = async (req, res) => {
     statusSql += ' GROUP BY status';
     const [rows] = await db.query(statusSql, statusParams);
     const [[latest]] = await db.query('SELECT MAX(batch_date) AS batch_date FROM daily_prospects WHERE tenant_id=?', [req.user.tenant_id]);
+    const dayDate = selectedDate || latest?.batch_date || null;
+    const [[dayTotal]] = dayDate
+      ? await db.query(
+        'SELECT COUNT(*) AS total FROM daily_prospects WHERE tenant_id=? AND batch_date=DATE(?)',
+        [req.user.tenant_id, dayDate]
+      )
+      : [[{ total: 0 }]];
     const [[history]] = personalView || req.user.role === 'setter'
       ? await db.query('SELECT COUNT(*) AS total FROM daily_prospects WHERE tenant_id=? AND assigned_to=?', [req.user.tenant_id, req.user.id])
       : await db.query('SELECT COUNT(*) AS total FROM daily_prospects WHERE tenant_id=?', [req.user.tenant_id]);
@@ -181,7 +189,14 @@ const summary = async (req, res) => {
         [req.user.tenant_id]
       );
     }
-    res.json({ date: latest?.batch_date || null, statuses: rows, history: history.total, performance, assignments });
+    res.json({
+      date: latest?.batch_date || null,
+      day_total: Number(dayTotal?.total || 0),
+      statuses: rows,
+      history: history.total,
+      performance,
+      assignments,
+    });
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
 
