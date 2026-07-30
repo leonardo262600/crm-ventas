@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line } from 'recharts';
-import { Download, FileSpreadsheet, Users2, Target, FileText, Calendar, X } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { FileSpreadsheet, Users2, Target, FileText, Calendar, RefreshCw, X } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -34,6 +34,7 @@ const PRESETS    = [
 
 export default function Reports() {
   const [data, setData]         = useState(null);
+  const [commercial, setCommercial] = useState(null);
   const [loading, setLoading]   = useState(true);
   const [from, setFrom]         = useState('');
   const [to, setTo]             = useState('');
@@ -44,8 +45,15 @@ export default function Reports() {
     const params = {};
     if (from) params.from = from;
     if (to)   params.to   = to;
-    api.get('/reports/dashboard', { params })
-      .then(r => setData(r.data))
+    Promise.all([
+      api.get('/reports/dashboard', { params }),
+      api.get('/reports/commercial-analytics', { params }),
+    ])
+      .then(([dashboard, analytics]) => {
+        setData(dashboard.data);
+        setCommercial(analytics.data);
+      })
+      .catch(error => toast.error(error.response?.data?.message || 'No se pudo cargar la analítica'))
       .finally(() => setLoading(false));
   }, [from, to]);
 
@@ -76,8 +84,9 @@ export default function Reports() {
     <div>
       {/* ── Header ── */}
       <div className="page-header">
-        <div><h1>Reportes y Dashboards</h1><p>Análisis y métricas de ventas</p></div>
+        <div><h1>Analítica comercial</h1><p>Embudo, rendimiento del equipo y calidad de la prospección</p></div>
         <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-secondary" onClick={load}><RefreshCw size={15}/>Actualizar</button>
           <button className="btn btn-secondary" onClick={() => downloadFile(buildExportUrl('/api/exports/contacts/excel'), 'contactos.xlsx')}>
             <Users2 size={15} /> Contactos XLS
           </button>
@@ -149,6 +158,103 @@ export default function Reports() {
 
       {loading ? <div className="spinner" /> : (
         <>
+          <div className="card" style={{marginBottom:20}}>
+            <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'flex-start',marginBottom:16,flexWrap:'wrap'}}>
+              <div>
+                <h3 style={{fontWeight:700}}>Rendimiento del embudo comercial</h3>
+                <p className="text-muted text-sm">Se actualiza al abrir esta página. “Trabajados” significa que el lead ya salió de Pendiente.</p>
+              </div>
+              {commercial?.generated_at && <span className="text-muted" style={{fontSize:11}}>Actualizado: {new Date(commercial.generated_at).toLocaleString('es-ES')}</span>}
+            </div>
+            <div className="stats-grid" style={{marginBottom:20}}>
+              {[
+                ['Leads', commercial?.kpis?.leads || 0, '#3b82f6'],
+                ['Trabajados', commercial?.kpis?.worked || 0, '#0f766e'],
+                ['Contactados', commercial?.kpis?.contacted || 0, '#8b5cf6'],
+                ['Demos agendadas', commercial?.kpis?.scheduled || 0, '#f59e0b'],
+                ['Demos realizadas', commercial?.kpis?.demos_completed || 0, '#06b6d4'],
+                ['Ventas', commercial?.kpis?.sales || 0, '#16a34a'],
+              ].map(([label,value,color])=>(
+                <div key={label} style={{padding:'14px 16px',background:'var(--card)',border:'1px solid var(--border)',borderTop:`4px solid ${color}`,borderRadius:12}}>
+                  <strong style={{display:'block',fontSize:25,color}}>{value}</strong>
+                  <span className="text-muted text-sm">{label}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:10}}>
+              {[
+                ['Tasa trabajada', commercial?.kpis?.work_rate],
+                ['Tasa de contacto', commercial?.kpis?.contact_rate],
+                ['Tasa de agendamiento', commercial?.kpis?.booking_rate],
+                ['Tasa de asistencia', commercial?.kpis?.attendance_rate],
+                ['Cierre sobre demos', commercial?.kpis?.sales_rate],
+              ].map(([label,value])=>(
+                <div key={label} style={{padding:12,border:'1px solid var(--border)',borderRadius:10,background:'var(--bg)',textAlign:'center'}}>
+                  <strong style={{fontSize:20}}>{value || 0}%</strong>
+                  <span className="text-muted" style={{display:'block',fontSize:11,marginTop:3}}>{label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(320px,1fr))',gap:20,marginBottom:20}}>
+            <div className="card">
+              <h3 style={{fontWeight:600,marginBottom:16}}>Embudo de prospección a venta</h3>
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={commercial?.funnel || []} layout="vertical">
+                  <XAxis type="number" allowDecimals={false}/>
+                  <YAxis type="category" dataKey="name" width={115} tick={{fontSize:11}}/>
+                  <Tooltip/>
+                  <Bar dataKey="value" fill="#3b5bdb" radius={[0,5,5,0]}/>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="card">
+              <h3 style={{fontWeight:600,marginBottom:16}}>Calidad de los leads</h3>
+              <ResponsiveContainer width="100%" height={260}>
+                <PieChart>
+                  <Pie data={commercial?.qualification || []} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={92} label={({name,value})=>`${name}: ${value}`}>
+                    {(commercial?.qualification || []).map((_,i)=><Cell key={i} fill={['#16a34a','#f59e0b','#ef4444','#94a3b8'][i%4]}/>)}
+                  </Pie>
+                  <Tooltip/>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="card" style={{marginBottom:20}}>
+            <h3 style={{fontWeight:600,marginBottom:16}}>Rendimiento por responsable</h3>
+            <div className="table-wrap">
+              <table>
+                <thead><tr><th>Responsable</th><th>Asignados</th><th>Pendientes</th><th>Contactados</th><th>Agendadas</th><th>Ventas</th><th>Conversión a demo</th></tr></thead>
+                <tbody>
+                  {(commercial?.setters || []).map(person=>{
+                    const conversion = Number(person.contacted) ? ((Number(person.scheduled)/Number(person.contacted))*100).toFixed(1) : '0.0';
+                    return <tr key={person.id}>
+                      <td><strong>{person.name}</strong><span className="text-muted" style={{display:'block',fontSize:11}}>{person.role==='admin'?'Leonardo':'Setter'}</span></td>
+                      <td>{person.assigned}</td><td>{person.pending}</td><td>{person.contacted}</td><td>{person.scheduled}</td><td>{person.sales}</td><td>{conversion}%</td>
+                    </tr>;
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="card" style={{marginBottom:20}}>
+            <h3 style={{fontWeight:600,marginBottom:16}}>Zonas con mayor actividad</h3>
+            <div className="table-wrap">
+              <table>
+                <thead><tr><th>Provincia / zona</th><th>Leads</th><th>Contactados</th><th>Demos</th><th>Tasa de contacto</th></tr></thead>
+                <tbody>
+                  {(commercial?.zones || []).map(zone=>{
+                    const rate = Number(zone.leads) ? ((Number(zone.contacted)/Number(zone.leads))*100).toFixed(1) : '0.0';
+                    return <tr key={zone.name}><td><strong>{zone.name}</strong></td><td>{zone.leads}</td><td>{zone.contacted}</td><td>{zone.scheduled}</td><td>{rate}%</td></tr>;
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           {/* ── KPI Cards ── */}
           <div className="stats-grid" style={{ marginBottom: 24 }}>
             {[

@@ -142,4 +142,154 @@ const salesFunnel = async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
 
-module.exports = { dashboard, salesFunnel };
+const commercialAnalytics = async (req, res) => {
+  const tid = req.user.tenant_id;
+  const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
+  const from = validDate(req.query.from) ? req.query.from : null;
+  const to = validDate(req.query.to) ? req.query.to : null;
+  const prospectRange = from && to ? ' AND batch_date BETWEEN ? AND ?' : '';
+  const prospectParams = from && to ? [tid, from, to] : [tid];
+  const opportunityRange = from && to ? ' AND created_at BETWEEN ? AND CONCAT(?,\' 23:59:59\')' : '';
+  const opportunityParams = from && to ? [tid, from, to] : [tid];
+
+  try {
+    const [[prospects]] = await db.query(
+      `SELECT
+         COUNT(*) AS total,
+         SUM(assigned_to IS NOT NULL) AS assigned,
+         SUM(status <> 'pendiente') AS worked,
+         SUM(status IN ('contactada','volver_contactar','agendada')) AS contacted,
+         SUM(status='agendada') AS scheduled,
+         SUM(status='no_interesa') AS not_interested,
+         SUM(status='ya_realadvisor') AS already_realadvisor,
+         SUM(status='no_localizable') AS unreachable
+       FROM daily_prospects
+       WHERE tenant_id=?${prospectRange}`,
+      prospectParams
+    );
+
+    const [[opportunities]] = await db.query(
+      `SELECT
+         COUNT(*) AS total,
+         SUM(demo_status IN ('programada','reagendada','realizada','no_show')) AS demos_scheduled,
+         SUM(demo_status='realizada') AS demos_completed,
+         SUM(demo_status='no_show') AS no_shows,
+         SUM(status='won') AS sales,
+         COALESCE(SUM(CASE WHEN status='won' THEN cash_collected ELSE 0 END),0) AS cash_collected
+       FROM opportunities
+       WHERE tenant_id=?${opportunityRange}`,
+      opportunityParams
+    );
+
+    const [statuses] = await db.query(
+      `SELECT status AS name, COUNT(*) AS value
+       FROM daily_prospects
+       WHERE tenant_id=?${prospectRange}
+       GROUP BY status ORDER BY value DESC`,
+      prospectParams
+    );
+
+    const [qualification] = await db.query(
+      `SELECT COALESCE(qualification_level,'Sin clasificar') AS name, COUNT(*) AS value,
+              ROUND(AVG(qualification_score),1) AS average_score
+       FROM daily_prospects
+       WHERE tenant_id=?${prospectRange}
+       GROUP BY qualification_level
+       ORDER BY FIELD(qualification_level,'A','B','C'), value DESC`,
+      prospectParams
+    );
+
+    const [zones] = await db.query(
+      `SELECT COALESCE(NULLIF(province,''),NULLIF(zone,''),'Sin zona') AS name,
+              COUNT(*) AS leads,
+              SUM(status IN ('contactada','volver_contactar','agendada')) AS contacted,
+              SUM(status='agendada') AS scheduled
+       FROM daily_prospects
+       WHERE tenant_id=?${prospectRange}
+       GROUP BY name ORDER BY leads DESC LIMIT 10`,
+      prospectParams
+    );
+
+    const setterDate = from && to
+      ? ` AND dp.batch_date BETWEEN ? AND ?`
+      : '';
+    const setterParams = from && to ? [tid, from, to, tid, from, to] : [tid, tid];
+    const [setters] = await db.query(
+      `SELECT u.id, u.name, u.role,
+              COALESCE(p.assigned,0) AS assigned,
+              COALESCE(p.pending,0) AS pending,
+              COALESCE(p.contacted,0) AS contacted,
+              COALESCE(p.scheduled,0) AS scheduled,
+              COALESCE(o.sales,0) AS sales,
+              COALESCE(o.cash_collected,0) AS cash_collected
+       FROM users u
+       LEFT JOIN (
+         SELECT dp.assigned_to,
+                COUNT(*) AS assigned,
+                SUM(dp.status IN ('llamar','volver_contactar')) AS pending,
+                SUM(dp.status IN ('contactada','volver_contactar','agendada')) AS contacted,
+                SUM(dp.status='agendada') AS scheduled
+         FROM daily_prospects dp
+         WHERE dp.tenant_id=?${setterDate}
+         GROUP BY dp.assigned_to
+       ) p ON p.assigned_to=u.id
+       LEFT JOIN (
+         SELECT setter_id,
+                COUNT(*) AS sales,
+                COALESCE(SUM(cash_collected),0) AS cash_collected
+         FROM opportunities
+         WHERE tenant_id=? AND status='won'${from && to ? ' AND close_date BETWEEN ? AND ?' : ''}
+         GROUP BY setter_id
+       ) o ON o.setter_id=u.id
+       WHERE u.tenant_id=? AND u.active=1 AND u.deleted_at IS NULL
+         AND u.role IN ('admin','setter')
+       ORDER BY scheduled DESC, contacted DESC, assigned DESC`,
+      [...setterParams, tid]
+    );
+
+    const total = Number(prospects.total || 0);
+    const worked = Number(prospects.worked || 0);
+    const contacted = Number(prospects.contacted || 0);
+    const scheduled = Number(prospects.scheduled || 0);
+    const demosCompleted = Number(opportunities.demos_completed || 0);
+    const sales = Number(opportunities.sales || 0);
+    const pct = (value, base) => base ? Number(((value / base) * 100).toFixed(1)) : 0;
+
+    res.json({
+      kpis: {
+        leads: total,
+        assigned: Number(prospects.assigned || 0),
+        worked,
+        contacted,
+        scheduled,
+        demos_completed: demosCompleted,
+        no_shows: Number(opportunities.no_shows || 0),
+        sales,
+        cash_collected: Number(opportunities.cash_collected || 0),
+        work_rate: pct(worked, total),
+        contact_rate: pct(contacted, worked),
+        booking_rate: pct(scheduled, contacted),
+        attendance_rate: pct(demosCompleted, demosCompleted + Number(opportunities.no_shows || 0)),
+        sales_rate: pct(sales, demosCompleted),
+      },
+      funnel: [
+        { name: 'Leads', value: total },
+        { name: 'Trabajados', value: worked },
+        { name: 'Contactados', value: contacted },
+        { name: 'Demos agendadas', value: scheduled },
+        { name: 'Demos realizadas', value: demosCompleted },
+        { name: 'Ventas', value: sales },
+      ],
+      statuses,
+      qualification,
+      zones,
+      setters,
+      filters: { from, to },
+      generated_at: new Date().toISOString(),
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+module.exports = { dashboard, salesFunnel, commercialAnalytics };

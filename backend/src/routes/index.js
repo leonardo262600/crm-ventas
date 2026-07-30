@@ -141,6 +141,7 @@ router.get('/invoices/:id/pdf',      auth, invoicesCtrl.downloadPDF);
 // ── Reports ───────────────────────────────────────────────
 router.get('/reports/dashboard', auth, reportsCtrl.dashboard);
 router.get('/reports/funnel',    auth, reportsCtrl.salesFunnel);
+router.get('/reports/commercial-analytics', auth, reportsCtrl.commercialAnalytics);
 
 // ── Communications ────────────────────────────────────────
 router.get('/communications/emails',          auth, commCtrl.listEmails);

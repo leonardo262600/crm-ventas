@@ -35,7 +35,7 @@ const nav = [
   { to: '/my-calls',       icon: PhoneCall,       label: 'Mis llamadas',       mobileLabel: 'Mis llamadas', adminOnly: true },
   { to: '/chat',           icon: MessageSquare,   label: 'Chat',               mobileLabel: 'Chat' },
   { to: '/communications', icon: FileText,        label: 'Plantillas',         mobileLabel: 'Plantillas' },
-  { to: '/reports',        icon: BarChart2,       label: 'Informes',           mobileLabel: 'Informes' },
+  { to: '/reports',        icon: BarChart2,       label: 'Analítica',          mobileLabel: 'Analítica' },
 ];
 
 export default function Sidebar() {
