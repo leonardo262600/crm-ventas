@@ -83,7 +83,7 @@ const postalCodeFrom = (postalCode, address) => {
 };
 
 const list = async (req, res) => {
-  const { date, status, search, mine, crm_check, page = 1, limit = 50 } = req.query;
+  const { date, status, search, mine, crm_check, assigned_to, page = 1, limit = 50 } = req.query;
   const personalView = String(mine || '') === '1';
   const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
   const offset = (Math.max(Number(page) || 1, 1) - 1) * safeLimit;
@@ -107,6 +107,12 @@ const list = async (req, res) => {
     ) {
       sql += ' AND dp.realadvisor_crm_check=?';
       params.push(crm_check);
+    }
+    if (req.user.role === 'admin' && assigned_to === 'unassigned') {
+      sql += ' AND dp.assigned_to IS NULL';
+    } else if (req.user.role === 'admin' && /^\d+$/.test(String(assigned_to || ''))) {
+      sql += ' AND dp.assigned_to=?';
+      params.push(Number(assigned_to));
     }
     if (search) {
       sql += ' AND (dp.agency_name LIKE ? OR dp.city LIKE ? OR dp.province LIKE ? OR dp.email LIKE ? OR dp.phone LIKE ?)';

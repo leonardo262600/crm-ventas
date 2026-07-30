@@ -54,6 +54,7 @@ export default function DailyProspecting({ personalMode = false }) {
   const [date, setDate] = useState('');
   const [filter, setFilter] = useState(() => operatorView ? 'llamar' : 'pendiente');
   const [crmCheckFilter, setCrmCheckFilter] = useState('todos');
+  const [assigneeFilter, setAssigneeFilter] = useState('todos');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState('');
@@ -72,6 +73,7 @@ export default function DailyProspecting({ personalMode = false }) {
           status: filter,
           search,
           crm_check: isAdmin && !isPersonalCalls && crmCheckFilter !== 'todos' ? crmCheckFilter : undefined,
+          assigned_to: isAdmin && !isPersonalCalls && assigneeFilter !== 'todos' ? assigneeFilter : undefined,
           limit:100,
           mine: isPersonalCalls ? 1 : undefined,
         } }),
@@ -84,7 +86,7 @@ export default function DailyProspecting({ personalMode = false }) {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { load(); }, [filter, crmCheckFilter]);
+  useEffect(() => { load(); }, [filter, crmCheckFilter, assigneeFilter]);
 
   const counts = useMemo(() => {
     const result = { todos: items.length };
@@ -105,7 +107,9 @@ export default function DailyProspecting({ personalMode = false }) {
     setItems(current => current
       .map(row => row.id === item.id ? { ...row, ...changes } : row)
       .filter(row => (filter === 'todos' || row.status === filter)
-        && (crmCheckFilter === 'todos' || row.realadvisor_crm_check === crmCheckFilter)));
+        && (crmCheckFilter === 'todos' || row.realadvisor_crm_check === crmCheckFilter)
+        && (assigneeFilter === 'todos'
+          || (assigneeFilter === 'unassigned' ? !row.assigned_to : Number(row.assigned_to) === Number(assigneeFilter)))));
     try {
       await api.patch(`/prospecting/${item.id}`, changes);
       if (!silent) toast.success('Actualizado');
@@ -251,6 +255,20 @@ export default function DailyProspecting({ personalMode = false }) {
                 <option value="si">Sí</option>
                 <option value="no">No</option>
                 <option value="pendiente">Sin revisar</option>
+              </select>
+            </div>
+          )}
+          {isAdmin && !isPersonalCalls && (
+            <div className="input-group" style={{margin:0,minWidth:180}}>
+              <label>Setter</label>
+              <select className="input" value={assigneeFilter} onChange={e=>setAssigneeFilter(e.target.value)}>
+                <option value="todos">Todos</option>
+                {(summary?.assignments || []).map(person => (
+                  <option key={person.id} value={person.id}>
+                    {Number(person.id) === Number(user?.id) ? 'Leonardo' : person.name}
+                  </option>
+                ))}
+                <option value="unassigned">Sin asignar</option>
               </select>
             </div>
           )}
