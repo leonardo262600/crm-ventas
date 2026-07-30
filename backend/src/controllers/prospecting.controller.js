@@ -83,7 +83,7 @@ const postalCodeFrom = (postalCode, address) => {
 };
 
 const list = async (req, res) => {
-  const { date, status, search, mine, page = 1, limit = 50 } = req.query;
+  const { date, status, search, mine, crm_check, page = 1, limit = 50 } = req.query;
   const personalView = String(mine || '') === '1';
   const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
   const offset = (Math.max(Number(page) || 1, 1) - 1) * safeLimit;
@@ -101,6 +101,13 @@ const list = async (req, res) => {
       params.push(req.user.id);
     }
     if (status && status !== 'todos') { sql += ' AND dp.status=?'; params.push(status); }
+    if (
+      req.user.role === 'admin'
+      && ['pendiente', 'si', 'no'].includes(String(crm_check || ''))
+    ) {
+      sql += ' AND dp.realadvisor_crm_check=?';
+      params.push(crm_check);
+    }
     if (search) {
       sql += ' AND (dp.agency_name LIKE ? OR dp.city LIKE ? OR dp.province LIKE ? OR dp.email LIKE ? OR dp.phone LIKE ?)';
       params.push(...Array(5).fill(`%${search}%`));

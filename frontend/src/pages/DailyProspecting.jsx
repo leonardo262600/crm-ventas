@@ -53,6 +53,7 @@ export default function DailyProspecting({ personalMode = false }) {
   const [summary, setSummary] = useState(null);
   const [date, setDate] = useState('');
   const [filter, setFilter] = useState(() => operatorView ? 'llamar' : 'pendiente');
+  const [crmCheckFilter, setCrmCheckFilter] = useState('todos');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState('');
@@ -66,7 +67,14 @@ export default function DailyProspecting({ personalMode = false }) {
     setLoading(true);
     try {
       const [list, stats] = await Promise.all([
-        api.get('/prospecting', { params: { date: requestedDate || undefined, status: filter, search, limit:100, mine: isPersonalCalls ? 1 : undefined } }),
+        api.get('/prospecting', { params: {
+          date: requestedDate || undefined,
+          status: filter,
+          search,
+          crm_check: isAdmin && !isPersonalCalls && crmCheckFilter !== 'todos' ? crmCheckFilter : undefined,
+          limit:100,
+          mine: isPersonalCalls ? 1 : undefined,
+        } }),
         api.get('/prospecting/summary', { params: { mine: isPersonalCalls ? 1 : undefined } }),
       ]);
       setItems(list.data.items);
@@ -76,7 +84,7 @@ export default function DailyProspecting({ personalMode = false }) {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { load(); }, [filter]);
+  useEffect(() => { load(); }, [filter, crmCheckFilter]);
 
   const counts = useMemo(() => {
     const result = { todos: items.length };
@@ -96,7 +104,8 @@ export default function DailyProspecting({ personalMode = false }) {
     const previous = items;
     setItems(current => current
       .map(row => row.id === item.id ? { ...row, ...changes } : row)
-      .filter(row => filter === 'todos' || row.status === filter));
+      .filter(row => (filter === 'todos' || row.status === filter)
+        && (crmCheckFilter === 'todos' || row.realadvisor_crm_check === crmCheckFilter)));
     try {
       await api.patch(`/prospecting/${item.id}`, changes);
       if (!silent) toast.success('Actualizado');
@@ -234,6 +243,17 @@ export default function DailyProspecting({ personalMode = false }) {
       <div className="card" style={{marginBottom:16}}>
         <div style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'end'}}>
           <div className="input-group" style={{margin:0,minWidth:170}}><label>Filtrar por fecha (opcional)</label><input className="input" type="date" value={date} onChange={e=>{setDate(e.target.value);load(e.target.value);}}/></div>
+          {isAdmin && !isPersonalCalls && (
+            <div className="input-group" style={{margin:0,minWidth:180}}>
+              <label>CRM RealAdvisor</label>
+              <select className="input" value={crmCheckFilter} onChange={e=>setCrmCheckFilter(e.target.value)}>
+                <option value="todos">Todos</option>
+                <option value="si">Sí</option>
+                <option value="no">No</option>
+                <option value="pendiente">Sin revisar</option>
+              </select>
+            </div>
+          )}
           <div className="input-group" style={{margin:0,flex:1,minWidth:220}}><label>Buscar</label><div style={{position:'relative'}}><Search size={15} style={{position:'absolute',left:11,top:12,color:'#94a3b8'}}/><input className="input" value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>e.key==='Enter'&&load()} placeholder="Agencia, ciudad, teléfono o correo" style={{paddingLeft:34}}/></div></div>
           <button className="btn btn-primary" onClick={()=>load()}>Buscar</button>
         </div>
