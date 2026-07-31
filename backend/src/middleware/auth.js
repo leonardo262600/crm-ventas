@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const db = require('../config/db');
 
 const auth = async (req, res, next) => {
@@ -50,4 +51,35 @@ const requireRole = (...roles) => (req, res, next) => {
   next();
 };
 
-module.exports = { auth, requireRole };
+const safeSecretMatch = (provided, expected) => {
+  const left = Buffer.from(String(provided || ''));
+  const right = Buffer.from(String(expected || ''));
+  return left.length === right.length && left.length > 0 && crypto.timingSafeEqual(left, right);
+};
+
+// Credencial técnica limitada a las rutas de carga de prospección.
+const prospectingAutomationAuth = async (req, res, next) => {
+  const expected = process.env.PROSPECTING_AUTOMATION_KEY;
+  const provided = req.headers['x-prospecting-key'];
+  if (!expected || !safeSecretMatch(provided, expected)) {
+    return res.status(401).json({ message: 'Credencial de prospección no válida' });
+  }
+  try {
+    const tenantId = Number(process.env.PROSPECTING_TENANT_ID || 1);
+    const [rows] = await db.query(
+      `SELECT id,tenant_id,name,email,role,active
+         FROM users
+        WHERE tenant_id=? AND role='admin' AND active=1 AND deleted_at IS NULL
+        ORDER BY id LIMIT 1`,
+      [tenantId]
+    );
+    if (!rows.length) return res.status(503).json({ message: 'No existe un administrador activo para la prospección' });
+    req.user = rows[0];
+    req.prospectingAutomation = true;
+    next();
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { auth, requireRole, prospectingAutomationAuth };

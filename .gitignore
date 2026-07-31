@@ -25,5 +25,6 @@ frontend/dist/
 # Runtime files
 backend/backups/
 backend/public/uploads/
+.automation/
 .vercel
 .env*

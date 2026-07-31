@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { auth, requireRole } = require('../middleware/auth');
+const { auth, requireRole, prospectingAutomationAuth } = require('../middleware/auth');
 const multer  = require('multer');
 const path    = require('path');
 const fs      = require('fs');
@@ -79,6 +79,9 @@ router.delete('/contacts/:id', auth, requireRole('admin','gerente'), contactsCtr
 router.get('/prospecting', auth, prospectingCtrl.list);
 router.get('/prospecting/summary', auth, prospectingCtrl.summary);
 router.post('/prospecting/bulk', auth, requireRole('admin','gerente','vendedor'), prospectingCtrl.bulkCreate);
+router.get('/prospecting-automation', prospectingAutomationAuth, prospectingCtrl.list);
+router.get('/prospecting-automation/summary', prospectingAutomationAuth, prospectingCtrl.summary);
+router.post('/prospecting-automation/bulk', prospectingAutomationAuth, prospectingCtrl.bulkCreate);
 router.patch('/prospecting/:id', auth, prospectingCtrl.update);
 router.post('/prospecting/:id/follow-up', auth, prospectingCtrl.scheduleFollowUp);
 router.post('/prospecting/:id/schedule-demo', auth, prospectingCtrl.scheduleDemo);
