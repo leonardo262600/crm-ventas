@@ -37,7 +37,7 @@ const nav = [
   { to: '/setter-commissions', icon: BadgeEuro,    label: 'Comisiones Setter',  mobileLabel: 'Comisiones' },
   { to: '/chat',           icon: MessageSquare,   label: 'Chat',               mobileLabel: 'Chat' },
   { to: '/communications', icon: FileText,        label: 'Plantillas',         mobileLabel: 'Plantillas' },
-  { to: '/reports',        icon: BarChart2,       label: 'Analítica',          mobileLabel: 'Analítica' },
+  { to: '/reports',        icon: BarChart2,       label: 'KPI',                mobileLabel: 'KPI' },
 ];
 
 export default function Sidebar() {
