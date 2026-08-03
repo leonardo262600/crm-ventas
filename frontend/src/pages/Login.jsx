@@ -7,7 +7,8 @@ import { Lock, ShieldCheck, User } from 'lucide-react';
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: '', password: '', tfa_token: '' });
+  const [form, setForm] = useState({ email: localStorage.getItem('crm_remembered_username') || '', password: '', tfa_token: '' });
+  const [rememberUser, setRememberUser] = useState(() => localStorage.getItem('crm_remembered_username') !== null);
   const [loading, setLoading] = useState(false);
   const [requires2FA, setRequires2FA] = useState(false);
 
@@ -20,6 +21,8 @@ export default function Login() {
         setRequires2FA(true);
         toast('Código 2FA requerido', { icon: '🛡️' });
       } else {
+        if (rememberUser) localStorage.setItem('crm_remembered_username', form.email.trim());
+        else localStorage.removeItem('crm_remembered_username');
         navigate('/');
       }
     } catch (err) {
@@ -56,9 +59,10 @@ export default function Login() {
                     <User size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                     <input className="input" style={{ paddingLeft: 38 }} type="text" name="username"
                       inputMode="text" autoComplete="username" autoCapitalize="none" spellCheck="false"
-                      onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
+                      value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
                   </div>
                 </div>
+                <label style={{display:'flex',alignItems:'center',gap:8,fontSize:12,color:'#64748b',cursor:'pointer'}}><input type="checkbox" checked={rememberUser} onChange={event=>setRememberUser(event.target.checked)}/>Recordar mi usuario en este dispositivo</label>
                 <div className="input-group">
                   <label>Contraseña</label>
                   <div style={{ position: 'relative' }}>

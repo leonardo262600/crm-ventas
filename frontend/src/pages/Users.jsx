@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, X, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, X, Trash2, AlertTriangle, Eye } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
@@ -7,8 +8,10 @@ import { getUserSymbol } from '../utils/userAvatar';
 
 const empty = { name:'', email:'', password:'', role:'vendedor', active:1 };
 const ROLE_BADGE = { admin:'badge-red', gerente:'badge-purple', vendedor:'badge-blue', setter:'badge-green' };
+const ROLE_LABEL = { admin:'Administrador', gerente:'Gerente', vendedor:'Closer', setter:'Setter' };
 
 export default function Users() {
+  const navigate = useNavigate();
   const { user: me } = useAuth();
   const [users, setUsers] = useState([]);
   const [modal, setModal] = useState(false);
@@ -84,12 +87,13 @@ export default function Users() {
                     </div>
                   </td>
                   <td>{u.email}</td>
-                  <td><span className={`badge ${ROLE_BADGE[u.role]}`}>{u.role}</span></td>
+                  <td><span className={`badge ${ROLE_BADGE[u.role]}`}>{ROLE_LABEL[u.role] || u.role}</span></td>
                   <td><span className={`badge ${u.active?'badge-green':'badge-red'}`}>{u.active?'Activo':'Inactivo'}</span></td>
                   <td style={{ fontSize:12, color:'#64748b' }}>{u.created_at?.slice(0,10)}</td>
                   <td>
-                    {me?.role==='admin' && u.id!==me.id && (
-                      <div style={{ display:'flex', gap:6 }}>
+                    {me?.role==='admin' && <div style={{ display:'flex', gap:6 }}>
+                      <button className="btn-icon" onClick={()=>navigate(`/team-workspaces/${u.id}`)} title="Abrir hoja de trabajo"><Eye size={16}/></button>
+                      {u.id!==me.id && <>
                         <button className="btn-icon" onClick={()=>openEdit(u)}>✏</button>
                         <button className="btn-icon" style={{ color:u.active?'#ef4444':'#10b981' }} onClick={()=>toggle(u)}>
                           {u.active?'🚫':'✓'}
@@ -104,8 +108,8 @@ export default function Users() {
                             <Trash2 size={16}/>
                           </button>
                         )}
-                      </div>
-                    )}
+                      </>}
+                    </div>}
                   </td>
                 </tr>
               ))}
@@ -131,7 +135,7 @@ export default function Users() {
                   </div>
                   <div className="input-group"><label>Rol</label>
                     <select className="input" value={form.role} onChange={e=>setForm(f=>({...f,role:e.target.value}))}>
-                      <option value="vendedor">Vendedor</option>
+                      <option value="vendedor">Closer</option>
                       <option value="setter">Setter</option>
                       <option value="gerente">Gerente</option>
                       <option value="admin">Administrador</option>

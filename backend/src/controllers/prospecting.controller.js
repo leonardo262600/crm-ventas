@@ -131,12 +131,16 @@ const summary = async (req, res) => {
   try {
     await ensureQualificationSchema();
     const personalView = String(req.query.mine || '') === '1';
+    const workspaceUserId = ['admin','gerente'].includes(req.user.role) && /^\d+$/.test(String(req.query.workspace_user_id || ''))
+      ? Number(req.query.workspace_user_id)
+      : null;
+    const viewUserId = req.user.role === 'setter' || personalView ? req.user.id : workspaceUserId;
     const selectedDate = req.query.date || null;
     let statusSql = `SELECT status, COUNT(*) AS total FROM daily_prospects WHERE tenant_id=?`;
     const statusParams = [req.user.tenant_id];
-    if (req.user.role === 'setter' || personalView) {
+    if (viewUserId) {
       statusSql += ' AND assigned_to=?';
-      statusParams.push(req.user.id);
+      statusParams.push(viewUserId);
     }
     statusSql += ' GROUP BY status';
     const [rows] = await db.query(statusSql, statusParams);
@@ -148,8 +152,8 @@ const summary = async (req, res) => {
         [req.user.tenant_id, dayDate]
       )
       : [[{ total: 0 }]];
-    const [[history]] = personalView || req.user.role === 'setter'
-      ? await db.query('SELECT COUNT(*) AS total FROM daily_prospects WHERE tenant_id=? AND assigned_to=?', [req.user.tenant_id, req.user.id])
+    const [[history]] = viewUserId
+      ? await db.query('SELECT COUNT(*) AS total FROM daily_prospects WHERE tenant_id=? AND assigned_to=?', [req.user.tenant_id, viewUserId])
       : await db.query('SELECT COUNT(*) AS total FROM daily_prospects WHERE tenant_id=?', [req.user.tenant_id]);
     let performance = null;
     if (req.user.role === 'setter') {
@@ -163,7 +167,7 @@ const summary = async (req, res) => {
            AND close_date<DATE_ADD(DATE_FORMAT(CURDATE(),'%Y-%m-01'),INTERVAL 1 MONTH)`,
         [req.user.tenant_id, req.user.id]
       );
-    } else if (personalView) {
+    } else if (personalView || workspaceUserId) {
       [[performance]] = await db.query(
         `SELECT COUNT(*) AS sales,
                 COALESCE(SUM(cash_collected),0) AS cash_collected,
@@ -172,7 +176,7 @@ const summary = async (req, res) => {
          WHERE tenant_id=? AND assigned_to=? AND status='won'
            AND close_date>=DATE_FORMAT(CURDATE(),'%Y-%m-01')
            AND close_date<DATE_ADD(DATE_FORMAT(CURDATE(),'%Y-%m-01'),INTERVAL 1 MONTH)`,
-        [req.user.tenant_id, req.user.id]
+        [req.user.tenant_id, viewUserId]
       );
     }
     let assignments = [];
@@ -190,12 +194,16 @@ const summary = async (req, res) => {
         [req.user.tenant_id]
       );
     }
+    let workspace = null;
+    if (workspaceUserId) {
+      [[workspace]] = await db.query('SELECT id,name,role FROM users WHERE id=? AND tenant_id=? AND deleted_at IS NULL', [workspaceUserId, req.user.tenant_id]);
+    }
     res.json({
       date: latest?.batch_date || null,
       day_total: Number(dayTotal?.total || 0),
       statuses: rows,
       history: history.total,
-      performance,
+      performance, workspace,
       assignments,
     });
   } catch (err) { res.status(500).json({ message: err.message }); }

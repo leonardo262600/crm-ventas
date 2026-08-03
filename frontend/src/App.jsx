@@ -30,6 +30,7 @@ const DailyProspecting = lazy(() => import('./pages/DailyProspecting'));
 const Demos = lazy(() => import('./pages/Demos'));
 const SetterCommissions = lazy(() => import('./pages/SetterCommissions'));
 const CloserCalendar = lazy(() => import('./pages/CloserCalendar'));
+const TeamWorkspace = lazy(() => import('./pages/TeamWorkspace'));
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -75,6 +76,7 @@ const AppRoutes = () => {
         <Route path="products"      element={<OperationalRoute><Products /></OperationalRoute>} />
         <Route path="reports"       element={<OperationalRoute><Reports /></OperationalRoute>} />
         <Route path="users"         element={<RoleRoute roles={['admin','gerente']}><Users /></RoleRoute>} />
+        <Route path="team-workspaces/:id" element={<RoleRoute roles={['admin','gerente']}><TeamWorkspace /></RoleRoute>} />
         <Route path="communications" element={<OperationalRoute><Communications /></OperationalRoute>} />
         <Route path="automations"   element={<OperationalRoute><Automations /></OperationalRoute>} />
         <Route path="workflows"     element={<OperationalRoute><Workflows /></OperationalRoute>} />

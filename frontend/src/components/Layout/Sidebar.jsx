@@ -104,7 +104,7 @@ export default function Sidebar() {
             </div>
             <div style={{ overflow: 'hidden', flex:1 }}>
               <p style={{ color: '#173b60', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name}</p>
-              <p style={{ color: '#52708d', fontSize: 11 }}>{user?.role === 'admin' ? 'Asesor' : user?.role === 'vendedor' ? 'Vendedor' : user?.role === 'setter' ? 'Setter' : user?.role}</p>
+              <p style={{ color: '#52708d', fontSize: 11 }}>{user?.role === 'admin' ? 'Asesor' : user?.role === 'vendedor' ? 'Closer' : user?.role === 'setter' ? 'Setter' : user?.role}</p>
             </div>
             <UserCircle size={14} color="#6d89a3"/>
           </div>

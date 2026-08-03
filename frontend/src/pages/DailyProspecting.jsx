@@ -3,6 +3,7 @@ import { Building2, CalendarClock, CalendarPlus, Check, ClipboardPaste, Link2, M
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+import { useSearchParams } from 'react-router-dom';
 import { fmtCurrency as fmt } from '../utils/format';
 
 const STATUSES = [
@@ -45,16 +46,19 @@ const qualificationClass = level => `prospect-priority prospect-priority-${Strin
 
 export default function DailyProspecting({ personalMode = false }) {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const isSetter = user?.role === 'setter';
   const isAdmin = user?.role === 'admin';
   const isPersonalCalls = personalMode && isAdmin;
-  const operatorView = isSetter || isPersonalCalls;
+  const workspaceUserId = isAdmin && /^\d+$/.test(searchParams.get('assigned_to') || '') ? searchParams.get('assigned_to') : '';
+  const workspaceView = Boolean(workspaceUserId);
+  const operatorView = isSetter || isPersonalCalls || workspaceView;
   const [items, setItems] = useState([]);
   const [summary, setSummary] = useState(null);
   const [date, setDate] = useState('');
   const [filter, setFilter] = useState(() => operatorView ? 'llamar' : 'pendiente');
   const [crmCheckFilter, setCrmCheckFilter] = useState('todos');
-  const [assigneeFilter, setAssigneeFilter] = useState('todos');
+  const [assigneeFilter, setAssigneeFilter] = useState(workspaceUserId || 'todos');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState('');
@@ -81,6 +85,7 @@ export default function DailyProspecting({ personalMode = false }) {
         } }),
         api.get('/prospecting/summary', { params: {
           mine: isPersonalCalls ? 1 : undefined,
+          workspace_user_id: workspaceUserId || undefined,
           date: requestedDate || undefined,
         } }),
       ]);
@@ -237,7 +242,7 @@ export default function DailyProspecting({ personalMode = false }) {
       <div className="page-header">
         <div>
           <h1>{isPersonalCalls ? 'Mis llamadas' : isSetter ? 'Panel de llamadas' : 'Prospección diaria'}</h1>
-          <p>{operatorView ? 'Agencias asignadas exclusivamente a ti para llamar y convertir en reuniones' : '100 agencias cualificadas al día, ordenadas por potencial comercial y sin duplicados'}</p>
+          <p>{workspaceView ? `Vista administrativa de ${summary?.workspace?.name || 'este usuario'}` : operatorView ? 'Agencias asignadas exclusivamente a ti para llamar y convertir en reuniones' : '100 agencias cualificadas al día, ordenadas por potencial comercial y sin duplicados'}</p>
         </div>
         <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
           <button className="btn btn-secondary" onClick={()=>setShowLineSettings(true)}><Settings size={15}/>{workLine ? `Línea: ${workLine}` : 'Configurar línea'}</button>
@@ -270,7 +275,7 @@ export default function DailyProspecting({ personalMode = false }) {
       <div className="card" style={{marginBottom:16}}>
         <div style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'end'}}>
           <div className="input-group" style={{margin:0,minWidth:170}}><label>Filtrar por fecha (opcional)</label><input className="input" type="date" value={date} onChange={e=>{setDate(e.target.value);load(e.target.value);}}/></div>
-          {isAdmin && !isPersonalCalls && (
+          {isAdmin && !operatorView && (
             <div className="input-group" style={{margin:0,minWidth:180}}>
               <label>CRM RealAdvisor</label>
               <select className="input" value={crmCheckFilter} onChange={e=>setCrmCheckFilter(e.target.value)}>
@@ -281,7 +286,7 @@ export default function DailyProspecting({ personalMode = false }) {
               </select>
             </div>
           )}
-          {isAdmin && !isPersonalCalls && (
+          {isAdmin && !operatorView && (
             <div className="input-group" style={{margin:0,minWidth:180}}>
               <label>Setter</label>
               <select className="input" value={assigneeFilter} onChange={e=>setAssigneeFilter(e.target.value)}>
@@ -360,7 +365,7 @@ export default function DailyProspecting({ personalMode = false }) {
                       {!item.phone && !item.secondary_phone && !item.email && !item.secondary_email && <span className="text-muted text-sm">Ver web</span>}
                     </td>
                     <td>
-                      {isAdmin && !isPersonalCalls && (
+                      {isAdmin && !operatorView && (
                         <div className="prospect-admin-controls">
                           <div className="prospect-ra-check prospect-ra-check-status">
                             <span>CRM RealAdvisor</span>
