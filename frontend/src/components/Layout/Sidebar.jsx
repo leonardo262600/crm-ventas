@@ -35,7 +35,7 @@ const nav = [
   { to: '/prospecting',    icon: Building2,       label: 'Prospección diaria', mobileLabel: 'P. diaria' },
   { to: '/my-calls',       icon: PhoneCall,       label: 'Mis llamadas',       mobileLabel: 'Mis llamadas', adminOnly: true },
   { to: '/closer-calendar', icon: CalendarDays,   label: 'Calendario de demos', mobileLabel: 'Calendario' },
-  { to: '/setter-commissions', icon: BadgeEuro,    label: 'Comisiones Setter',  mobileLabel: 'Comisiones' },
+  { to: '/setter-commissions', icon: BadgeEuro,    label: 'Comisiones Setter',  mobileLabel: 'Comisiones', roles:['admin','gerente','setter'] },
   { to: '/chat',           icon: MessageSquare,   label: 'Chat',               mobileLabel: 'Chat' },
   { to: '/communications', icon: FileText,        label: 'Plantillas',         mobileLabel: 'Plantillas' },
   { to: '/reports',        icon: BarChart2,       label: 'KPI',                mobileLabel: 'KPI' },
@@ -119,7 +119,7 @@ export default function Sidebar() {
       <nav className="sidebar-nav" style={{ flex: 1, padding: '10px 10px', overflowY: 'auto' }}>
         {(effectiveRole === 'setter'
           ? nav.filter(item => ['/prospecting','/contacts','/closer-calendar','/setter-commissions','/chat'].includes(item.to))
-          : nav.filter(item => !item.adminOnly || effectiveRole === 'admin')
+          : nav.filter(item => (!item.adminOnly || effectiveRole === 'admin') && (!item.roles || item.roles.includes(effectiveRole)))
         ).map(({ to, icon: Icon, label, mobileLabel, exact }) => (
           <NavLink key={to} to={to} end={exact}
             style={({ isActive }) => navStyle(isActive)}>

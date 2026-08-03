@@ -4,6 +4,7 @@ import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 const money = value => new Intl.NumberFormat('es-ES', { style:'currency', currency:'EUR' }).format(Number(value || 0));
+const dateTime = value => value ? new Date(value).toLocaleString('es-ES', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
 const monthLabel = value => new Intl.DateTimeFormat('es-ES', { month:'long', year:'numeric' }).format(new Date(`${value}-01T12:00:00`));
 const shiftMonth = (month, offset) => {
   const date = new Date(`${month}-01T12:00:00`);
@@ -92,6 +93,34 @@ export default function SetterCommissions() {
             <p style={{fontSize:11,color:'var(--text-muted)',marginTop:14}}>El tramo se aplica a cada cliente vendido del mes: 1–4 = 50 €, 5–7 = 80 €, 8 o más = 100 €.</p>
           </section>
         </div>
+
+        <section className="card" style={{padding:20,marginTop:18}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:12,marginBottom:14}}>
+            <div>
+              <h2 style={{fontSize:18}}>Demos contabilizadas del mes</h2>
+              <p style={{fontSize:12,color:'var(--text-muted)',marginTop:3}}>Estas son las demos realizadas que forman el contador de {selected.name}.</p>
+            </div>
+            <span className="badge badge-blue">{selected.demos?.length || 0} demos</span>
+          </div>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Fecha</th><th>Cliente</th><th>Empresa</th><th>Closer</th><th>Resultado</th><th></th></tr></thead>
+              <tbody>
+                {(selected.demos || []).map(demo => (
+                  <tr key={demo.id}>
+                    <td>{dateTime(demo.demo_date)}</td>
+                    <td><strong>{demo.contact_name || demo.title}</strong></td>
+                    <td>{demo.company || '—'}</td>
+                    <td>{demo.closer_name || 'Sin asignar'}</td>
+                    <td><span className="badge badge-green">Realizada</span></td>
+                    <td><a className="btn btn-secondary btn-sm" href={`/opportunities?edit=${demo.id}`}>Ver oportunidad</a></td>
+                  </tr>
+                ))}
+                {!(selected.demos || []).length && <tr><td colSpan="6" style={{textAlign:'center',color:'var(--text-muted)',padding:24}}>Todavía no hay demos realizadas contabilizadas este mes.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </section>
 
         <section className="card setter-commission-rules">
           <div className="setter-rules-heading">

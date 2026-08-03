@@ -65,7 +65,32 @@ const list = async (req, res) => {
         sales_commission: salesCommission,
         total_commission: fixed + salesCommission,
         cash_collected: Number(row.cash_collected || 0),
+        demos: [],
       };
+    });
+
+    const detailParams = [req.user.tenant_id, month];
+    let detailRestriction = '';
+    if (req.user.role === 'setter') {
+      detailRestriction = ' AND o.setter_id=?';
+      detailParams.push(req.user.id);
+    }
+    const [demoRows] = await db.query(
+      `SELECT o.id,o.setter_id,o.title,o.demo_date,o.demo_status,
+              c.name AS contact_name,c.company,c.phone,
+              closer.id AS closer_id,closer.name AS closer_name
+         FROM opportunities o
+         LEFT JOIN contacts c ON c.id=o.contact_id
+         LEFT JOIN users closer ON closer.id=o.assigned_to
+        WHERE o.tenant_id=? AND DATE_FORMAT(o.demo_date,'%Y-%m')=?
+          AND o.demo_status='realizada'${detailRestriction}
+        ORDER BY o.demo_date DESC,o.id DESC`,
+      detailParams
+    );
+    const setterMap = new Map(setters.map(item => [Number(item.id), item]));
+    demoRows.forEach(demo => {
+      const setter = setterMap.get(Number(demo.setter_id));
+      if (setter) setter.demos.push(demo);
     });
 
     res.json({ month, demo_tiers: DEMO_TIERS, setters });
