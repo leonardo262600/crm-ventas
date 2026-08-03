@@ -104,6 +104,17 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 .setter-tier-grid > div p { font-size:12px; color:var(--text-muted); }
 .setter-tier-grid > div.reached { border-color:#86efac; background:#ecfdf5; }
 .setter-tier-grid > div.reached p { color:#047857; }
+.setter-commission-rules { padding:20px; margin-top:16px; }
+.setter-rules-heading { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+.setter-rules-heading h2 { font-size:18px; }
+.setter-rules-heading p,.setter-rule-note { color:var(--text-muted); font-size:12px; }
+.setter-rules-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:22px; }
+.setter-rules-grid h3 { font-size:15px; margin-bottom:4px; }
+.setter-rules-grid table { width:100%; margin-top:12px; }
+.setter-rules-grid th,.setter-rules-grid td { padding:10px 12px; text-align:left; }
+.setter-rules-grid th:last-child,.setter-rules-grid td:last-child { text-align:right; }
+.setter-motivation { display:flex; gap:10px; align-items:center; margin-top:14px; padding:13px; border-radius:10px; background:#f5f3ff; color:#6d28d9; }
+.setter-motivation p { font-size:11px; margin-top:2px; }
 .chat-connection { display:flex; align-items:center; gap:7px; color:#64748b; font-size:12px; }
 .chat-header-actions { display:flex; align-items:center; justify-content:flex-end; gap:8px; flex-wrap:wrap; }
 .chat-tone-select { height:32px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:#334155; padding:0 9px; font:inherit; font-size:12px; }
@@ -289,6 +300,7 @@ tr:hover td { background: #f8fafc; }
   .setter-commission-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .setter-commission-layout { grid-template-columns:1fr; }
   .setter-tier-grid { grid-template-columns:repeat(2,minmax(90px,1fr)); }
+  .setter-rules-grid { grid-template-columns:1fr; }
   .opportunity-quick-actions { gap:4px !important; }
   .opportunity-quick-actions .btn { padding:6px 5px; font-size:11px; gap:3px; }
   .opportunity-quick-actions .btn svg { width:13px; height:13px; flex:0 0 13px; }

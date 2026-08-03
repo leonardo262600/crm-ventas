@@ -92,6 +92,40 @@ export default function SetterCommissions() {
             <p style={{fontSize:11,color:'var(--text-muted)',marginTop:14}}>El tramo se aplica a cada cliente vendido del mes: 1–4 = 50 €, 5–7 = 80 €, 8 o más = 100 €.</p>
           </section>
         </div>
+
+        <section className="card setter-commission-rules">
+          <div className="setter-rules-heading">
+            <div><h2>Tabla de objetivos y comisiones</h2><p>Referencia mensual para todo el equipo.</p></div>
+            <Trophy size={24} color="#7c3aed"/>
+          </div>
+          <div className="setter-rules-grid">
+            <div>
+              <h3>Fijo por demos realizadas</h3>
+              <p className="setter-rule-note">La demo cuenta únicamente cuando el cliente asiste y el asesor la marca como realizada.</p>
+              <div className="table-container">
+                <table>
+                  <thead><tr><th>Demos realizadas</th><th>Fijo mensual</th></tr></thead>
+                  <tbody>{(data.demo_tiers || []).map(tier => <tr key={tier.min}><td>{tier.min}{tier.max ? `–${tier.max}` : '+'}</td><td><strong>{money(tier.amount)}</strong></td></tr>)}</tbody>
+                </table>
+              </div>
+            </div>
+            <div>
+              <h3>Comisión por clientes vendidos</h3>
+              <p className="setter-rule-note">El tramo alcanzado determina la comisión que se aplica a cada cliente vendido durante el mes.</p>
+              <div className="table-container">
+                <table>
+                  <thead><tr><th>Clientes vendidos</th><th>Por cliente</th></tr></thead>
+                  <tbody>
+                    <tr><td>1–4</td><td><strong>{money(50)}</strong></td></tr>
+                    <tr><td>5–7</td><td><strong>{money(80)}</strong></td></tr>
+                    <tr><td>8 o más</td><td><strong>{money(100)}</strong></td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div className="setter-motivation"><BadgeEuro size={20}/><div><strong>Fijo + comisión por ventas</strong><p>Ambos importes se suman automáticamente en la comisión total del mes.</p></div></div>
+            </div>
+          </div>
+        </section>
       </>}
     </div>
   );
