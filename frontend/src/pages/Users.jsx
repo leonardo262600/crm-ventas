@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, X, Trash2, AlertTriangle, Eye } from 'lucide-react';
+import { Plus, X, Trash2, AlertTriangle, Eye, PanelsTopLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { getUserSymbol } from '../utils/userAvatar';
+import { setAdminPreview } from '../utils/adminPreview';
 
 const empty = { name:'', email:'', password:'', role:'vendedor', active:1 };
 const ROLE_BADGE = { admin:'badge-red', gerente:'badge-purple', vendedor:'badge-blue', setter:'badge-green' };
@@ -26,6 +27,11 @@ export default function Users() {
 
   const openNew = () => { setForm(empty); setEditId(null); setModal(true); };
   const openEdit = u => { setForm({ ...u, password:'' }); setEditId(u.id); setModal(true); };
+  const previewAs = u => {
+    setAdminPreview(u);
+    toast.success(`Vista previa de ${u.name}`);
+    navigate(u.role === 'setter' ? '/prospecting' : '/');
+  };
 
   const save = async e => {
     e.preventDefault();
@@ -94,6 +100,7 @@ export default function Users() {
                     {me?.role==='admin' && <div style={{ display:'flex', gap:6 }}>
                       <button className="btn-icon" onClick={()=>navigate(`/team-workspaces/${u.id}`)} title="Abrir hoja de trabajo"><Eye size={16}/></button>
                       {u.id!==me.id && <>
+                        <button className="btn-icon" onClick={()=>previewAs(u)} title={`Ver el CRM como ${u.name}`}><PanelsTopLeft size={16}/></button>
                         <button className="btn-icon" onClick={()=>openEdit(u)}>✏</button>
                         <button className="btn-icon" style={{ color:u.active?'#ef4444':'#10b981' }} onClick={()=>toggle(u)}>
                           {u.active?'🚫':'✓'}

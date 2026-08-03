@@ -12,6 +12,7 @@ import { io } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import { playChatSound } from '../../utils/pushNotifications';
 import { getUserSymbol } from '../../utils/userAvatar';
+import { clearAdminPreview, useAdminPreview } from '../../utils/adminPreview';
 
 const SOCKET_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5080/api').replace(/\/api\/?$/, '');
 
@@ -43,8 +44,11 @@ const nav = [
 export default function Sidebar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const preview = useAdminPreview(user?.role === 'admin');
+  const displayUser = preview || user;
+  const effectiveRole = preview?.role || user?.role;
   const [chatUnread, setChatUnread] = useState(0);
-  const handleLogout = () => { logout(); navigate('/login'); };
+  const handleLogout = () => { clearAdminPreview(); logout(); navigate('/login'); };
   useEffect(() => {
     const refresh = () => api.get('/chat/unread-count').then(({data})=>setChatUnread(data.unread || 0)).catch(()=>{});
     refresh();
@@ -85,7 +89,7 @@ export default function Sidebar() {
       </div>
 
       {/* User card — click to go to profile */}
-      <NavLink className="sidebar-profile" to="/profile" style={{ textDecoration:'none' }}>
+      <NavLink className="sidebar-profile" to={preview ? `/team-workspaces/${preview.id}` : '/profile'} style={{ textDecoration:'none' }}>
         <div style={{ padding: '14px 20px', borderBottom: '1px solid #bfdcff', cursor:'pointer' }}
           onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,.55)'}
           onMouseLeave={e => e.currentTarget.style.background='transparent'}>
@@ -96,15 +100,15 @@ export default function Sidebar() {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: '#173b60', fontWeight: 700, fontSize: 14, flexShrink: 0,
             }}>
-              {user?.role === 'setter'
-                ? <span style={{fontSize:26,lineHeight:1}}>{getUserSymbol(user)}</span>
-                : user?.avatar || user?.role === 'admin'
-                ? <img src={user?.avatar || '/brand/leonardo-profile.jpg'} alt={user?.name || 'Usuario'} style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'50% 22%'}}/>
-                : (user?.name?.charAt(0).toUpperCase() || 'U')}
+              {displayUser?.role === 'setter'
+                ? <span style={{fontSize:26,lineHeight:1}}>{getUserSymbol(displayUser)}</span>
+                : displayUser?.avatar || displayUser?.role === 'admin'
+                ? <img src={displayUser?.avatar || '/brand/leonardo-profile.jpg'} alt={displayUser?.name || 'Usuario'} style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'50% 22%'}}/>
+                : (displayUser?.name?.charAt(0).toUpperCase() || 'U')}
             </div>
             <div style={{ overflow: 'hidden', flex:1 }}>
-              <p style={{ color: '#173b60', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name}</p>
-              <p style={{ color: '#52708d', fontSize: 11 }}>{user?.role === 'admin' ? 'Asesor' : user?.role === 'vendedor' ? 'Closer' : user?.role === 'setter' ? 'Setter' : user?.role}</p>
+              <p style={{ color: '#173b60', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayUser?.name}</p>
+              <p style={{ color: '#52708d', fontSize: 11 }}>{displayUser?.role === 'admin' ? 'Asesor' : displayUser?.role === 'vendedor' ? 'Closer' : displayUser?.role === 'setter' ? 'Setter' : displayUser?.role}</p>
             </div>
             <UserCircle size={14} color="#6d89a3"/>
           </div>
@@ -113,9 +117,9 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="sidebar-nav" style={{ flex: 1, padding: '10px 10px', overflowY: 'auto' }}>
-        {(user?.role === 'setter'
+        {(effectiveRole === 'setter'
           ? nav.filter(item => ['/prospecting','/contacts','/closer-calendar','/setter-commissions','/chat'].includes(item.to))
-          : nav.filter(item => !item.adminOnly || user?.role === 'admin')
+          : nav.filter(item => !item.adminOnly || effectiveRole === 'admin')
         ).map(({ to, icon: Icon, label, mobileLabel, exact }) => (
           <NavLink key={to} to={to} end={exact}
             style={({ isActive }) => navStyle(isActive)}>
@@ -127,7 +131,7 @@ export default function Sidebar() {
         ))}
 
         {/* Admin-only links */}
-        {(user?.role === 'admin' || user?.role === 'gerente') && (
+        {!preview && (user?.role === 'admin' || user?.role === 'gerente') && (
           <div className="sidebar-admin-links">
             <div style={{ height:1, background:'#bfdcff', margin:'8px 4px' }}/>
             <NavLink to="/settings"

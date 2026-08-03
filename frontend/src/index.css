@@ -94,6 +94,9 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 .prospect-assignment-counter { display:flex; align-items:center; gap:7px; padding:6px 9px; border-radius:8px; background:#f1f5f9; color:#334155; font-size:11px; }
 .prospect-assignment-counter strong { min-width:20px; padding:2px 6px; border-radius:999px; background:#3b5bdb; color:#fff; text-align:center; font-size:11px; }
 .sidebar-chat-badge { margin-left:auto; min-width:19px; height:19px; padding:0 5px; border-radius:10px; background:#ef4444; color:#fff; font-size:10px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; }
+.admin-preview-banner { display:flex; align-items:center; justify-content:center; gap:12px; min-height:42px; padding:8px 20px; background:#fff7ed; color:#9a3412; border-bottom:1px solid #fdba74; font-size:13px; position:sticky; top:60px; z-index:45; }
+.admin-preview-banner button { border:1px solid #fb923c; background:#fff; color:#9a3412; border-radius:8px; padding:6px 10px; font-weight:600; cursor:pointer; }
+.admin-preview-banner button:hover { background:#ffedd5; }
 .setter-commission-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-bottom:16px; }
 .setter-commission-layout { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(280px,.65fr); gap:16px; }
 .setter-progress { height:12px; background:var(--surface-muted); border-radius:99px; overflow:hidden; margin:22px 0 10px; }
@@ -303,6 +306,9 @@ tr:hover td { background: #f8fafc; }
 
 /* Aplicación instalada / navegación móvil */
 @media (max-width: 768px) {
+  .admin-preview-banner { top:60px; justify-content:space-between; gap:8px; padding:7px 10px; font-size:11px; }
+  .admin-preview-note { display:none; }
+  .admin-preview-banner button { padding:5px 8px; font-size:11px; flex-shrink:0; }
   .setter-commission-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .setter-commission-layout { grid-template-columns:1fr; }
   .setter-tier-grid { grid-template-columns:repeat(2,minmax(90px,1fr)); }

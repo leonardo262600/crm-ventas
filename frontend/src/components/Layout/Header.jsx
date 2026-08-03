@@ -5,9 +5,12 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 import { getUserSymbol } from '../../utils/userAvatar';
+import { useAdminPreview } from '../../utils/adminPreview';
 
 export default function Header() {
   const { user } = useAuth();
+  const preview = useAdminPreview(user?.role === 'admin');
+  const displayUser = preview || user;
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState(null);
@@ -18,7 +21,7 @@ export default function Header() {
   const [theme, setTheme] = useState(() => localStorage.getItem('crm_theme') === 'dark' ? 'dark' : 'light');
   const ref = useRef();
   const notificationRef = useRef();
-  const isSetter = user?.role === 'setter';
+  const isSetter = displayUser?.role === 'setter';
 
   useEffect(() => {
     if (isSetter) return undefined;
@@ -201,15 +204,15 @@ export default function Header() {
         {/* User avatar */}
         <div className="header-user" style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 10px', borderRadius:10, background:'#f8fafc' }}>
           <div style={{ width:30, height:30, borderRadius:'50%', overflow:'hidden', background:'#e3e9f7', display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,color:'#173b60' }}>
-            {user?.role === 'setter'
-              ? <span style={{fontSize:22,lineHeight:1}}>{getUserSymbol(user)}</span>
-              : user?.avatar || user?.role === 'admin'
-              ? <img src={user?.avatar || '/brand/leonardo-profile.jpg'} alt={user?.name || 'Usuario'} style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'50% 22%'}}/>
-              : (user?.name?.charAt(0).toUpperCase() || 'U')}
+            {displayUser?.role === 'setter'
+              ? <span style={{fontSize:22,lineHeight:1}}>{getUserSymbol(displayUser)}</span>
+              : displayUser?.avatar || displayUser?.role === 'admin'
+              ? <img src={displayUser?.avatar || '/brand/leonardo-profile.jpg'} alt={displayUser?.name || 'Usuario'} style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'50% 22%'}}/>
+              : (displayUser?.name?.charAt(0).toUpperCase() || 'U')}
           </div>
           <div>
-            <p style={{ fontWeight:600, fontSize:13, lineHeight:1.2 }}>{user?.name}</p>
-            <p style={{ fontSize:10, color:'#64748b' }}>{user?.role === 'admin' ? 'Asesor' : user?.role === 'vendedor' ? 'Vendedor' : user?.role === 'setter' ? 'Setter' : user?.role}</p>
+            <p style={{ fontWeight:600, fontSize:13, lineHeight:1.2 }}>{displayUser?.name}</p>
+            <p style={{ fontSize:10, color:'#64748b' }}>{displayUser?.role === 'admin' ? 'Asesor' : displayUser?.role === 'vendedor' ? 'Closer' : displayUser?.role === 'setter' ? 'Setter' : displayUser?.role}</p>
           </div>
         </div>
       </div>
