@@ -5,7 +5,7 @@ const available = async (req, res) => {
   try {
     await ensureCalendarSchema(db);
     const result = await availableClosers(db, req.user.tenant_id, req.query.start_at);
-    res.json({ start_at:result.slot.startAt, end_at:result.slot.endAt, closers:result.closers });
+    res.json({ start_at:result.slot.startAt, end_at:result.slot.endAt, blocked_until:result.slot.blockEndAt, closers:result.closers });
   } catch (error) {
     res.status(error.statusCode || 500).json({ message:error.message });
   }

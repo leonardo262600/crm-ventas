@@ -476,7 +476,7 @@ export default function DailyProspecting({ personalMode = false }) {
           <div className="modal" style={{maxWidth:440}}>
             <div className="modal-header"><div><h3>Agendar reunión</h3><p className="text-muted text-sm">{booking.item.agency_name}</p></div><button className="btn-icon" onClick={()=>setBooking(null)}><X size={18}/></button></div>
             <div className="modal-body">
-              <div className="input-group"><label>Fecha y hora de la demo</label><input className="input" type="datetime-local" value={booking.demo_date} onChange={e=>setBooking({...booking,demo_date:e.target.value})}/></div>
+              <div className="input-group"><label>Fecha y hora de la demo</label><input className="input" type="datetime-local" step="1800" value={booking.demo_date} onChange={e=>setBooking({...booking,demo_date:e.target.value})}/></div>
               <div className="input-group"><label>Closer responsable</label>
                 <select className="input" value={booking.closer_id || ''} onChange={e=>setBooking({...booking,closer_id:e.target.value})} disabled={checkingClosers}>
                   <option value="">Asignación automática · recomendado</option>
@@ -484,7 +484,7 @@ export default function DailyProspecting({ personalMode = false }) {
                 </select>
               </div>
               <div className={`closer-availability-message ${availableClosers.length ? 'available' : 'unavailable'}`}><UserCheck size={16}/><span>{checkingClosers ? 'Comprobando disponibilidad…' : availableClosers.length ? `${availableClosers.length} closer${availableClosers.length===1?'':'s'} disponible${availableClosers.length===1?'':'s'} en esta franja` : 'No hay closers disponibles en esta franja'}</span></div>
-              <p className="text-muted text-sm">La reserva ocupará únicamente la agenda del closer asignado. Los demás podrán recibir otra demo a la misma hora.</p>
+              <p className="text-muted text-sm">La demo dura 30 minutos y reserva otros 30 minutos de margen para el closer. Los demás closers podrán recibir otra demo a la misma hora.</p>
             </div>
             <div className="modal-footer"><button className="btn btn-secondary" onClick={()=>setBooking(null)}>Cancelar</button><button className="btn btn-primary" disabled={checkingClosers || !availableClosers.length} onClick={saveBooking}><CalendarPlus size={15}/>Guardar reunión</button></div>
           </div>

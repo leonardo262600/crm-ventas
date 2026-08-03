@@ -1,5 +1,5 @@
 const DEFAULT_START = '09:00:00';
-const DEFAULT_END = '18:00:00';
+const DEFAULT_END = '19:00:00';
 const CLOSER_ROLES = ['admin', 'gerente', 'vendedor'];
 
 const ensureCalendarSchema = async db => {
@@ -34,6 +34,10 @@ const ensureCalendarSchema = async db => {
     KEY idx_demo_booking_slot (tenant_id,closer_id,start_at,end_at,status),
     KEY idx_demo_booking_corporate (tenant_id,closer_id,corporate_status)
   )`);
+  // The calendar event lasts 30 minutes. Availability is blocked separately for 60 minutes.
+  await db.query(`UPDATE demo_bookings
+    SET end_at=DATE_ADD(start_at, INTERVAL 30 MINUTE)
+    WHERE end_at<>DATE_ADD(start_at, INTERVAL 30 MINUTE)`);
 };
 
 const parseSlot = value => {
@@ -41,10 +45,12 @@ const parseSlot = value => {
   if (!match) return null;
   const [, year, month, day, hour, minute] = match;
   const startAt = `${year}-${month}-${day} ${hour}:${minute}:00`;
-  const endDate = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute) + 60));
-  const endAt = endDate.toISOString().slice(0, 19).replace('T', ' ');
+  const meetingEndDate = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute) + 30));
+  const blockEndDate = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute) + 60));
+  const endAt = meetingEndDate.toISOString().slice(0, 19).replace('T', ' ');
+  const blockEndAt = blockEndDate.toISOString().slice(0, 19).replace('T', ' ');
   const weekday = (new Date(Date.UTC(Number(year), Number(month) - 1, Number(day))).getUTCDay() + 6) % 7;
-  return { startAt, endAt, weekday, time:`${hour}:${minute}:00`, endTime:endAt.slice(11), date:`${year}-${month}-${day}` };
+  return { startAt, endAt, blockEndAt, weekday, time:`${hour}:${minute}:00`, blockEndTime:blockEndAt.slice(11), date:`${year}-${month}-${day}` };
 };
 
 const availabilityForCloser = async (connection, tenantId, closerId, slot) => {
@@ -53,12 +59,12 @@ const availabilityForCloser = async (connection, tenantId, closerId, slot) => {
     [tenantId, closerId]
   );
   if (!configured.length) {
-    return slot.weekday < 5 && slot.time >= DEFAULT_START && slot.endTime <= DEFAULT_END;
+    return slot.weekday < 5 && slot.time >= DEFAULT_START && slot.blockEndTime <= DEFAULT_END;
   }
   return configured.some(row => Number(row.active) === 1
     && Number(row.weekday) === slot.weekday
     && slot.time >= String(row.start_time)
-    && slot.endTime <= String(row.end_time));
+    && slot.blockEndTime <= String(row.end_time));
 };
 
 const closerHasConflict = async (connection, tenantId, closerId, slot) => {
@@ -66,7 +72,7 @@ const closerHasConflict = async (connection, tenantId, closerId, slot) => {
     `SELECT COUNT(*) AS total FROM opportunities
       WHERE tenant_id=? AND assigned_to=? AND demo_status IN ('programada','reagendada')
         AND demo_date < ? AND DATE_ADD(demo_date, INTERVAL 60 MINUTE) > ?`,
-    [tenantId, closerId, slot.endAt, slot.startAt]
+    [tenantId, closerId, slot.blockEndAt, slot.startAt]
   );
   return Number(row.total || 0) > 0;
 };
