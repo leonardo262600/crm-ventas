@@ -40,12 +40,20 @@ const create = async (req, res) => {
 };
 
 const update = async (req, res) => {
-  const { name, email, role, active } = req.body;
+  const { name, email, role, active, password } = req.body;
   try {
-    await db.query(
-      'UPDATE users SET name=?, email=?, role=?, active=? WHERE id=? AND tenant_id=?',
-      [name, email, role, active, req.params.id, req.user.tenant_id]
-    );
+    if (password) {
+      const hashed = await bcrypt.hash(password, 10);
+      await db.query(
+        'UPDATE users SET name=?, email=?, role=?, active=?, password=? WHERE id=? AND tenant_id=?',
+        [name, email, role, active, hashed, req.params.id, req.user.tenant_id]
+      );
+    } else {
+      await db.query(
+        'UPDATE users SET name=?, email=?, role=?, active=? WHERE id=? AND tenant_id=?',
+        [name, email, role, active, req.params.id, req.user.tenant_id]
+      );
+    }
     res.json({ message: 'Usuario actualizado' });
   } catch (err) { res.status(500).json({ message: err.message }); }
 };
