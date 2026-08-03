@@ -23,6 +23,7 @@ const profileCtrl    = require('../controllers/profile.controller');
 const settingsCtrl   = require('../controllers/settings.controller');
 const prospectingCtrl = require('../controllers/prospecting.controller');
 const setterCommissionsCtrl = require('../controllers/setterCommissions.controller');
+const closerCalendarCtrl = require('../controllers/closerCalendar.controller');
 
 // Multer storage para logos
 const logoStorage = multer.diskStorage({
@@ -88,6 +89,12 @@ router.post('/prospecting/:id/follow-up', auth, prospectingCtrl.scheduleFollowUp
 router.post('/prospecting/:id/schedule-demo', auth, prospectingCtrl.scheduleDemo);
 router.post('/prospecting/:id/convert', auth, requireRole('admin','gerente','vendedor'), prospectingCtrl.convert);
 router.get('/setter-commissions', auth, requireRole('admin','gerente','setter'), setterCommissionsCtrl.list);
+router.get('/closer-calendar/available', auth, requireRole('admin','gerente','vendedor','setter'), closerCalendarCtrl.available);
+router.get('/closer-calendar/closers', auth, requireRole('admin','gerente','vendedor','setter'), closerCalendarCtrl.listClosers);
+router.get('/closer-calendar/bookings', auth, requireRole('admin','gerente','vendedor','setter'), closerCalendarCtrl.listBookings);
+router.patch('/closer-calendar/bookings/:id/corporate-status', auth, requireRole('admin','gerente','vendedor'), closerCalendarCtrl.updateCorporateStatus);
+router.get('/closer-calendar/availability', auth, requireRole('admin','gerente','vendedor'), closerCalendarCtrl.getAvailability);
+router.put('/closer-calendar/availability', auth, requireRole('admin','gerente','vendedor'), closerCalendarCtrl.saveAvailability);
 
 // ── Opportunities ─────────────────────────────────────────
 router.get('/opportunities',                auth, oppsCtrl.list);

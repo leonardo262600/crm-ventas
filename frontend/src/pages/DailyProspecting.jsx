@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Building2, CalendarClock, CalendarPlus, Check, ClipboardPaste, Link2, Mail, Pencil, Phone, RefreshCw, Search, Settings, UserPlus, X } from 'lucide-react';
+import { Building2, CalendarClock, CalendarPlus, Check, ClipboardPaste, Link2, Mail, Pencil, Phone, RefreshCw, Search, Settings, UserCheck, UserPlus, X } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
@@ -63,6 +63,8 @@ export default function DailyProspecting({ personalMode = false }) {
   const [showLineSettings, setShowLineSettings] = useState(false);
   const [followUp, setFollowUp] = useState(null);
   const [booking, setBooking] = useState(null);
+  const [availableClosers, setAvailableClosers] = useState([]);
+  const [checkingClosers, setCheckingClosers] = useState(false);
 
   const load = async (requestedDate = date) => {
     setLoading(true);
@@ -192,13 +194,31 @@ export default function DailyProspecting({ personalMode = false }) {
     const next = new Date(Date.now() + 24 * 60 * 60 * 1000);
     next.setMinutes(Math.ceil(next.getMinutes() / 15) * 15, 0, 0);
     const localDefault = new Date(next.getTime() - next.getTimezoneOffset() * 60000).toISOString().slice(0,16);
-    setBooking({ item, demo_date: localDefault });
+    setBooking({ item, demo_date: localDefault, closer_id:'' });
   };
+
+  useEffect(() => {
+    if (!booking?.demo_date) { setAvailableClosers([]); return; }
+    const timer = setTimeout(async () => {
+      setCheckingClosers(true);
+      try {
+        const { data } = await api.get('/closer-calendar/available', { params:{ start_at:booking.demo_date } });
+        setAvailableClosers(data.closers || []);
+        setBooking(current => current && (current.closer_id && !(data.closers || []).some(item => Number(item.id) === Number(current.closer_id)))
+          ? {...current,closer_id:''}
+          : current);
+      } catch (error) {
+        setAvailableClosers([]);
+        toast.error(error.response?.data?.message || 'No se pudo comprobar la disponibilidad');
+      } finally { setCheckingClosers(false); }
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [booking?.demo_date]);
 
   const saveBooking = async () => {
     if (!booking?.demo_date) return toast.error('Selecciona fecha y hora');
     try {
-      const { data } = await api.post(`/prospecting/${booking.item.id}/schedule-demo`, { demo_date: booking.demo_date });
+      const { data } = await api.post(`/prospecting/${booking.item.id}/schedule-demo`, { demo_date: booking.demo_date, closer_id:booking.closer_id || null });
       setItems(current => current
         .map(row => row.id === booking.item.id ? {...row,status:'agendada',follow_up_at:booking.demo_date,converted_contact_id:data.contact_id} : row)
         .filter(row => filter === 'todos' || row.status === filter));
@@ -457,9 +477,16 @@ export default function DailyProspecting({ personalMode = false }) {
             <div className="modal-header"><div><h3>Agendar reunión</h3><p className="text-muted text-sm">{booking.item.agency_name}</p></div><button className="btn-icon" onClick={()=>setBooking(null)}><X size={18}/></button></div>
             <div className="modal-body">
               <div className="input-group"><label>Fecha y hora de la demo</label><input className="input" type="datetime-local" value={booking.demo_date} onChange={e=>setBooking({...booking,demo_date:e.target.value})}/></div>
-              <p className="text-muted text-sm">Al guardar, la agencia quedará como Agendada, se crearán el contacto y la oportunidad, y Leonardo recibirá un aviso en su CRM.</p>
+              <div className="input-group"><label>Closer responsable</label>
+                <select className="input" value={booking.closer_id || ''} onChange={e=>setBooking({...booking,closer_id:e.target.value})} disabled={checkingClosers}>
+                  <option value="">Asignación automática · recomendado</option>
+                  {availableClosers.map(closer => <option key={closer.id} value={closer.id}>{closer.name} · {closer.bookings_that_day} demos ese día</option>)}
+                </select>
+              </div>
+              <div className={`closer-availability-message ${availableClosers.length ? 'available' : 'unavailable'}`}><UserCheck size={16}/><span>{checkingClosers ? 'Comprobando disponibilidad…' : availableClosers.length ? `${availableClosers.length} closer${availableClosers.length===1?'':'s'} disponible${availableClosers.length===1?'':'s'} en esta franja` : 'No hay closers disponibles en esta franja'}</span></div>
+              <p className="text-muted text-sm">La reserva ocupará únicamente la agenda del closer asignado. Los demás podrán recibir otra demo a la misma hora.</p>
             </div>
-            <div className="modal-footer"><button className="btn btn-secondary" onClick={()=>setBooking(null)}>Cancelar</button><button className="btn btn-primary" onClick={saveBooking}><CalendarPlus size={15}/>Guardar reunión</button></div>
+            <div className="modal-footer"><button className="btn btn-secondary" onClick={()=>setBooking(null)}>Cancelar</button><button className="btn btn-primary" disabled={checkingClosers || !availableClosers.length} onClick={saveBooking}><CalendarPlus size={15}/>Guardar reunión</button></div>
           </div>
         </div>
       )}

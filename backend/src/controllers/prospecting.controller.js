@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const { syncDemoTasks } = require('../services/demoAutomation.service');
+const { ensureCalendarSchema, availableClosers, acquireSlotLock, releaseSlotLock } = require('../services/closerCalendar.service');
 
 let qualificationSchemaPromise;
 const ensureQualificationSchema = () => {
@@ -383,13 +384,16 @@ const convert = async (req, res) => {
 };
 
 const scheduleDemo = async (req, res) => {
-  const { demo_date } = req.body;
+  const { demo_date, closer_id } = req.body;
   if (!demo_date || Number.isNaN(new Date(demo_date).getTime())) {
     return res.status(400).json({ message: 'Selecciona una fecha y hora válidas' });
   }
   const connection = await db.getConnection();
+  let slotLock = null;
   try {
+    await ensureCalendarSchema(connection);
     await connection.beginTransaction();
+    slotLock = await acquireSlotLock(connection, req.user.tenant_id, demo_date);
     const [[prospect]] = await connection.query(
       'SELECT * FROM daily_prospects WHERE id=? AND tenant_id=? FOR UPDATE',
       [req.params.id, req.user.tenant_id]
@@ -403,16 +407,15 @@ const scheduleDemo = async (req, res) => {
       return res.status(403).json({ message: 'Esta agencia está asignada a otro responsable' });
     }
 
-    const [[owner]] = await connection.query(
-      `SELECT id,name FROM users
-       WHERE tenant_id=? AND active=1 AND role='admin'
-       ORDER BY CASE WHEN LOWER(name) LIKE 'leonardo%' THEN 0 ELSE 1 END,id LIMIT 1`,
-      [req.user.tenant_id]
-    );
+    const availability = await availableClosers(connection, req.user.tenant_id, demo_date);
+    const owner = closer_id
+      ? availability.closers.find(item => Number(item.id) === Number(closer_id))
+      : availability.closers[0];
     if (!owner) {
       await connection.rollback();
-      return res.status(409).json({ message: 'No hay un asesor administrador activo para asignar la demo' });
+      return res.status(409).json({ message: closer_id ? 'Ese closer ya no está disponible en este horario' : 'No hay closers disponibles en este horario' });
     }
+    const setterId = req.user.role === 'setter' ? req.user.id : null;
 
     let contactId = prospect.converted_contact_id;
     if (!contactId) {
@@ -438,8 +441,16 @@ const scheduleDemo = async (req, res) => {
         assigned_to,setter_id,created_by,next_action,next_action_type,next_action_at,demo_date,demo_status,followup_phase)
        VALUES (?,?,?,?,'open','templada',?,?,?,'prospección setter',?,?,?,?,'reunion',?,?,'programada',0)`,
       [req.user.tenant_id, `Demo · ${prospect.agency_name}`, contactId, stage?.id || null,
-       prospect.zone || prospect.city, prospect.city, prospect.province, owner.id, req.user.id, req.user.id,
+       prospect.zone || prospect.city, prospect.city, prospect.province, owner.id, setterId, req.user.id,
        'Realizar demo agendada', demo_date, demo_date]
+    );
+
+    await connection.query(
+      `INSERT INTO demo_bookings
+       (tenant_id,opportunity_id,prospect_id,closer_id,setter_id,start_at,end_at,status,corporate_status)
+       VALUES (?,?,?,?,?,?,?,'programada','pendiente')`,
+      [req.user.tenant_id, opportunity.insertId, prospect.id, owner.id, setterId,
+       availability.slot.startAt, availability.slot.endAt]
     );
 
     await syncDemoTasks(connection, {
@@ -458,7 +469,7 @@ const scheduleDemo = async (req, res) => {
        (tenant_id,title,type,description,scheduled_at,due_at,status,contact_id,opportunity_id,assigned_to,created_by)
        VALUES (?,?, 'tarea', ?, NOW(), NOW(), 'pendiente', ?, ?, ?, ?)`,
       [req.user.tenant_id, `Agendar en mi Calendar: ${prospect.agency_name}`,
-       `${req.user.name || 'El setter'} ha agendado una demo para ${new Date(demo_date).toLocaleString('es-ES')}. Añádela al Calendar corporativo y confirma los datos de la reunión.`,
+       `${req.user.name || 'El setter'} ha agendado una demo para ${new Date(demo_date).toLocaleString('es-ES')}. Está pendiente de añadir al CRM y Calendar corporativos.`,
        contactId, opportunity.insertId, owner.id, req.user.id]
     );
     await connection.query(
@@ -474,11 +485,15 @@ const scheduleDemo = async (req, res) => {
       contact_id: contactId,
       opportunity_id: opportunity.insertId,
       assigned_to: owner.name,
+      closer_id: owner.id,
     });
   } catch (err) {
     await connection.rollback();
-    res.status(500).json({ message: err.message });
-  } finally { connection.release(); }
+    res.status(err.statusCode || 500).json({ message: err.message });
+  } finally {
+    await releaseSlotLock(connection, slotLock);
+    connection.release();
+  }
 };
 
 module.exports = { list, summary, bulkCreate, update, scheduleFollowUp, scheduleDemo, convert };

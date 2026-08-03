@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const { runAutomations } = require('../services/automations.service');
 const { syncDemoTasks, completePendingDemoTasks } = require('../services/demoAutomation.service');
+const { ensureCalendarSchema, parseSlot } = require('../services/closerCalendar.service');
 
 const list = async (req, res) => {
   const { stage_id, status, assigned_to } = req.query;
@@ -213,6 +214,7 @@ const updateDemoStatus = async (req, res) => {
   if (!allowed.includes(demo_status)) return res.status(400).json({ message: 'Estado de demo no válido' });
   const connection = await db.getConnection();
   try {
+    await ensureCalendarSchema(connection);
     await connection.beginTransaction();
     let sql = 'UPDATE opportunities SET demo_status=?';
     const params = [demo_status];
@@ -233,6 +235,18 @@ const updateDemoStatus = async (req, res) => {
     sql += ' WHERE id=? AND tenant_id=?';
     params.push(req.params.id, req.user.tenant_id);
     await connection.query(sql, params);
+    if (demo_status === 'reagendada') {
+      const slot = parseSlot(demo_date);
+      await connection.query(
+        'UPDATE demo_bookings SET status=?,start_at=?,end_at=? WHERE tenant_id=? AND opportunity_id=?',
+        [demo_status, slot.startAt, slot.endAt, req.user.tenant_id, req.params.id]
+      );
+    } else {
+      await connection.query(
+        'UPDATE demo_bookings SET status=? WHERE tenant_id=? AND opportunity_id=?',
+        [demo_status, req.user.tenant_id, req.params.id]
+      );
+    }
 
     const [[opportunity]] = await connection.query(
       'SELECT * FROM opportunities WHERE id=? AND tenant_id=?',
