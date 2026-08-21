@@ -30,10 +30,15 @@ const templateFor = (templates, record) => {
 };
 
 const dailyBrief = async (req, res) => {
+  const madridHour = Number(new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Madrid', hour: '2-digit', hourCycle: 'h23',
+  }).format(new Date()));
   const date = validDate(req.query.date) ? req.query.date : new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit',
   }).format(new Date());
-  const slot = req.query.slot === 'afternoon' ? 'afternoon' : 'morning';
+  const slot = req.query.slot === 'morning' || req.query.slot === 'afternoon'
+    ? req.query.slot
+    : madridHour >= 12 ? 'afternoon' : 'morning';
   const tenantId = req.user.tenant_id;
   const baseUrl = String(process.env.FRONTEND_URL || 'https://crm-leonardo.vercel.app').replace(/\/$/, '');
 
