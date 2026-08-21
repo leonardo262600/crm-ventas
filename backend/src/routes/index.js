@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { auth, requireRole, prospectingAutomationAuth } = require('../middleware/auth');
+const { auth, requireRole, prospectingAutomationAuth, assistantAutomationAuth } = require('../middleware/auth');
 const multer  = require('multer');
 const path    = require('path');
 const fs      = require('fs');
@@ -25,6 +25,7 @@ const prospectingCtrl = require('../controllers/prospecting.controller');
 const setterCommissionsCtrl = require('../controllers/setterCommissions.controller');
 const teamWorkspaceCtrl = require('../controllers/teamWorkspace.controller');
 const closerCalendarCtrl = require('../controllers/closerCalendar.controller');
+const crmAssistantCtrl = require('../controllers/crmAssistant.controller');
 
 // Multer storage para logos
 const logoStorage = multer.diskStorage({
@@ -85,6 +86,7 @@ router.post('/prospecting/bulk', auth, requireRole('admin','gerente','vendedor')
 router.get('/prospecting-automation', prospectingAutomationAuth, prospectingCtrl.list);
 router.get('/prospecting-automation/summary', prospectingAutomationAuth, prospectingCtrl.summary);
 router.post('/prospecting-automation/bulk', prospectingAutomationAuth, prospectingCtrl.bulkCreate);
+router.get('/assistant-automation/daily-brief', assistantAutomationAuth, crmAssistantCtrl.dailyBrief);
 router.patch('/prospecting/:id', auth, prospectingCtrl.update);
 router.post('/prospecting/:id/follow-up', auth, prospectingCtrl.scheduleFollowUp);
 router.post('/prospecting/:id/schedule-demo', auth, prospectingCtrl.scheduleDemo);

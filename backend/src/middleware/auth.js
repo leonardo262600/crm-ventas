@@ -82,4 +82,29 @@ const prospectingAutomationAuth = async (req, res, next) => {
   }
 };
 
-module.exports = { auth, requireRole, prospectingAutomationAuth };
+// Credencial técnica de solo lectura para el asistente personal conectado a n8n.
+const assistantAutomationAuth = async (req, res, next) => {
+  const expected = process.env.CRM_ASSISTANT_AUTOMATION_KEY;
+  const provided = req.headers['x-crm-assistant-key'];
+  if (!expected || !safeSecretMatch(provided, expected)) {
+    return res.status(401).json({ message: 'Credencial del asistente no válida' });
+  }
+  try {
+    const tenantId = Number(process.env.CRM_ASSISTANT_TENANT_ID || 1);
+    const [rows] = await db.query(
+      `SELECT id,tenant_id,name,email,role,active
+         FROM users
+        WHERE tenant_id=? AND role='admin' AND active=1 AND deleted_at IS NULL
+        ORDER BY id LIMIT 1`,
+      [tenantId]
+    );
+    if (!rows.length) return res.status(503).json({ message: 'No existe un usuario activo para el asistente' });
+    req.user = rows[0];
+    req.crmAssistantAutomation = true;
+    next();
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { auth, requireRole, prospectingAutomationAuth, assistantAutomationAuth };
