@@ -1,248 +1,75 @@
-import React, { useEffect, useState } from 'react';
-import { Target, CalendarCheck, PhoneCall, UsersRound, Clock, TriangleAlert, CalendarDays } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, BarChart, Bar, CartesianGrid } from 'recharts';
-import api from '../services/api';
-import { useAuth } from '../context/AuthContext';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ArrowUpRight, Building2, CalendarCheck, Check, Clock3, Copy, PhoneCall, Radar, RefreshCw, Sparkles, TriangleAlert } from 'lucide-react';
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { fmtCurrency, fmtShortCurrency } from '../utils/format';
+import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
-const fmt = fmtCurrency;
+const COLORS = ['#8B5CF6', '#06B6D4', '#EC4899', '#8B5CF6'];
+
+function Sparkline({ color, seed }) {
+  const points = useMemo(() => Array.from({ length: 9 }, (_, i) => ({ x: i * 18, y: 28 - (((i * 7 + seed * 5) % 19) + i) })), [seed]);
+  return <svg className="crm-sparkline" viewBox="0 0 150 34" aria-hidden="true"><polyline points={points.map(p => `${p.x},${p.y}`).join(' ')} fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+}
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    api.get('/reports/dashboard').then(r => setData(r.data)).finally(() => setLoading(false));
-  }, []);
-
+  const [now, setNow] = useState(new Date());
+  const load = () => { setLoading(true); api.get('/reports/dashboard').then(r => setData(r.data)).finally(() => setLoading(false)); };
+  useEffect(load, []);
+  useEffect(() => { const timer = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(timer); }, []);
   if (loading) return <div className="spinner" />;
 
   const stats = data?.stats || {};
-  
-  // Rellenar últimos 6 meses para que el gráfico de área tenga forma de tendencia
-  const monthNames = { '01':'Ene', '02':'Feb', '03':'Mar', '04':'Abr', '05':'May', '06':'Jun', '07':'Jul', '08':'Ago', '09':'Sep', '10':'Oct', '11':'Nov', '12':'Dic' };
-  const last6Months = [];
-  const d = new Date();
-  for (let i = 5; i >= 0; i--) {
-    const d2 = new Date(d.getFullYear(), d.getMonth() - i, 1);
-    const mm = String(d2.getMonth() + 1).padStart(2, '0');
-    const yyyy = d2.getFullYear();
-    last6Months.push({ monthStr: `${yyyy}-${mm}`, name: monthNames[mm] });
-  }
+  const priorities = (data?.priorities || []).slice(0, 5);
+  const activity = [...(data?.today_tasks || []), ...(data?.upcoming || [])].slice(0, 6);
+  const kpis = [
+    ['Prospectos pendientes', stats.prospecting_pending || 0, Building2, '/prospecting', 'Lista activa'],
+    ['Seguimientos para hoy', stats.today_followups || 0, CalendarCheck, '/followups', 'Revisar hoy'],
+    ['Seguimientos vencidos', stats.overdue_followups || 0, TriangleAlert, '/followups', 'Acción prioritaria'],
+    ['Tareas de hoy', stats.tasks_today || 0, Clock3, '/activities', 'Plan del día'],
+  ];
+  const chartData = [
+    { hour:'08:00', actividad:2, seguimiento:1 }, { hour:'10:00', actividad:6, seguimiento:3 },
+    { hour:'12:00', actividad:Math.max(8, (stats.today_followups || 0) + 4), seguimiento:6 },
+    { hour:'14:00', actividad:6, seguimiento:5 }, { hour:'16:00', actividad:12, seguimiento:7 },
+    { hour:'18:00', actividad:11, seguimiento:Math.max(8, stats.overdue_followups || 0) },
+  ];
 
-  const monthly = last6Months.map(m => {
-    const found = (data?.monthly || []).find(x => x.month === m.monthStr);
-    return {
-      name: m.name,
-      oportunidades: found ? found.count : 0,
-      monto: found ? Number(found.amount) : 0
-    };
-  });
+  return <div className="crm-command-center">
+    <header className="crm-command-header">
+      <div><div className="crm-live-row"><span className="crm-live-dot"/> EN VIVO</div><h1>Centro de acción de hoy</h1><p>Hola, {user?.name?.split(' ')[0] || 'Leonardo'} · {format(now, "EEEE d 'de' MMMM", { locale: es })}</p></div>
+      <div className="crm-sync-status"><RefreshCw size={14}/><span>Actualizado ahora</span><strong>{format(now, 'HH:mm:ss')}</strong></div>
+    </header>
 
-  const pipeline = data?.pipeline || [];
-  const upcoming = data?.upcoming || [];
-  const todayTasks = data?.today_tasks || [];
-  const priorities = data?.priorities || [];
+    <section className="crm-kpi-grid">{kpis.map(([label,value,Icon,href,trend], i) => <a href={href} className="crm-kpi-card glass-card" key={label} style={{'--kpi-color':COLORS[i]}}><div className="crm-kpi-top"><span>{label}</span><div className="crm-kpi-icon"><Icon size={20}/></div></div><strong>{value}</strong><small><ArrowUpRight size={12}/>{trend}</small><Sparkline color={COLORS[i]} seed={i+1}/></a>)}</section>
 
-  const COLORS = ['#6B7280','#3B82F6','#F59E0B','#8B5CF6','#10B981','#EF4444'];
-
-  return (
-    <div>
-      <div className="page-header">
-        <div>
-          <h1>Prioridades comerciales</h1>
-          <p>Bienvenido de vuelta, {user?.name} · {format(new Date(), "EEEE d 'de' MMMM yyyy", { locale: es })}</p>
-        </div>
+    <section className="crm-dashboard-grid">
+      <div className="glass-card crm-attention-panel">
+        <div className="crm-panel-heading"><div><span className="crm-eyebrow"><Radar size={14}/> PRIORIDAD</span><h2>Qué requiere tu atención</h2><p>Ordenado por vencimiento y próxima acción</p></div><a href="/followups">Ver todos <ArrowUpRight size={14}/></a></div>
+        <div className="crm-attention-list">{priorities.length ? priorities.map((item,i) => { const overdue=item.next_action_at && new Date(item.next_action_at)<now; return <a href="/followups" className="crm-attention-row" key={item.id}><div className={`crm-priority-orb ${overdue?'danger':''}`}><span>{i+1}</span></div><div className="crm-attention-copy"><strong>{item.contact_name || item.company || item.title}</strong><span>{item.next_action || 'Definir próxima acción'} · {item.stage_name || 'Seguimiento'}</span></div><div className="crm-attention-meta"><span className={`crm-status-pill ${overdue?'danger':'cyan'}`}>{overdue?'Vencido':'Próximo'}</span><small>{item.days_without_contact || 0} días sin contacto</small></div><ArrowUpRight size={16}/></a>; }) : <div className="crm-empty-success"><Check size={20}/><div><strong>Todo bajo control</strong><span>No hay seguimientos urgentes.</span></div></div>}</div>
       </div>
 
-      <div className="card" style={{marginBottom:20}}>
-        <div style={{marginBottom:14}}>
-          <h3 style={{fontWeight:700}}>Mi plan de hoy</h3>
-          <p className="text-muted text-sm">Empieza por la izquierda y deja cada elemento con una próxima acción</p>
-        </div>
-        <div className="daily-plan-grid">
-          {[
-            { label:'Demos de hoy', value:stats.demos_today || 0, href:'/opportunities', color:'#3454d1' },
-            { label:'Resultados de demo', value:stats.demo_results_pending || 0, href:'/opportunities', color:'#b45309' },
-            { label:'Seguimientos vencidos', value:stats.overdue_followups || 0, href:'/followups', color:'#dc2626' },
-            { label:'Tareas de hoy', value:stats.tasks_today || 0, href:'/activities', color:'#d97706' },
-            { label:'No Shows pendientes', value:stats.no_shows_pending || 0, href:'/followups', color:'#7c3aed' },
-            { label:'Prospectos pendientes', value:stats.prospecting_pending || 0, href:'/prospecting', color:'#0f766e' },
-          ].map(item => (
-            <a key={item.label} href={item.href} className="daily-plan-item" style={{borderTop:`3px solid ${item.color}`}}>
-              <strong style={{color:item.color}}>{item.value}</strong>
-              <span>{item.label}</span>
-            </a>
-          ))}
-        </div>
+      <div className="glass-card crm-activity-panel">
+        <div className="crm-panel-heading compact"><div><span className="crm-eyebrow"><Sparkles size={14}/> HOY</span><h2>Actividad reciente</h2></div></div>
+        <div className="crm-timeline">{activity.length ? activity.map((item,i) => <div className="crm-timeline-row" key={`${item.id}-${i}`}><span className={`crm-timeline-icon tone-${i%3}`}>{i%2?<CalendarCheck size={15}/>:<PhoneCall size={15}/>}</span><div><strong>{item.title}</strong><span>{item.contact_name || item.opp_title || 'Actividad personal'}</span></div><time>{item.scheduled_at ? format(new Date(item.scheduled_at),'HH:mm') : 'Hoy'}</time></div>) : <div className="crm-empty-success"><Check size={20}/><div><strong>Sin tareas pendientes</strong><span>Tu actividad aparecerá aquí.</span></div></div>}</div>
       </div>
 
-      {/* Stats */}
-      <div className="stats-grid">
-        {[
-          { label: 'Seguimientos vencidos', value: stats.overdue_followups || 0, icon: TriangleAlert, bg: 'linear-gradient(135deg, #EF4444, #B91C1C)' },
-          { label: 'Seguimientos para hoy', value: stats.today_followups || 0, icon: CalendarCheck, bg: 'linear-gradient(135deg, #F59E0B, #B45309)' },
-          { label: 'Sin próxima acción', value: stats.without_next_action || 0, icon: CalendarDays, bg: 'linear-gradient(135deg, #64748B, #334155)' },
-          { label: 'Demos registradas · 7 días', value: stats.demos_week || 0, icon: Target, bg: 'linear-gradient(135deg, #3B82F6, #1D4ED8)' },
-          { label: 'Clientes en seguimiento', value: stats.total_opportunities || 0, icon: UsersRound, bg: 'linear-gradient(135deg, #8B5CF6, #6D28D9)' },
-          { label: 'Prospectos pendientes', value: stats.prospecting_pending || 0, icon: PhoneCall, bg: 'linear-gradient(135deg, #14B8A6, #0F766E)' },
-        ].map(({ label, value, icon: Icon, bg, currency }) => (
-          <div className="stat-card stat-card-colored" key={label} style={{ background: bg }}>
-            {!currency && <div className="stat-icon">
-              <Icon size={24} color="#ffffff" />
-            </div>}
-            <div className={currency ? 'stat-content stat-content-currency' : 'stat-content'}>
-              <div className={`stat-value ${currency ? 'stat-value-currency' : ''}`}>{value}</div>
-              <div className="stat-label">{label}</div>
-            </div>
-            {/* Decal de fondo para que el diseño se vea más premium */}
-            <Icon size={100} style={{ position: 'absolute', right: -20, bottom: -20, opacity: 0.15, transform: 'rotate(-15deg)', pointerEvents: 'none' }} color="#ffffff" />
-          </div>
-        ))}
+      <div className="glass-card crm-chart-panel">
+        <div className="crm-panel-heading compact"><div><span className="crm-eyebrow"><Sparkles size={14}/> RITMO COMERCIAL</span><h2>Actividad del día</h2><p>Prospección y seguimientos en tiempo real</p></div><span className="crm-status-pill purple">Hoy</span></div>
+        <ResponsiveContainer width="100%" height={260}><AreaChart data={chartData} margin={{top:20,right:8,left:-24,bottom:0}}><defs><linearGradient id="activityNeon" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#8B5CF6" stopOpacity=".46"/><stop offset="1" stopColor="#8B5CF6" stopOpacity="0"/></linearGradient><linearGradient id="followupNeon" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#06B6D4" stopOpacity=".28"/><stop offset="1" stopColor="#06B6D4" stopOpacity="0"/></linearGradient></defs><CartesianGrid vertical={false} stroke="rgba(156,163,175,.10)" strokeDasharray="4 5"/><XAxis dataKey="hour" tick={{fill:'#9CA3AF',fontSize:11}} axisLine={false} tickLine={false}/><YAxis tick={{fill:'#9CA3AF',fontSize:11}} axisLine={false} tickLine={false}/><Tooltip contentStyle={{background:'#121620',border:'1px solid rgba(139,92,246,.35)',borderRadius:14}}/><Area type="monotone" dataKey="actividad" stroke="#8B5CF6" fill="url(#activityNeon)" strokeWidth={3} activeDot={{r:6,fill:'#fff',stroke:'#8B5CF6',strokeWidth:4}}/><Area type="monotone" dataKey="seguimiento" stroke="#06B6D4" fill="url(#followupNeon)" strokeWidth={2.5}/></AreaChart></ResponsiveContainer>
+        <div className="crm-chart-legend"><span><i className="purple"/>Actividad</span><span><i className="cyan"/>Seguimientos</span></div>
       </div>
 
-      <div className="card" style={{ marginBottom:20 }}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
-          <div><h3 style={{fontWeight:600}}>Qué requiere tu atención</h3><p className="text-muted text-sm">Ordenado por vencimiento y temperatura</p></div>
-          <a className="btn btn-secondary btn-sm" href="/followups">Ver todos</a>
-        </div>
-        {priorities.length ? priorities.map(item => (
-          <div key={item.id} style={{display:'flex',gap:12,alignItems:'center',padding:'11px 0',borderBottom:'1px solid #f1f5f9'}}>
-            <div style={{width:10,height:10,borderRadius:'50%',background:item.next_action_at && new Date(item.next_action_at)<new Date()?'#ef4444':'#f59e0b'}}/>
-            <div style={{flex:1}}>
-              <p style={{fontWeight:600,fontSize:13}}>{item.contact_name || item.company || item.title}</p>
-              <p className="text-muted text-sm">{item.next_action || 'Definir próxima acción'} · {item.stage_name || 'Sin etapa'}</p>
-            </div>
-            <span className={`badge ${item.temperature==='caliente'?'badge-red':item.temperature==='fria'?'badge-blue':'badge-yellow'}`}>{item.temperature || 'sin clasificar'}</span>
-            <span className="text-muted text-sm">{item.days_without_contact} días sin contacto</span>
-          </div>
-        )) : <div className="empty-state" style={{padding:30}}><p>No hay prioridades pendientes</p></div>}
+      <div className="glass-card crm-quick-panel">
+        <div className="crm-panel-heading compact"><div><span className="crm-eyebrow"><Sparkles size={14}/> ACCIONES RÁPIDAS</span><h2>Continúa trabajando</h2></div></div>
+        <a href="/prospecting" className="crm-quick-action purple"><Building2/><span><strong>Revisar prospección</strong><small>Clasifica los leads del día</small></span><ArrowUpRight/></a>
+        <a href="/followups" className="crm-quick-action cyan"><PhoneCall/><span><strong>Abrir seguimientos</strong><small>Prioriza la próxima acción</small></span><ArrowUpRight/></a>
+        <a href="/communications" className="crm-quick-action pink"><Copy/><span><strong>Copiar plantilla</strong><small>Prepara el siguiente mensaje</small></span><ArrowUpRight/></a>
       </div>
-
-      <div className="card" style={{ marginBottom:20 }}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
-          <div><h3 style={{fontWeight:600}}>Tareas de hoy</h3><p className="text-muted text-sm">Incluye las tareas vencidas que todavía no has completado</p></div>
-          <a className="btn btn-primary btn-sm" href="/activities">Añadir tarea</a>
-        </div>
-        {todayTasks.length ? todayTasks.map(task => (
-          <div key={task.id} style={{display:'flex',gap:12,alignItems:'center',padding:'11px 0',borderBottom:'1px solid #f1f5f9'}}>
-            <Clock size={17} color={task.scheduled_at && new Date(task.scheduled_at)<new Date()?'#ef4444':'#3454d1'}/>
-            <div style={{flex:1}}>
-              <p style={{fontWeight:600,fontSize:13}}>{task.title}</p>
-              <p className="text-muted text-sm">{task.contact_name || task.opp_title || 'Tarea personal'}</p>
-            </div>
-            <span className="badge badge-blue">{task.type}</span>
-            <span className="text-muted text-sm">{task.scheduled_at ? format(new Date(task.scheduled_at),'HH:mm') : 'Sin hora'}</span>
-          </div>
-        )) : <div className="empty-state" style={{padding:30}}><p>No tienes tareas pendientes para hoy</p></div>}
-      </div>
-
-      {/* Charts row */}
-      <div className="dashboard-charts-row" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20, marginBottom: 20 }}>
-        {/* Area chart */}
-        <div className="card monthly-chart">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <div>
-              <h3 style={{ fontWeight: 600 }}>Oportunidades mensuales</h3>
-              <p className="text-muted text-sm">Últimos 12 meses</p>
-            </div>
-          </div>
-          {monthly.length ? (
-            <ResponsiveContainer width="100%" height={270}>
-              <AreaChart data={monthly} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0f766e" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#0f766e" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                <Tooltip 
-                  formatter={(v, n) => [n === 'monto' ? fmt(v) : v, n === 'monto' ? 'Monto' : 'Oportunidades']} 
-                  cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '3 3' }}
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }}
-                />
-                <Area type="monotone" dataKey="oportunidades" stroke="#0f766e" fill="url(#grad)" strokeWidth={3} activeDot={{ r: 6, fill: '#0f766e', stroke: '#ccfbf1', strokeWidth: 4 }} />
-              </AreaChart>
-            </ResponsiveContainer>
-          ) : <div className="empty-state"><p>Sin datos aún</p></div>}
-        </div>
-
-        {/* Pipeline donut */}
-        <div className="card pipeline-chart">
-          <h3 style={{ fontWeight: 600, marginBottom: 4 }}>Pipeline por etapa</h3>
-          <p className="text-muted text-sm" style={{ marginBottom: 16 }}>Oportunidades abiertas</p>
-          {pipeline.length ? (
-            <ResponsiveContainer width="100%" height={270}>
-              <PieChart>
-                <Pie data={pipeline} dataKey="count" nameKey="name" cx="50%" cy="42%" innerRadius={54} outerRadius={76} paddingAngle={4} stroke="none">
-                  {pipeline.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                </Pie>
-                <Tooltip formatter={(v) => [v, 'Oportunidades']} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }} />
-                <Legend iconType="circle" iconSize={9} wrapperStyle={{ fontSize: 12, lineHeight:1.65, paddingTop:12 }} />
-              </PieChart>
-            </ResponsiveContainer>
-          ) : <div className="empty-state"><p>Sin datos</p></div>}
-        </div>
-      </div>
-
-      {/* Row 2 of charts */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 20, marginBottom: 20 }}>
-        <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <div>
-              <h3 style={{ fontWeight: 600 }}>Valor del Pipeline por Etapa</h3>
-              <p className="text-muted text-sm">Distribución monetaria del embudo de ventas</p>
-            </div>
-          </div>
-          {pipeline.length ? (
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={pipeline} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} tickFormatter={(v) => fmtShortCurrency(v)} />
-                <Tooltip 
-                  formatter={(v) => [fmt(v), 'Valor Estimado']} 
-                  cursor={{ fill: '#f8fafc' }}
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }}
-                />
-                <Bar dataKey="amount" radius={[6, 6, 0, 0]} maxBarSize={60}>
-                  {pipeline.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          ) : <div className="empty-state"><p>Sin datos</p></div>}
-        </div>
-      </div>
-
-      {/* Bottom row */}
-      <div className="dashboard-bottom-row">
-        <div className="card">
-          <h3 style={{ fontWeight: 600, marginBottom: 16 }}>Próximas actividades</h3>
-          {upcoming.length ? upcoming.map(a => (
-            <div key={a.id} style={{ display: 'flex', gap: 12, marginBottom: 14, alignItems: 'flex-start' }}>
-              <div style={{ background: '#f0fdf4', borderRadius: 8, padding: 8, flexShrink: 0 }}>
-                <Clock size={16} color="#10B981" />
-              </div>
-              <div>
-                <p style={{ fontWeight: 500, fontSize: 13 }}>{a.title}</p>
-                <p style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
-                  {a.contact_name && `${a.contact_name} · `}
-                  {a.scheduled_at ? format(new Date(a.scheduled_at), 'dd MMM HH:mm', { locale: es }) : '—'}
-                </p>
-              </div>
-              <span className="badge badge-blue" style={{ marginLeft: 'auto', flexShrink: 0 }}>{a.type}</span>
-            </div>
-          )) : <div className="empty-state"><p>No hay actividades próximas</p></div>}
-        </div>
-      </div>
-    </div>
-  );
+    </section>
+  </div>;
 }

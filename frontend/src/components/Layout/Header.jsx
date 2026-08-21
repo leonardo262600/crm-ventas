@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Bell, Moon, Sun, X } from 'lucide-react';
+import { Search, Bell, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
@@ -18,7 +18,6 @@ export default function Header() {
   const [upcoming, setUpcoming] = useState([]);
   const [overdue, setOverdue] = useState([]);
   const [showNotif, setShowNotif] = useState(false);
-  const [theme, setTheme] = useState(() => localStorage.getItem('crm_theme') === 'dark' ? 'dark' : 'light');
   const ref = useRef();
   const notificationRef = useRef();
   const isSetter = displayUser?.role === 'setter';
@@ -63,12 +62,6 @@ export default function Header() {
   }, []);
 
   const go = (path) => { navigate(path); setQuery(''); setOpen(false); };
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    localStorage.setItem('crm_theme', next);
-    document.documentElement.dataset.theme = next;
-  };
   const removeTask = async (event, activity) => {
     event.stopPropagation();
     if (!confirm(`¿Eliminar el aviso "${activity.title}"?`)) return;
@@ -148,15 +141,6 @@ export default function Header() {
       </div>}
 
       <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:12 }}>
-        <button
-          className="btn-icon theme-toggle"
-          type="button"
-          onClick={toggleTheme}
-          title={theme === 'dark' ? 'Usar tema claro' : 'Usar tema oscuro'}
-          aria-label={theme === 'dark' ? 'Usar tema claro' : 'Usar tema oscuro'}
-        >
-          {theme === 'dark' ? <Sun size={18}/> : <Moon size={18}/>}
-        </button>
         {/* Notifications */}
         {!isSetter && <div style={{ position:'relative' }} ref={notificationRef}>
           <button className="btn-icon" onClick={() => { setShowNotif(v => !v); setOpen(false); }} style={{ position:'relative' }}>
