@@ -1,4 +1,4 @@
-self.CRM_BUILD_VERSION = '2026-08-21-personal-followups';
+self.CRM_BUILD_VERSION = '2026-08-21-personal-dashboard';
 
 self.addEventListener('install', event => {
   self.skipWaiting();

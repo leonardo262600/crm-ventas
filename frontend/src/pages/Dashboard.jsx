@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Target, CalendarCheck, DollarSign, TrendingUp, Clock, TriangleAlert, CalendarDays } from 'lucide-react';
+import { Target, CalendarCheck, PhoneCall, UsersRound, Clock, TriangleAlert, CalendarDays } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, BarChart, Bar, CartesianGrid } from 'recharts';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -43,7 +43,6 @@ export default function Dashboard() {
   });
 
   const pipeline = data?.pipeline || [];
-  const topSellers = data?.top_sellers || [];
   const upcoming = data?.upcoming || [];
   const todayTasks = data?.today_tasks || [];
   const priorities = data?.priorities || [];
@@ -87,9 +86,9 @@ export default function Dashboard() {
           { label: 'Seguimientos vencidos', value: stats.overdue_followups || 0, icon: TriangleAlert, bg: 'linear-gradient(135deg, #EF4444, #B91C1C)' },
           { label: 'Seguimientos para hoy', value: stats.today_followups || 0, icon: CalendarCheck, bg: 'linear-gradient(135deg, #F59E0B, #B45309)' },
           { label: 'Sin próxima acción', value: stats.without_next_action || 0, icon: CalendarDays, bg: 'linear-gradient(135deg, #64748B, #334155)' },
-          { label: 'Demos últimos 7 días', value: stats.demos_week || 0, icon: Target, bg: 'linear-gradient(135deg, #3B82F6, #1D4ED8)' },
-          { label: 'Cash collected del mes', value: fmt(stats.cash_collected_month || 0), icon: DollarSign, currency: true, bg: 'linear-gradient(135deg, #8B5CF6, #6D28D9)' },
-          { label: 'Mi comisión del mes', value: fmt(stats.commission_month || 0), icon: TrendingUp, currency: true, bg: 'linear-gradient(135deg, #14B8A6, #0F766E)' },
+          { label: 'Demos registradas · 7 días', value: stats.demos_week || 0, icon: Target, bg: 'linear-gradient(135deg, #3B82F6, #1D4ED8)' },
+          { label: 'Clientes en seguimiento', value: stats.total_opportunities || 0, icon: UsersRound, bg: 'linear-gradient(135deg, #8B5CF6, #6D28D9)' },
+          { label: 'Prospectos pendientes', value: stats.prospecting_pending || 0, icon: PhoneCall, bg: 'linear-gradient(135deg, #14B8A6, #0F766E)' },
         ].map(({ label, value, icon: Icon, bg, currency }) => (
           <div className="stat-card stat-card-colored" key={label} style={{ background: bg }}>
             {!currency && <div className="stat-icon">
@@ -224,27 +223,7 @@ export default function Dashboard() {
       </div>
 
       {/* Bottom row */}
-      <div className="dashboard-bottom-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-        {/* Top sellers */}
-        <div className="card">
-          <h3 style={{ fontWeight: 600, marginBottom: 16 }}>Top vendedores</h3>
-          {topSellers.length ? topSellers.map((s, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-              <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#0f766e,#134e4a)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, flexShrink: 0 }}>
-                {i + 1}
-              </div>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontWeight: 600, fontSize: 13 }}>{s.name}</p>
-                <div style={{ background: '#e2e8f0', borderRadius: 4, height: 4, marginTop: 4 }}>
-                  <div style={{ background: '#0f766e', height: 4, borderRadius: 4, width: `${Math.min(100, (s.total_amount / (topSellers[0]?.total_amount || 1)) * 100)}%` }} />
-                </div>
-              </div>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#0f766e' }}>{fmt(s.total_amount)}</span>
-            </div>
-          )) : <div className="empty-state"><p>Sin datos</p></div>}
-        </div>
-
-        {/* Upcoming activities */}
+      <div className="dashboard-bottom-row">
         <div className="card">
           <h3 style={{ fontWeight: 600, marginBottom: 16 }}>Próximas actividades</h3>
           {upcoming.length ? upcoming.map(a => (

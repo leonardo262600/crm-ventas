@@ -78,13 +78,12 @@ export default function Reports() {
   const stats      = data?.stats || {};
   const monthly    = (data?.monthly || []).map(m => ({ name: m.month?.slice(5), oportunidades: m.count, monto: Number(m.amount) }));
   const pipeline   = data?.pipeline || [];
-  const topSellers = data?.top_sellers || [];
 
   return (
     <div>
       {/* ── Header ── */}
       <div className="page-header">
-        <div><h1>Analítica comercial</h1><p>Embudo, rendimiento del equipo y calidad de la prospección</p></div>
+        <div><h1>KPI comerciales</h1><p>Embudo personal, seguimiento y calidad de la prospección</p></div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-secondary" onClick={load}><RefreshCw size={15}/>Actualizar</button>
           <button className="btn btn-secondary" onClick={() => downloadFile(buildExportUrl('/api/exports/contacts/excel'), 'contactos.xlsx')}>
@@ -223,24 +222,6 @@ export default function Reports() {
           </div>
 
           <div className="card" style={{marginBottom:20}}>
-            <h3 style={{fontWeight:600,marginBottom:16}}>Rendimiento por responsable</h3>
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>Responsable</th><th>Asignados</th><th>Pendientes</th><th>Contactados</th><th>Agendadas</th><th>Ventas</th><th>Conversión a demo</th></tr></thead>
-                <tbody>
-                  {(commercial?.setters || []).map(person=>{
-                    const conversion = Number(person.contacted) ? ((Number(person.scheduled)/Number(person.contacted))*100).toFixed(1) : '0.0';
-                    return <tr key={person.id}>
-                      <td><strong>{person.name}</strong><span className="text-muted" style={{display:'block',fontSize:11}}>{person.role==='admin'?'Leonardo':'Setter'}</span></td>
-                      <td>{person.assigned}</td><td>{person.pending}</td><td>{person.contacted}</td><td>{person.scheduled}</td><td>{person.sales}</td><td>{conversion}%</td>
-                    </tr>;
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="card" style={{marginBottom:20}}>
             <h3 style={{fontWeight:600,marginBottom:16}}>Zonas con mayor actividad</h3>
             <div className="table-wrap">
               <table>
@@ -315,20 +296,6 @@ export default function Reports() {
               ) : <div className="empty-state" style={{ height: 160 }}><p>Sin datos en este período</p></div>}
             </div>
 
-            {/* Ranking vendedores */}
-            <div className="card">
-              <h3 style={{ fontWeight: 600, marginBottom: 16 }}>Ranking de vendedores</h3>
-              {topSellers.length ? (
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={topSellers} layout="vertical">
-                    <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={90} />
-                    <Tooltip formatter={v => [fmt(v), 'Ganado']} />
-                    <Bar dataKey="total_amount" fill="#10B981" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : <div className="empty-state" style={{ height: 160 }}><p>Sin ventas ganadas en este período</p></div>}
-            </div>
           </div>
 
           {/* Pipeline por etapa — tabla */}
