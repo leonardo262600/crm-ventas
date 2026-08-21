@@ -13,7 +13,7 @@ const STATUSES = [
   ['volver_contactar', 'Volver a contactar'],
   ['agendada', 'Agendada'],
   ['ya_realadvisor', 'Ya está en RealAdvisor'],
-  ['no_interesa', 'No interesa'],
+  ['no_interesa', 'No le interesa'],
   ['no_localizable', 'No localizable'],
 ];
 
@@ -260,18 +260,6 @@ export default function DailyProspecting({ personalMode = false }) {
         {!operatorView && <div className="followup-filter prospect-stat prospect-stat-history"><span className="notranslate" translate="no">Histórico total</span><strong>{summary?.history || 0}</strong></div>}
       </div>
 
-      {isAdmin && !isPersonalCalls && summary?.assignments?.length > 0 && (
-        <div className="prospect-assignment-summary">
-          <span className="prospect-assignment-title">Llamadas pendientes por responsable</span>
-          {summary.assignments.map(person => (
-            <div key={person.id} className="prospect-assignment-counter">
-              <span>{Number(person.id) === Number(user?.id) ? 'Yo' : person.name}</span>
-              <strong>{Number(person.pending_calls || 0)}</strong>
-            </div>
-          ))}
-        </div>
-      )}
-
       <div className="card" style={{marginBottom:16}}>
         <div style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'end'}}>
           <div className="input-group" style={{margin:0,minWidth:170}}><label>Filtrar por fecha (opcional)</label><input className="input" type="date" value={date} onChange={e=>{setDate(e.target.value);load(e.target.value);}}/></div>
@@ -283,20 +271,6 @@ export default function DailyProspecting({ personalMode = false }) {
                 <option value="si">Sí</option>
                 <option value="no">No</option>
                 <option value="pendiente">Sin revisar</option>
-              </select>
-            </div>
-          )}
-          {isAdmin && !operatorView && (
-            <div className="input-group" style={{margin:0,minWidth:180}}>
-              <label>Setter</label>
-              <select className="input" value={assigneeFilter} onChange={e=>setAssigneeFilter(e.target.value)}>
-                <option value="todos">Todos</option>
-                {(summary?.assignments || []).map(person => (
-                  <option key={person.id} value={person.id}>
-                    {Number(person.id) === Number(user?.id) ? 'Leonardo' : person.name}
-                  </option>
-                ))}
-                <option value="unassigned">Sin asignar</option>
               </select>
             </div>
           )}
@@ -376,22 +350,6 @@ export default function DailyProspecting({ personalMode = false }) {
                               aria-label={`Existe en CRM RealAdvisor: ${item.agency_name}`}
                             >
                               {CRM_CHECKS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                            </select>
-                          </div>
-                          <div className="prospect-assignee-control">
-                            <span>Setter</span>
-                            <select
-                              className="prospect-assignee-select"
-                              value={item.assigned_to || ''}
-                              onChange={event => assignProspect(item, event.target.value)}
-                              aria-label={`Responsable de ${item.agency_name}`}
-                            >
-                              <option value="">Sin asignar</option>
-                              {(summary?.assignments || []).map(person => (
-                                <option key={person.id} value={person.id}>
-                                  {Number(person.id) === Number(user?.id) ? `Yo · ${person.name}` : person.name}
-                                </option>
-                              ))}
                             </select>
                           </div>
                         </div>

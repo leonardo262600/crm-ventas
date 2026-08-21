@@ -4,7 +4,6 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout/Layout';
 import Login from './pages/Login';
-import Chat from './pages/Chat';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Contacts = lazy(() => import('./pages/Contacts'));
@@ -63,20 +62,20 @@ const AppRoutes = () => {
         <Route index                element={<HomeRoute />} />
         <Route path="contacts"      element={<Contacts />} />
         <Route path="opportunities" element={<OperationalRoute><Opportunities /></OperationalRoute>} />
-        <Route path="demos"          element={<OperationalRoute><Demos /></OperationalRoute>} />
+        <Route path="demos"          element={<Navigate to="/followups" replace />} />
         <Route path="activities"    element={<OperationalRoute><Activities /></OperationalRoute>} />
         <Route path="followups"     element={<OperationalRoute><FollowUps /></OperationalRoute>} />
         <Route path="prospecting"   element={<DailyProspecting />} />
-        <Route path="my-calls"      element={<RoleRoute roles={['admin']}><DailyProspecting personalMode /></RoleRoute>} />
-        <Route path="setter-commissions" element={<RoleRoute roles={['admin','gerente','setter']}><SetterCommissions /></RoleRoute>} />
-        <Route path="closer-calendar" element={<RoleRoute roles={['admin','gerente','vendedor','setter']}><CloserCalendar /></RoleRoute>} />
-        <Route path="chat"          element={<Chat />} />
+        <Route path="my-calls"      element={<Navigate to="/prospecting" replace />} />
+        <Route path="setter-commissions" element={<Navigate to="/followups" replace />} />
+        <Route path="closer-calendar" element={<Navigate to="/followups" replace />} />
+        <Route path="chat"          element={<Navigate to="/followups" replace />} />
         <Route path="quotes"        element={<OperationalRoute><Quotes /></OperationalRoute>} />
         <Route path="invoices"      element={<OperationalRoute><Invoices /></OperationalRoute>} />
         <Route path="products"      element={<OperationalRoute><Products /></OperationalRoute>} />
         <Route path="reports"       element={<OperationalRoute><Reports /></OperationalRoute>} />
-        <Route path="users"         element={<RoleRoute roles={['admin','gerente']}><Users /></RoleRoute>} />
-        <Route path="team-workspaces/:id" element={<RoleRoute roles={['admin','gerente']}><TeamWorkspace /></RoleRoute>} />
+        <Route path="users"         element={<Navigate to="/" replace />} />
+        <Route path="team-workspaces/:id" element={<Navigate to="/" replace />} />
         <Route path="communications" element={<OperationalRoute><Communications /></OperationalRoute>} />
         <Route path="automations"   element={<OperationalRoute><Automations /></OperationalRoute>} />
         <Route path="workflows"     element={<OperationalRoute><Workflows /></OperationalRoute>} />

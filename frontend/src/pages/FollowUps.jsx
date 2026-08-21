@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CalendarClock, CheckCircle2, Clock3, Mail, MessageCircle, Phone, RefreshCw, TriangleAlert } from 'lucide-react';
+import { Bell, CalendarClock, CheckCircle2, Clock3, Mail, MessageCircle, Phone, Plus, RefreshCw, TriangleAlert } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
@@ -34,8 +34,16 @@ const QUICK_RESULTS = [
   { code:'revisandolo', label:'Revisándolo', outcome:'Está revisando la propuesta', contacted:true, days:3, action:'Pedir una decisión', type:'llamada' },
   { code:'socio', label:'Consulta socio', outcome:'Debe consultarlo con su socio o director', contacted:true, days:2, action:'Retomar tras la consulta interna', type:'llamada' },
   { code:'reagendar', label:'Reagendar', outcome:'Solicita reagendar el contacto', contacted:true, days:2, action:'Realizar contacto reagendado', type:'llamada' },
-  { code:'no_interesa', label:'No interesa', outcome:'Indica que no está interesado', contacted:true, days:1, action:'Confirmar cierre o pausar oportunidad', type:'llamada' },
+  { code:'no_interesa', label:'No le interesa', outcome:'Indica que no está interesado', contacted:true, days:1, action:'Confirmar cierre o pausar oportunidad', type:'llamada' },
 ];
+
+const emptyPostDemo = () => {
+  const next = new Date();
+  next.setDate(next.getDate() + 1);
+  next.setHours(10, 0, 0, 0);
+  const local = date => new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  return { name:'', company:'', phone:'', email:'', notes:'', demo_date:local(new Date()), temperature:'templada', next_action:'Enviar resumen y propuesta después de la demo', next_action_type:'email', next_action_at:local(next) };
+};
 
 export default function FollowUps() {
   const [items, setItems] = useState([]);
@@ -44,6 +52,7 @@ export default function FollowUps() {
   const [activity, setActivity] = useState(null);
   const [templates, setTemplates] = useState([]);
   const [reschedule, setReschedule] = useState(null);
+  const [postDemo, setPostDemo] = useState(null);
 
   const load = () => {
     setLoading(true);
@@ -83,6 +92,33 @@ export default function FollowUps() {
       load();
     } catch (error) {
       toast.error(error.response?.data?.message || 'No se pudo registrar');
+    }
+  };
+
+  const savePostDemo = async event => {
+    event.preventDefault();
+    try {
+      const contact = await api.post('/contacts', {
+        name:postDemo.name, company:postDemo.company, phone:postDemo.phone,
+        email:postDemo.email, notes:postDemo.notes, tags:'post-demo',
+      });
+      await api.post('/opportunities', {
+        title:`Seguimiento: ${postDemo.company || postDemo.name}`,
+        contact_id:contact.data.id,
+        demo_date:postDemo.demo_date,
+        demo_status:'realizada',
+        temperature:postDemo.temperature,
+        followup_phase:0,
+        next_action:postDemo.next_action,
+        next_action_type:postDemo.next_action_type,
+        next_action_at:postDemo.next_action_at,
+        description:postDemo.notes,
+      });
+      toast.success('Cliente añadido al seguimiento');
+      setPostDemo(null);
+      load();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'No se pudo crear el seguimiento');
     }
   };
 
@@ -199,7 +235,10 @@ export default function FollowUps() {
           <h1>Seguimientos</h1>
           <p>Tu lista de trabajo: qué hacer, con quién y cuándo</p>
         </div>
-        <button className="btn btn-secondary" onClick={load}><RefreshCw size={16}/>Actualizar</button>
+        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+          <button className="btn btn-primary" onClick={()=>setPostDemo(emptyPostDemo())}><Plus size={16}/>Añadir demo realizada</button>
+          <button className="btn btn-secondary" onClick={load}><RefreshCw size={16}/>Actualizar</button>
+        </div>
       </div>
 
       <div className="followup-summary">
@@ -280,6 +319,34 @@ export default function FollowUps() {
           </div>
         )}
       </div>
+
+      {postDemo && (
+        <div className="modal-overlay" onClick={event => event.target === event.currentTarget && setPostDemo(null)}>
+          <div className="modal" style={{maxWidth:720}}>
+            <div className="modal-header">
+              <div><h3>Añadir seguimiento después de una demo</h3><p className="text-muted text-sm">Copia aquí los datos esenciales tras realizar la demo en el CRM de empresa.</p></div>
+              <button className="btn-icon" onClick={()=>setPostDemo(null)}>×</button>
+            </div>
+            <form onSubmit={savePostDemo}>
+              <div className="modal-body">
+                <div className="form-grid">
+                  <div className="input-group"><label>Nombre del contacto</label><input className="input" value={postDemo.name} onChange={e=>setPostDemo(v=>({...v,name:e.target.value}))} required/></div>
+                  <div className="input-group"><label>Agencia / empresa</label><input className="input" value={postDemo.company} onChange={e=>setPostDemo(v=>({...v,company:e.target.value}))} required/></div>
+                  <div className="input-group"><label>Teléfono</label><input className="input" type="tel" value={postDemo.phone} onChange={e=>setPostDemo(v=>({...v,phone:e.target.value}))}/></div>
+                  <div className="input-group"><label>Correo</label><input className="input" type="email" value={postDemo.email} onChange={e=>setPostDemo(v=>({...v,email:e.target.value}))}/></div>
+                  <div className="input-group"><label>Fecha de la demo</label><input className="input" type="datetime-local" value={postDemo.demo_date} onChange={e=>setPostDemo(v=>({...v,demo_date:e.target.value}))} required/></div>
+                  <div className="input-group"><label>Temperatura</label><select className="input" value={postDemo.temperature} onChange={e=>setPostDemo(v=>({...v,temperature:e.target.value}))}><option value="caliente">Caliente</option><option value="templada">Templada</option><option value="fria">Fría</option></select></div>
+                  <div className="input-group"><label>Próxima acción</label><input className="input" value={postDemo.next_action} onChange={e=>setPostDemo(v=>({...v,next_action:e.target.value}))} required/></div>
+                  <div className="input-group"><label>Canal</label><select className="input" value={postDemo.next_action_type} onChange={e=>setPostDemo(v=>({...v,next_action_type:e.target.value}))}><option value="email">Correo</option><option value="whatsapp">WhatsApp</option><option value="llamada">Llamada</option><option value="reunion">Reunión</option></select></div>
+                  <div className="input-group full"><label>¿Cuándo quieres recibir el aviso?</label><input className="input" type="datetime-local" value={postDemo.next_action_at} onChange={e=>setPostDemo(v=>({...v,next_action_at:e.target.value}))} required/><small style={{color:'#64748b',display:'flex',gap:5,alignItems:'center'}}><Bell size={13}/>Se avisará en los dispositivos donde actives las notificaciones.</small></div>
+                  <div className="input-group full"><label>Notas de la demo</label><textarea className="input" rows={4} value={postDemo.notes} onChange={e=>setPostDemo(v=>({...v,notes:e.target.value}))} placeholder="Necesidad, objeciones, decisión, próximo paso…"/></div>
+                </div>
+              </div>
+              <div className="modal-footer"><button type="button" className="btn btn-secondary" onClick={()=>setPostDemo(null)}>Cancelar</button><button className="btn btn-primary" type="submit">Crear seguimiento</button></div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {activity && (
         <div className="modal-overlay" onClick={event => event.target === event.currentTarget && setActivity(null)}>

@@ -57,12 +57,14 @@ app.use((err, _req, res, _next) => {
 });
 
 const { startRunner } = require('./src/services/workflow_runner');
+const { startFollowupNotificationRunner } = require('./src/services/followupNotifications.service');
 
 // Inicializar Socket.io
 initSocket(server, ALLOWED_ORIGINS);
 
 // Iniciar Workflow Runner en segundo plano
 startRunner();
+startFollowupNotificationRunner();
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`CRM Ventas API + Socket.io + Workflows corriendo en puerto ${PORT}`));

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -7,14 +7,8 @@ import {
   MessageSquare, Settings, UserCircle, SlidersHorizontal, DatabaseBackup, Building2,
   Milestone, FileText, PhoneCall, BadgeEuro, CalendarDays
 } from 'lucide-react';
-import api from '../../services/api';
-import { io } from 'socket.io-client';
-import toast from 'react-hot-toast';
-import { playChatSound } from '../../utils/pushNotifications';
 import { getUserSymbol } from '../../utils/userAvatar';
 import { clearAdminPreview, useAdminPreview } from '../../utils/adminPreview';
-
-const SOCKET_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5080/api').replace(/\/api\/?$/, '');
 
 const navStyle = isActive => ({
   display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px',
@@ -27,16 +21,10 @@ const navStyle = isActive => ({
 
 const nav = [
   { to: '/',               icon: LayoutDashboard, label: 'Inicio',             mobileLabel: 'Inicio', exact: true },
-  { to: '/contacts',       icon: Users2,          label: 'Contactos',          mobileLabel: 'Contactos' },
-  { to: '/opportunities',  icon: Target,          label: 'Oportunidades',      mobileLabel: 'Oportun.' },
-  { to: '/demos',          icon: CalendarClock,   label: 'Centro de demos',    mobileLabel: 'Demos' },
-  { to: '/followups',      icon: Milestone,       label: 'Seguimientos',       mobileLabel: 'Seguim.' },
-  { to: '/activities',     icon: CalendarCheck,   label: 'Tareas diarias',     mobileLabel: 'T. diarias' },
   { to: '/prospecting',    icon: Building2,       label: 'Prospección diaria', mobileLabel: 'P. diaria' },
-  { to: '/my-calls',       icon: PhoneCall,       label: 'Mis llamadas',       mobileLabel: 'Mis llamadas', adminOnly: true },
-  { to: '/closer-calendar', icon: CalendarDays,   label: 'Calendario de demos', mobileLabel: 'Calendario' },
-  { to: '/setter-commissions', icon: BadgeEuro,    label: 'Comisiones Setter',  mobileLabel: 'Comisiones', roles:['admin','gerente','setter'] },
-  { to: '/chat',           icon: MessageSquare,   label: 'Chat',               mobileLabel: 'Chat' },
+  { to: '/contacts',       icon: Users2,          label: 'Clientes',           mobileLabel: 'Clientes' },
+  { to: '/followups',      icon: Milestone,       label: 'Seguimientos',       mobileLabel: 'Seguim.' },
+  { to: '/activities',     icon: CalendarCheck,   label: 'Tareas y avisos',    mobileLabel: 'Tareas' },
   { to: '/communications', icon: FileText,        label: 'Plantillas',         mobileLabel: 'Plantillas' },
   { to: '/reports',        icon: BarChart2,       label: 'KPI',                mobileLabel: 'KPI' },
 ];
@@ -47,29 +35,7 @@ export default function Sidebar() {
   const preview = useAdminPreview(user?.role === 'admin');
   const displayUser = preview || user;
   const effectiveRole = preview?.role || user?.role;
-  const [chatUnread, setChatUnread] = useState(0);
   const handleLogout = () => { clearAdminPreview(); logout(); navigate('/login'); };
-  useEffect(() => {
-    const refresh = () => api.get('/chat/unread-count').then(({data})=>setChatUnread(data.unread || 0)).catch(()=>{});
-    refresh();
-    const timer = setInterval(refresh, 15000);
-    return () => clearInterval(timer);
-  }, []);
-  useEffect(() => {
-    const socket = io(SOCKET_URL, {
-      auth:{ token:localStorage.getItem('crm_token') },
-      transports:['polling','websocket'],
-    });
-    socket.on('chat_notification', message => {
-      if (Number(message.user_id) === Number(user?.id)) return;
-      setChatUnread(current => current + 1);
-      if (window.location.pathname !== '/chat' && document.visibilityState === 'visible') {
-        playChatSound();
-        toast(`${message.user_name}: ${message.message}`, { icon:'💬', duration:5000 });
-      }
-    });
-    return () => socket.disconnect();
-  }, [user?.id]);
 
   return (
     <aside className="app-sidebar" style={{
@@ -126,7 +92,6 @@ export default function Sidebar() {
             <Icon size={17}/>
             <span className="nav-label-desktop">{label}</span>
             <span className="nav-label-mobile">{mobileLabel}</span>
-            {to==='/chat' && chatUnread>0 && <span className="sidebar-chat-badge">{chatUnread>99?'99+':chatUnread}</span>}
           </NavLink>
         ))}
 
@@ -148,11 +113,6 @@ export default function Sidebar() {
               style={({ isActive }) => navStyle(isActive)}>
               <Settings size={17}/>
               Administración
-            </NavLink>
-            <NavLink to="/users"
-              style={({ isActive }) => navStyle(isActive)}>
-              <Users size={17}/>
-              Usuarios
             </NavLink>
           </div>
         )}
