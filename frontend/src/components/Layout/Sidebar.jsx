@@ -48,15 +48,9 @@ export default function Sidebar() {
       left: 0, top: 0,
       zIndex: 100,
     }}>
-      {/* Logo */}
-      <div className="sidebar-brand" style={{ padding: '22px 18px 18px', borderBottom: '1px solid #bfdcff' }}>
-        <img src="/brand/realadvisor-wordmark.png" alt="RealAdvisor" style={{ display:'block', width:'100%', maxWidth:190, height:32, objectFit:'contain', objectPosition:'left center' }}/>
-        <p style={{ color: '#52708d', fontSize: 11, marginTop:8 }}>Seguimiento comercial</p>
-      </div>
-
-      {/* User card — click to go to profile */}
+      {/* Identidad personal — click para ir al perfil */}
       <NavLink className="sidebar-profile" to={preview ? `/team-workspaces/${preview.id}` : '/profile'} style={{ textDecoration:'none' }}>
-        <div style={{ padding: '14px 20px', borderBottom: '1px solid #bfdcff', cursor:'pointer' }}
+        <div style={{ padding: '24px 20px 18px', borderBottom: '1px solid #bfdcff', cursor:'pointer' }}
           onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,.55)'}
           onMouseLeave={e => e.currentTarget.style.background='transparent'}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -74,7 +68,7 @@ export default function Sidebar() {
             </div>
             <div style={{ overflow: 'hidden', flex:1 }}>
               <p style={{ color: '#173b60', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayUser?.name}</p>
-              <p style={{ color: '#52708d', fontSize: 11 }}>{displayUser?.role === 'admin' ? 'Asesor' : displayUser?.role === 'vendedor' ? 'Closer' : displayUser?.role === 'setter' ? 'Setter' : displayUser?.role}</p>
+              <p style={{ color: '#52708d', fontSize: 11 }}>{displayUser?.role === 'admin' ? 'CEO' : displayUser?.role === 'vendedor' ? 'Closer' : displayUser?.role === 'setter' ? 'Setter' : displayUser?.role}</p>
             </div>
             <UserCircle size={14} color="#6d89a3"/>
           </div>
