@@ -260,7 +260,7 @@ export default function DailyProspecting({ personalMode = false }) {
         {!operatorView && <div className="followup-filter prospect-stat prospect-stat-history"><span className="notranslate" translate="no">Histórico total</span><strong>{summary?.history || 0}</strong></div>}
       </div>
 
-      <div className="card" style={{marginBottom:16}}>
+      <div className="card prospect-filter-bar" style={{marginBottom:16}}>
         <div style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'end'}}>
           <div className="input-group" style={{margin:0,minWidth:170}}><label>Filtrar por fecha (opcional)</label><input className="input" type="date" value={date} onChange={e=>{setDate(e.target.value);load(e.target.value);}}/></div>
           {isAdmin && !operatorView && (
