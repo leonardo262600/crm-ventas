@@ -107,4 +107,25 @@ const assistantAutomationAuth = async (req, res, next) => {
   }
 };
 
-module.exports = { auth, requireRole, prospectingAutomationAuth, assistantAutomationAuth };
+// Credencial técnica de lectura/escritura limitada al cerebro personal.
+const puchiAutomationAuth = async (req, res, next) => {
+  const expected = process.env.PUCHI_AUTOMATION_KEY;
+  const provided = req.headers['x-puchi-key'];
+  if (!expected || !safeSecretMatch(provided, expected)) {
+    return res.status(401).json({ message: 'Credencial de PUCHI no válida' });
+  }
+  try {
+    const tenantId = Number(process.env.PUCHI_TENANT_ID || 1);
+    const [rows] = await db.query(
+      `SELECT id,tenant_id,name,email,role,active FROM users
+       WHERE tenant_id=? AND role='admin' AND active=1 AND deleted_at IS NULL ORDER BY id LIMIT 1`,
+      [tenantId]
+    );
+    if (!rows.length) return res.status(503).json({ message: 'No existe un propietario activo para PUCHI' });
+    req.user = rows[0];
+    req.puchiAutomation = true;
+    next();
+  } catch (error) { return res.status(500).json({ message: error.message }); }
+};
+
+module.exports = { auth, requireRole, prospectingAutomationAuth, assistantAutomationAuth, puchiAutomationAuth };
