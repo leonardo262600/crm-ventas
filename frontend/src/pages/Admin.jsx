@@ -132,8 +132,8 @@ export default function Admin() {
               {stages.map(s => (
                 <div key={s.id} style={{ display:'flex', alignItems:'center', gap:14, padding:'12px 16px', background:'#f8fafc', borderRadius:10, borderLeft:`4px solid ${s.color}` }}>
                   <div style={{ width:18, height:18, borderRadius:4, background:s.color, flexShrink:0 }} />
-                  <span style={{ fontWeight:600, flex:1 }}>{s.name}</span>
-                  <span style={{ fontSize:12, color:'#94a3b8' }}>Orden: {s.order_index}</span>
+                  <span className="pipeline-stage-title">{s.name}</span>
+                  <span className="pipeline-stage-order">Orden: {s.order_index}</span>
                   {s.is_default ? <span className="badge badge-green">Predeterminada</span> : null}
                   <div style={{ display:'flex', gap:6 }}>
                     <button className="btn-icon" onClick={() => openEdit(s)}>✏</button>
