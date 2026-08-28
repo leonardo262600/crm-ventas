@@ -94,7 +94,7 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Suspense fallback={<div className="app-loading"><img src="/icons/icon-192.png" alt=""/><span>Cargando CRM…</span></div>}>
+        <Suspense fallback={<div className="app-loading"><img src="/icons/icon-192.png?v=2" alt="CRM Personal"/><span>Cargando CRM Personal…</span></div>}>
           <AppRoutes />
         </Suspense>
         <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
