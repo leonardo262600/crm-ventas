@@ -196,7 +196,7 @@ export default function Header() {
           </div>
           <div>
             <p style={{ fontWeight:600, fontSize:13, lineHeight:1.2 }}>{displayUser?.name}</p>
-            <p style={{ fontSize:10, color:'#64748b' }}>{displayUser?.role === 'admin' ? 'Asesor' : displayUser?.role === 'vendedor' ? 'Closer' : displayUser?.role === 'setter' ? 'Setter' : displayUser?.role}</p>
+            <p style={{ fontSize:10, color:'#64748b' }}>{displayUser?.role === 'admin' ? 'CEO' : displayUser?.role === 'vendedor' ? 'Closer' : displayUser?.role === 'setter' ? 'Setter' : displayUser?.role}</p>
           </div>
         </div>
       </div>
