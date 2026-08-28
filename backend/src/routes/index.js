@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { auth, requireRole, prospectingAutomationAuth, assistantAutomationAuth } = require('../middleware/auth');
+const { auth, requireRole, prospectingAutomationAuth, assistantAutomationAuth, puchiAutomationAuth } = require('../middleware/auth');
 const multer  = require('multer');
 const path    = require('path');
 const fs      = require('fs');
@@ -26,6 +26,7 @@ const setterCommissionsCtrl = require('../controllers/setterCommissions.controll
 const teamWorkspaceCtrl = require('../controllers/teamWorkspace.controller');
 const closerCalendarCtrl = require('../controllers/closerCalendar.controller');
 const crmAssistantCtrl = require('../controllers/crmAssistant.controller');
+const personalHubCtrl = require('../controllers/personalHub.controller');
 
 // Multer storage para logos
 const logoStorage = multer.diskStorage({
@@ -87,6 +88,16 @@ router.get('/prospecting-automation', prospectingAutomationAuth, prospectingCtrl
 router.get('/prospecting-automation/summary', prospectingAutomationAuth, prospectingCtrl.summary);
 router.post('/prospecting-automation/bulk', prospectingAutomationAuth, prospectingCtrl.bulkCreate);
 router.get('/assistant-automation/daily-brief', assistantAutomationAuth, crmAssistantCtrl.dailyBrief);
+
+// ── Cerebro personal: usuario + integración PUCHI ─────────
+router.get('/personal-hub', auth, personalHubCtrl.list);
+router.post('/personal-hub', auth, personalHubCtrl.create);
+router.put('/personal-hub/:id', auth, personalHubCtrl.update);
+router.delete('/personal-hub/:id', auth, personalHubCtrl.remove);
+router.get('/personal-hub-automation', puchiAutomationAuth, personalHubCtrl.list);
+router.post('/personal-hub-automation', puchiAutomationAuth, personalHubCtrl.create);
+router.put('/personal-hub-automation/:id', puchiAutomationAuth, personalHubCtrl.update);
+router.delete('/personal-hub-automation/:id', puchiAutomationAuth, personalHubCtrl.remove);
 router.patch('/prospecting/:id', auth, prospectingCtrl.update);
 router.post('/prospecting/:id/follow-up', auth, prospectingCtrl.scheduleFollowUp);
 router.post('/prospecting/:id/schedule-demo', auth, prospectingCtrl.scheduleDemo);
