@@ -1,4 +1,4 @@
-self.CRM_BUILD_VERSION = '2026-08-21-personal-dashboard';
+self.CRM_BUILD_VERSION = '2026-08-28-personal-identity-v2';
 
 self.addEventListener('install', event => {
   self.skipWaiting();
@@ -22,11 +22,11 @@ self.addEventListener('push', function(event) {
     }
   }
 
-  const title = payload.title || 'CRM Ventas';
+  const title = payload.title || 'CRM Personal';
   const options = {
     body: payload.body || 'Tienes una nueva actualización en el sistema.',
-    icon: payload.icon || '/icons/icon-192.png',
-    badge: '/icons/icon-192.png',
+    icon: payload.icon || '/icons/icon-192.png?v=2',
+    badge: '/icons/icon-192.png?v=2',
     vibrate: [100, 50, 100],
     data: {
       dateOfArrival: Date.now(),
