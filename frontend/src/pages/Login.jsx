@@ -33,7 +33,7 @@ export default function Login() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', background: '#05070a' }}>
+    <div className="login-page">
       {/* Left panel */}
       <div style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', padding: '40px', display: 'none' }} className="login-left">
         <h1 style={{ margin: '0 0 28px', fontSize: 46, letterSpacing: '-0.04em' }}>CRM Personal</h1>
@@ -43,17 +43,17 @@ export default function Login() {
       </div>
 
       {/* Right panel / form */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', padding: '20px' }}>
-        <div style={{ background: '#fff', borderRadius: 20, padding: '48px 40px', width: '100%', maxWidth: 420, boxShadow: '0 24px 80px rgba(0,0,0,.25)' }}>
+      <div className="login-shell">
+        <div className="login-card">
           <div style={{ marginBottom: 32 }}>
-            <h1 style={{ margin: 0, color: '#0f172a', fontSize: 32, letterSpacing: '-0.04em' }}>CRM Personal</h1>
-            <p style={{ fontSize: 12, color: '#64748b', marginTop:10 }}>Inicia sesión en tu cuenta</p>
+            <h1 className="login-title">CRM Personal</h1>
+            <p className="login-subtitle">Inicia sesión en tu cuenta</p>
           </div>
 
           <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {!requires2FA ? (
               <>
-                <div className="input-group">
+                <div className="input-group login-input-group">
                   <label>Usuario o correo</label>
                   <div style={{ position: 'relative' }}>
                     <User size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
@@ -62,8 +62,8 @@ export default function Login() {
                       value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
                   </div>
                 </div>
-                <label style={{display:'flex',alignItems:'center',gap:8,fontSize:12,color:'#64748b',cursor:'pointer'}}><input type="checkbox" checked={rememberUser} onChange={event=>setRememberUser(event.target.checked)}/>Recordar mi usuario en este dispositivo</label>
-                <div className="input-group">
+                <label className="login-remember"><input type="checkbox" checked={rememberUser} onChange={event=>setRememberUser(event.target.checked)}/>Recordar mi usuario en este dispositivo</label>
+                <div className="input-group login-input-group">
                   <label>Contraseña</label>
                   <div style={{ position: 'relative' }}>
                     <Lock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
@@ -73,7 +73,7 @@ export default function Login() {
                 </div>
               </>
             ) : (
-              <div className="input-group">
+              <div className="input-group login-input-group">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                   <ShieldCheck size={20} color="#0f766e" />
                   <label style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Código de Autenticación 2FA</label>
