@@ -58,6 +58,7 @@ app.use((err, _req, res, _next) => {
 
 const { startRunner } = require('./src/services/workflow_runner');
 const { startFollowupNotificationRunner } = require('./src/services/followupNotifications.service');
+const { ensurePersonalHubSchema } = require('./src/controllers/personalHub.controller');
 
 // Inicializar Socket.io
 initSocket(server, ALLOWED_ORIGINS);
@@ -67,4 +68,9 @@ startRunner();
 startFollowupNotificationRunner();
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`CRM Ventas API + Socket.io + Workflows corriendo en puerto ${PORT}`));
+ensurePersonalHubSchema()
+  .then(() => server.listen(PORT, () => console.log(`CRM Ventas API + Socket.io + Workflows corriendo en puerto ${PORT}`)))
+  .catch((error) => {
+    console.error('[PersonalHub] No se pudo preparar el esquema:', error);
+    process.exitCode = 1;
+  });
