@@ -33,10 +33,10 @@ export default function Login() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', background: 'linear-gradient(135deg, #3454d1 0%, #172c91 100%)' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', background: '#05070a' }}>
       {/* Left panel */}
       <div style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', padding: '40px', display: 'none' }} className="login-left">
-        <img src="/brand/realadvisor-wordmark.png" alt="RealAdvisor" style={{ width:320, maxWidth:'85%', height:'auto', marginBottom:28 }}/>
+        <h1 style={{ margin: '0 0 28px', fontSize: 46, letterSpacing: '-0.04em' }}>CRM Personal</h1>
         <p style={{ opacity: .8, textAlign: 'center', maxWidth: 360, lineHeight: 1.6 }}>
           Organiza tus demos, seguimientos y oportunidades desde un solo lugar.
         </p>
@@ -46,7 +46,7 @@ export default function Login() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', padding: '20px' }}>
         <div style={{ background: '#fff', borderRadius: 20, padding: '48px 40px', width: '100%', maxWidth: 420, boxShadow: '0 24px 80px rgba(0,0,0,.25)' }}>
           <div style={{ marginBottom: 32 }}>
-            <img src="/brand/realadvisor-wordmark.png" alt="RealAdvisor" style={{ display:'block', width:240, maxWidth:'100%', height:'auto' }}/>
+            <h1 style={{ margin: 0, color: '#0f172a', fontSize: 32, letterSpacing: '-0.04em' }}>CRM Personal</h1>
             <p style={{ fontSize: 12, color: '#64748b', marginTop:10 }}>Inicia sesión en tu cuenta</p>
           </div>
 
@@ -87,7 +87,7 @@ export default function Login() {
               </div>
             )}
             
-            <button className="btn btn-primary w-full" style={{ marginTop: 8, justifyContent: 'center', height: 44 }} disabled={loading || (requires2FA && form.tfa_token?.length !== 6)}>
+            <button className="btn login-submit w-full" style={{ marginTop: 8, justifyContent: 'center', height: 44 }} disabled={loading || (requires2FA && form.tfa_token?.length !== 6)}>
               {loading ? 'Ingresando...' : requires2FA ? 'Verificar y Entrar' : 'Iniciar sesión'}
             </button>
             
