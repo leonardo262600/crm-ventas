@@ -16,9 +16,6 @@ CREATE TABLE IF NOT EXISTS personal_hub_items (
   created_by INT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  CONSTRAINT fk_personal_hub_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id),
-  CONSTRAINT fk_personal_hub_owner FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE,
-  CONSTRAINT fk_personal_hub_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
   INDEX idx_personal_hub_section (tenant_id, owner_id, section, position),
   INDEX idx_personal_hub_tasks (tenant_id, owner_id, task_status, position),
   INDEX idx_personal_hub_agenda (tenant_id, owner_id, scheduled_start)
