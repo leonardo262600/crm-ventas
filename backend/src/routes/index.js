@@ -84,6 +84,7 @@ router.delete('/contacts/:id', auth, requireRole('admin','gerente'), contactsCtr
 router.get('/prospecting', auth, prospectingCtrl.list);
 router.get('/prospecting/summary', auth, prospectingCtrl.summary);
 router.post('/prospecting/bulk', auth, requireRole('admin','gerente','vendedor'), prospectingCtrl.bulkCreate);
+router.post('/prospecting/refresh-free', auth, requireRole('admin'), prospectingCtrl.refreshFree);
 router.get('/prospecting-automation', prospectingAutomationAuth, prospectingCtrl.list);
 router.get('/prospecting-automation/summary', prospectingAutomationAuth, prospectingCtrl.summary);
 router.post('/prospecting-automation/bulk', prospectingAutomationAuth, prospectingCtrl.bulkCreate);
