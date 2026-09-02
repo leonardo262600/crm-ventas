@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const { syncDemoTasks } = require('../services/demoAutomation.service');
 const { ensureCalendarSchema, availableClosers, acquireSlotLock, releaseSlotLock } = require('../services/closerCalendar.service');
+const { refreshFreeProspecting } = require('../services/freeProspectingRefresh.service');
 
 let qualificationSchemaPromise;
 const ensureQualificationSchema = () => {
@@ -16,6 +17,8 @@ const ensureQualificationSchema = () => {
       qualification_level: 'VARCHAR(1) NULL',
       qualification_reason: 'VARCHAR(700) NULL',
       call_angle: 'VARCHAR(500) NULL',
+      contact_person: 'VARCHAR(255) NULL',
+      extra_info: 'TEXT NULL',
       realadvisor_crm_check: "VARCHAR(12) NOT NULL DEFAULT 'pendiente'",
       assigned_to: 'INT NULL',
     };
@@ -222,11 +225,12 @@ const bulkCreate = async (req, res) => {
       const [result] = await db.query(
         `INSERT IGNORE INTO daily_prospects
          (tenant_id,batch_date,zone,city,province,agency_name,phone,email,website,address,postal_code,source_url,
-          qualification_score,qualification_level,qualification_reason,call_angle,normalized_key,created_by)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+          contact_person,extra_info,qualification_score,qualification_level,qualification_reason,call_angle,normalized_key,created_by)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         [req.user.tenant_id, batchDate, item.zone || item.city || null, item.city || null, item.province || null,
          item.agency_name, normalizeSpanishPhone(item.phone), item.email || null, item.website || null, item.address || null,
          postalCodeFrom(item.postal_code, item.address), item.source_url || item.website || null,
+         item.contact_person || null, item.extra_info ? String(item.extra_info).slice(0, 65000) : null,
          Number.isFinite(Number(item.qualification_score)) ? Math.min(100, Math.max(0, Math.round(Number(item.qualification_score)))) : null,
          ['A','B','C'].includes(String(item.qualification_level || '').toUpperCase())
            ? String(item.qualification_level).toUpperCase()
@@ -237,6 +241,15 @@ const bulkCreate = async (req, res) => {
     }
     res.status(201).json({ inserted, duplicates, batch_date: batchDate });
   } catch (err) { res.status(500).json({ message: err.message }); }
+};
+
+const refreshFree = async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ message: 'Solo el administrador puede renovar la lista' });
+  try {
+    await ensureQualificationSchema();
+    const result = await refreshFreeProspecting(req.user.tenant_id, req.user.id, 50);
+    res.status(201).json(result);
+  } catch (error) { res.status(503).json({ message: error.message }); }
 };
 
 const update = async (req, res) => {
@@ -504,4 +517,4 @@ const scheduleDemo = async (req, res) => {
   }
 };
 
-module.exports = { list, summary, bulkCreate, update, scheduleFollowUp, scheduleDemo, convert };
+module.exports = { list, summary, bulkCreate, refreshFree, update, scheduleFollowUp, scheduleDemo, convert };
