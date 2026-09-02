@@ -85,6 +85,7 @@ router.get('/prospecting', auth, prospectingCtrl.list);
 router.get('/prospecting/summary', auth, prospectingCtrl.summary);
 router.post('/prospecting/bulk', auth, requireRole('admin','gerente','vendedor'), prospectingCtrl.bulkCreate);
 router.post('/prospecting/refresh-free', auth, requireRole('admin'), prospectingCtrl.refreshFree);
+router.get('/prospecting/refresh-free/status', auth, requireRole('admin'), prospectingCtrl.refreshFreeStatus);
 router.get('/prospecting-automation', prospectingAutomationAuth, prospectingCtrl.list);
 router.get('/prospecting-automation/summary', prospectingAutomationAuth, prospectingCtrl.summary);
 router.post('/prospecting-automation/bulk', prospectingAutomationAuth, prospectingCtrl.bulkCreate);
