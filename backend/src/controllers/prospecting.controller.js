@@ -1,7 +1,7 @@
 const db = require('../config/db');
 const { syncDemoTasks } = require('../services/demoAutomation.service');
 const { ensureCalendarSchema, availableClosers, acquireSlotLock, releaseSlotLock } = require('../services/closerCalendar.service');
-const { refreshFreeProspecting } = require('../services/freeProspectingRefresh.service');
+const { startRefreshJob, getRefreshJob } = require('../services/freeProspectingRefresh.service');
 
 let qualificationSchemaPromise;
 const ensureQualificationSchema = () => {
@@ -247,10 +247,12 @@ const refreshFree = async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ message: 'Solo el administrador puede renovar la lista' });
   try {
     await ensureQualificationSchema();
-    const result = await refreshFreeProspecting(req.user.tenant_id, req.user.id, 50);
-    res.status(201).json(result);
+    const job = startRefreshJob(req.user.tenant_id, req.user.id, 50);
+    res.status(202).json(job);
   } catch (error) { res.status(503).json({ message: error.message }); }
 };
+
+const refreshFreeStatus = (req, res) => res.json(getRefreshJob());
 
 const update = async (req, res) => {
   const allowedStatuses = ['pendiente','llamar','contactada','agendada','ya_realadvisor','no_interesa','volver_contactar','no_localizable'];
@@ -517,4 +519,4 @@ const scheduleDemo = async (req, res) => {
   }
 };
 
-module.exports = { list, summary, bulkCreate, refreshFree, update, scheduleFollowUp, scheduleDemo, convert };
+module.exports = { list, summary, bulkCreate, refreshFree, refreshFreeStatus, update, scheduleFollowUp, scheduleDemo, convert };
