@@ -69,6 +69,7 @@ export default function DailyProspecting({ personalMode = false }) {
   const [booking, setBooking] = useState(null);
   const [availableClosers, setAvailableClosers] = useState([]);
   const [checkingClosers, setCheckingClosers] = useState(false);
+  const [refreshingFree, setRefreshingFree] = useState(false);
 
   const load = async (requestedDate = date) => {
     setLoading(true);
@@ -237,6 +238,19 @@ export default function DailyProspecting({ personalMode = false }) {
   const summaryCount = status => Number(summary?.statuses?.find(row => row.status === status)?.total || 0);
   const visibleStatuses = operatorView ? STATUSES.filter(([value]) => value !== 'pendiente') : STATUSES;
 
+  const refreshFree = async () => {
+    const pending = summaryCount('pendiente');
+    if (!window.confirm(`Se moverán ${pending} agencias de Pendiente a No le interesa y se cargarán exactamente 50 nuevas. Si no se consiguen 50, no cambiará nada. ¿Continuar?`)) return;
+    setRefreshingFree(true);
+    try {
+      const { data } = await api.post('/prospecting/refresh-free');
+      toast.success(`${data.archived} anteriores archivadas y ${data.inserted} nuevas cargadas`);
+      setFilter('pendiente');
+      await load('');
+    } catch (error) { toast.error(error.response?.data?.message || 'No se pudo renovar la lista'); }
+    finally { setRefreshingFree(false); }
+  };
+
   return (
     <div>
       <div className="page-header">
@@ -246,6 +260,7 @@ export default function DailyProspecting({ personalMode = false }) {
         </div>
         <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
           <button className="btn btn-secondary" onClick={()=>setShowLineSettings(true)}><Settings size={15}/>{workLine ? `Línea: ${workLine}` : 'Configurar línea'}</button>
+          {isAdmin && !operatorView && <button className="btn btn-primary" disabled={refreshingFree} onClick={refreshFree}><RefreshCw size={16}/>{refreshingFree ? 'Buscando 50 nuevas…' : 'Renovar con 50 nuevas'}</button>}
           <button className="btn btn-secondary" onClick={() => load()}><RefreshCw size={16}/>Actualizar</button>
         </div>
       </div>
