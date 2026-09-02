@@ -241,8 +241,15 @@ export default function DailyProspecting({ personalMode = false }) {
   const refreshFree = async () => {
     setRefreshingFree(true);
     try {
-      const { data } = await api.post('/prospecting/refresh-free');
-      toast.success(`${data.archived} anteriores archivadas y ${data.inserted} nuevas cargadas`);
+      await api.post('/prospecting/refresh-free');
+      let job;
+      for (let attempt = 0; attempt < 72; attempt += 1) {
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        ({ data: job } = await api.get('/prospecting/refresh-free/status'));
+        if (job.status !== 'processing') break;
+      }
+      if (job?.status !== 'completed') throw new Error(job?.error || 'La búsqueda tardó demasiado; inténtalo de nuevo');
+      toast.success(`${job.result.archived} anteriores archivadas y ${job.result.inserted} nuevas cargadas`);
       setFilter('pendiente');
       await load('');
     } catch (error) { toast.error(error.response?.data?.message || 'No se pudo renovar la lista'); }
