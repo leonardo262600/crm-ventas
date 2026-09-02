@@ -239,8 +239,6 @@ export default function DailyProspecting({ personalMode = false }) {
   const visibleStatuses = operatorView ? STATUSES.filter(([value]) => value !== 'pendiente') : STATUSES;
 
   const refreshFree = async () => {
-    const pending = summaryCount('pendiente');
-    if (!window.confirm(`Se moverán ${pending} agencias de Pendiente a No le interesa y se cargarán exactamente 50 nuevas. Si no se consiguen 50, no cambiará nada. ¿Continuar?`)) return;
     setRefreshingFree(true);
     try {
       const { data } = await api.post('/prospecting/refresh-free');
