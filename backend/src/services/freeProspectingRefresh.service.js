@@ -6,6 +6,7 @@ const BBOXES = [
   [42.70,-9.40,43.80,-5.30], [27.60,-18.20,29.50,-13.20], [38.70,-9.60,41.20,-5.50],
 ];
 const ENDPOINTS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
+let refreshJob = { status: 'idle', result: null, error: null, started_at: null, finished_at: null };
 const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 const digits = value => String(value || '').replace(/\D/g, '');
 const websiteHost = value => { try { return new URL(/^https?:/i.test(value || '') ? value : `https://${value}`).hostname.replace(/^www\./, '').toLowerCase(); } catch { return normalize(value); } };
@@ -110,4 +111,15 @@ const refreshFreeProspecting = async (tenantId, userId, target = 50) => {
   finally { connection.release(); }
 };
 
-module.exports = { refreshFreeProspecting };
+const startRefreshJob = (tenantId, userId, target = 50) => {
+  if (refreshJob.status === 'processing') return refreshJob;
+  refreshJob = { status: 'processing', result: null, error: null, started_at: new Date().toISOString(), finished_at: null };
+  refreshFreeProspecting(tenantId, userId, target)
+    .then(result => { refreshJob = { ...refreshJob, status: 'completed', result, finished_at: new Date().toISOString() }; })
+    .catch(error => { refreshJob = { ...refreshJob, status: 'failed', error: error.message, finished_at: new Date().toISOString() }; });
+  return refreshJob;
+};
+
+const getRefreshJob = () => refreshJob;
+
+module.exports = { startRefreshJob, getRefreshJob };
